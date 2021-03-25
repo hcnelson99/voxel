@@ -69,53 +69,56 @@ char *load_file(const char *filename) {
     return string;
 }
 
-bool compile_shader(GLuint shader, const char *filename) {
-    char *code = load_file(filename);
-
-    glShaderSource(shader, 1, &code, NULL);
-    glCompileShader(shader);
-
-    free(code);
-
-    GLint success;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (success != GL_TRUE) {
-        printf("failed to compile shader %s\n", filename);
-        return false;
+class ShaderProgram {
+  public:
+    ShaderProgram() {
+        gl_program = glCreateProgram();
+        vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+        recompile();
     }
-    return true;
-}
-bool link_program(GLuint gl_program) {
-    glLinkProgram(gl_program);
-    GLint success;
-    glGetProgramiv(gl_program, GL_LINK_STATUS, &success);
-    if (success != GL_TRUE) {
-        printf("Failed to link program\n");
-        return false;
-    }
-    return true;
-}
 
-void recompile_program(GLuint *program) {
-    GLuint gl_program = glCreateProgram();
-    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    bool compile_shader(GLuint shader, const char *filename) {
+        char *code = load_file(filename);
 
-    if (!compile_shader(vertex_shader, "vertex.glsl")) {
-        return;
-    }
-    glAttachShader(gl_program, vertex_shader);
-    if (!compile_shader(fragment_shader, "fragment.glsl")) {
-        return;
-    }
-    glAttachShader(gl_program, fragment_shader);
-    if (!link_program(gl_program)) {
-        return;
-    }
-    glBindAttribLocation(gl_program, 0, "vertex_pos");
+        glShaderSource(shader, 1, &code, NULL);
+        glCompileShader(shader);
 
-    *program = gl_program;
-}
+        free(code);
+
+        GLint success;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        if (success != GL_TRUE) {
+            printf("failed to compile shader %s\n", filename);
+            return false;
+        }
+        return true;
+    }
+
+    bool recompile() {
+        if (!compile_shader(vertex_shader, "vertex.glsl")) {
+            return false;
+        }
+        glAttachShader(gl_program, vertex_shader);
+        if (!compile_shader(fragment_shader, "fragment.glsl")) {
+            return false;
+        }
+        glAttachShader(gl_program, fragment_shader);
+        glLinkProgram(gl_program);
+
+        GLint success;
+        glGetProgramiv(gl_program, GL_LINK_STATUS, &success);
+        if (success != GL_TRUE) {
+            printf("Failed to link program\n");
+            return false;
+        }
+
+        glBindAttribLocation(gl_program, 0, "vertex_pos");
+        return true;
+    }
+
+    GLuint gl_program, vertex_shader, fragment_shader;
+};
 
 enum class Axis { X, Y, Z };
 
@@ -180,12 +183,7 @@ int main() {
     glDebugMessageCallback(gl_debug_message, NULL);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
 
-    GLuint gl_program = 0;
-    recompile_program(&gl_program);
-    if (!gl_program) {
-        printf("failed to compile program");
-        return 1;
-    }
+    ShaderProgram program;
 
     enum Block : uint8_t {
         AIR,
@@ -279,7 +277,7 @@ int main() {
                 switch (event.key.keysym.sym) {
                 case SDLK_r:
                     printf("Recompiling...\n");
-                    recompile_program(&gl_program);
+                    program.recompile();
                     printf("Done\n");
                     break;
                 case SDLK_ESCAPE:
@@ -326,9 +324,9 @@ int main() {
         // glm::mat4 camera = view;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glUseProgram(gl_program);
+        glUseProgram(program.gl_program);
 
-        glUniformMatrix4fv(glGetUniformLocation(gl_program, "camera"), 1, GL_FALSE, (GLfloat *)&camera);
+        glUniformMatrix4fv(glGetUniformLocation(program.gl_program, "camera"), 1, GL_FALSE, (GLfloat *)&camera);
 
         glDrawArrays(GL_TRIANGLES, 0, vbo_data.size());
 
