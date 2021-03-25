@@ -113,7 +113,6 @@ void recompile_program(GLuint *program) {
         return;
     }
     glBindAttribLocation(gl_program, 0, "vertex_pos");
-    glBindAttribLocation(gl_program, 1, "in_color");
 
     *program = gl_program;
 }
@@ -150,10 +149,10 @@ int main() {
         return 1;
     }
 
-    int width = 800;
-    int height = 600;
+    int width = 1920;
+    int height = 1080;
     SDL_Window *window =
-        SDL_CreateWindow("Voxel", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_OPENGL);
+        SDL_CreateWindow("Voxel", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_OPENGL);
 
     if (!window) {
         printf("failed to init window\n");
@@ -195,12 +194,14 @@ int main() {
 
     Block chunk[16][16][16] = {AIR};
     chunk[0][0][0] = STONE;
+    chunk[0][1][0] = STONE;
 
     std::vector<glm::vec3> vbo_data;
 
     for (int x = 0; x < 16; ++x) {
         for (int y = 0; y < 16; ++y) {
             for (int z = 0; z < 16; ++z) {
+                chunk[x][y][z] = rand() % 10 == 0 ? STONE : AIR;
                 if (chunk[x][y][z] == STONE) {
                     add_square(vbo_data, x, y, z, Axis::X);
                     add_square(vbo_data, x, y, z, Axis::Y);
@@ -212,31 +213,6 @@ int main() {
             }
         }
     }
-
-    static const GLfloat g_color_buffer_data[] = {
-        0.583f, 0.771f, 0.014f, 0.583f, 0.771f, 0.014f, 0.583f, 0.771f, 0.014f,
-        0.583f, 0.771f, 0.014f, 0.583f, 0.771f, 0.014f, 0.583f, 0.771f, 0.014f,
-
-        0.609f, 0.115f, 0.436f, 0.609f, 0.115f, 0.436f, 0.609f, 0.115f, 0.436f,
-        0.609f, 0.115f, 0.436f, 0.609f, 0.115f, 0.436f, 0.609f, 0.115f, 0.436f,
-
-        0.327f, 0.483f, 0.844f, 0.327f, 0.483f, 0.844f, 0.327f, 0.483f, 0.844f,
-        0.327f, 0.483f, 0.844f, 0.327f, 0.483f, 0.844f, 0.327f, 0.483f, 0.844f,
-
-        0.822f, 0.569f, 0.201f, 0.822f, 0.569f, 0.201f, 0.822f, 0.569f, 0.201f,
-        0.822f, 0.569f, 0.201f, 0.822f, 0.569f, 0.201f, 0.822f, 0.569f, 0.201f,
-
-        0.435f, 0.602f, 0.223f, 0.435f, 0.602f, 0.223f, 0.435f, 0.602f, 0.223f,
-        0.435f, 0.602f, 0.223f, 0.435f, 0.602f, 0.223f, 0.435f, 0.602f, 0.223f,
-
-        0.310f, 0.747f, 0.185f, 0.310f, 0.747f, 0.185f, 0.310f, 0.747f, 0.185f,
-        0.310f, 0.747f, 0.185f, 0.310f, 0.747f, 0.185f, 0.310f, 0.747f, 0.185f,
-
-    };
-    GLuint v_color;
-    glGenBuffers(1, &v_color);
-    glBindBuffer(GL_ARRAY_BUFFER, v_color);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
 
     GLuint vbo;
     glGenBuffers(1, &vbo);
@@ -250,10 +226,6 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, v_color);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(1);
 
     glm::vec3 player_pos = glm::vec3(-1, 0.8, -1);
     double rotate_x = 0, rotate_y = 0;
@@ -287,7 +259,12 @@ int main() {
 
                 if (mouse_grabbed) {
                     rotate_x -= speed * dt * dx;
-                    rotate_y += speed * dt * dy;
+                    rotate_y -= speed * dt * dy;
+                    if (rotate_y > 89) {
+                        rotate_y = 89;
+                    } else if (rotate_y < -89) {
+                        rotate_y = -89;
+                    }
                 }
             } break;
             case SDL_MOUSEBUTTONDOWN:
@@ -313,7 +290,7 @@ int main() {
         }
 
         glm::mat4 player_look = glm::rotate((float)glm::radians(rotate_x), glm::vec3(0, 1, 0)) *
-                                glm::rotate((float)glm::radians(rotate_y), glm::vec3(1, 0, 0));
+                                glm::rotate((float)glm::radians(-rotate_y), glm::vec3(1, 0, 0));
 
         const Uint8 *keystate = SDL_GetKeyboardState(NULL);
         float speed = 8;
@@ -330,16 +307,23 @@ int main() {
         if (keystate[SDL_SCANCODE_D]) {
             player_pos += glm::vec3(player_look * glm::vec4(-move, 0, 0, 1));
         }
+        if (keystate[SDL_SCANCODE_SPACE]) {
+            player_pos += glm::vec3(0, move, 0);
+        }
+        if (keystate[SDL_SCANCODE_LSHIFT]) {
+            player_pos += glm::vec3(0, -move, 0);
+        }
 
         SDL_GetWindowSize(window, &width, &height);
         glViewport(0, 0, width, height);
 
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, .1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(75.0f), (float)width / height, .1f, 100.0f);
 
         glm::mat4 view =
             glm::lookAt(player_pos, player_pos + glm::vec3(player_look * glm::vec4(0, 0, 1, 1)), glm::vec3(0, 1, 0));
 
         glm::mat4 camera = projection * view;
+        // glm::mat4 camera = view;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(gl_program);
