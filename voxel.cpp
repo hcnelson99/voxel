@@ -258,6 +258,7 @@ int main() {
     glm::vec3 player_pos = glm::vec3(-1, 0.8, -1);
     double rotate_x = 0, rotate_y = 0;
 
+    bool mouse_grabbed = true;
     SDL_SetRelativeMouseMode(SDL_TRUE);
 
     glEnable(GL_DEPTH_TEST);
@@ -283,9 +284,20 @@ int main() {
                 int dy = event.motion.yrel;
 
                 float speed = 10;
-                rotate_x -= speed * dt * dx;
-                rotate_y += speed * dt * dy;
+
+                if (mouse_grabbed) {
+                    rotate_x -= speed * dt * dx;
+                    rotate_y += speed * dt * dy;
+                }
             } break;
+            case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_LEFT) {
+                    if (!mouse_grabbed) {
+                        mouse_grabbed = true;
+                        SDL_SetRelativeMouseMode(SDL_TRUE);
+                    }
+                }
+                break;
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                 case SDLK_r:
@@ -293,6 +305,9 @@ int main() {
                     recompile_program(&gl_program);
                     printf("Done\n");
                     break;
+                case SDLK_ESCAPE:
+                    mouse_grabbed = !mouse_grabbed;
+                    SDL_SetRelativeMouseMode(mouse_grabbed ? SDL_TRUE : SDL_FALSE);
                 }
             }
         }
