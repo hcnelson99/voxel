@@ -1,3 +1,5 @@
+#include <chrono>
+#include <glm/gtx/transform.hpp>
 #include <iostream>
 #include <stdio.h>
 #include <vector>
@@ -254,20 +256,36 @@ int main() {
     glEnableVertexAttribArray(1);
 
     glm::vec3 player_pos = glm::vec3(-1, 0.8, -1);
-    glm::vec3 player_look = glm::vec3(0, 0, -1);
+    double rotate_x = 0, rotate_y = 0;
+
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glClearColor(0, 0, 0, 1);
 
+    auto prev_time = std::chrono::steady_clock::now();
+
     bool running = true;
     while (running) {
+        auto time = std::chrono::steady_clock::now();
+        double dt = std::chrono::duration<double>(time - prev_time).count();
+        prev_time = time;
+
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
             case SDL_QUIT:
                 running = false;
                 break;
+            case SDL_MOUSEMOTION: {
+                int dx = event.motion.xrel;
+                int dy = event.motion.yrel;
+
+                float speed = 10;
+                rotate_x -= speed * dt * dx;
+                rotate_y += speed * dt * dy;
+            } break;
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                 case SDLK_r:
@@ -275,26 +293,27 @@ int main() {
                     recompile_program(&gl_program);
                     printf("Done\n");
                     break;
-                case SDLK_w:
-                    player_pos += glm::vec3(0, 0, 0.1);
-                    break;
-                case SDLK_s:
-                    player_pos -= glm::vec3(0, 0, 0.1);
-                    break;
-                case SDLK_d:
-                    player_pos += glm::vec3(0.1, 0, 0);
-                    break;
-                case SDLK_a:
-                    player_pos -= glm::vec3(0.1, 0, 0);
-                    break;
-                case SDLK_LEFT:
-                    player_look = glm::rotateY(player_look, (float)glm::radians(10.0));
-                    break;
-                case SDLK_RIGHT:
-                    player_look = glm::rotateY(player_look, (float)glm::radians(-10.0));
-                    break;
                 }
             }
+        }
+
+        glm::mat4 player_look = glm::rotate((float)glm::radians(rotate_x), glm::vec3(0, 1, 0)) *
+                                glm::rotate((float)glm::radians(rotate_y), glm::vec3(1, 0, 0));
+
+        const Uint8 *keystate = SDL_GetKeyboardState(NULL);
+        float speed = 8;
+        float move = speed * dt;
+        if (keystate[SDL_SCANCODE_W]) {
+            player_pos += glm::vec3(player_look * glm::vec4(0, 0, move, 1));
+        }
+        if (keystate[SDL_SCANCODE_S]) {
+            player_pos += glm::vec3(player_look * glm::vec4(0, 0, -move, 1));
+        }
+        if (keystate[SDL_SCANCODE_A]) {
+            player_pos += glm::vec3(player_look * glm::vec4(move, 0, 0, 1));
+        }
+        if (keystate[SDL_SCANCODE_D]) {
+            player_pos += glm::vec3(player_look * glm::vec4(-move, 0, 0, 1));
         }
 
         SDL_GetWindowSize(window, &width, &height);
@@ -302,7 +321,8 @@ int main() {
 
         glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / height, .1f, 100.0f);
 
-        glm::mat4 view = glm::lookAt(player_pos, player_pos + player_look, glm::vec3(0, 1, 0));
+        glm::mat4 view =
+            glm::lookAt(player_pos, player_pos + glm::vec3(player_look * glm::vec4(0, 0, 1, 1)), glm::vec3(0, 1, 0));
 
         glm::mat4 camera = projection * view;
 
