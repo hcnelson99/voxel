@@ -320,7 +320,6 @@ int main() {
             glm::lookAt(player_pos, player_pos + glm::vec3(player_look * glm::vec4(0, 0, 1, 1)), glm::vec3(0, 1, 0));
 
         glm::mat4 camera = projection * view;
-        // glm::mat4 camera = view;
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(program.gl_program);
