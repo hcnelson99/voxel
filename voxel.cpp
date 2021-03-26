@@ -1,6 +1,7 @@
 #include <chrono>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
+#include <map>
 #include <stdio.h>
 #include <vector>
 
@@ -71,7 +72,7 @@ char *load_file(std::string filename) {
 
 class ShaderProgram {
   public:
-    ShaderProgram(std::string vertex_fname, std::string fragment_fname)
+    ShaderProgram(std::string vertex_fname, std::string fragment_fname, std::map<std::string, int> attribs)
         : vertex_shader_filename(vertex_fname), fragment_shader_filename(fragment_fname) {
         recompile();
     }
@@ -115,12 +116,16 @@ class ShaderProgram {
             return false;
         }
 
-        glBindAttribLocation(gl_program, 0, "vertex_pos");
+        for (const auto &pair : attrib_locations) {
+            glBindAttribLocation(gl_program, pair.second, pair.first.c_str());
+        }
+
         return true;
     }
 
     GLuint gl_program, vertex_shader, fragment_shader;
     std::string vertex_shader_filename, fragment_shader_filename;
+    std::map<std::string, int> attrib_locations;
 };
 
 enum class Axis { X, Y, Z };
@@ -186,7 +191,7 @@ int main() {
     glDebugMessageCallback(gl_debug_message, NULL);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
 
-    ShaderProgram program("vertex.glsl", "fragment.glsl");
+    ShaderProgram program("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
 
     enum Block : uint8_t {
         AIR,
@@ -279,7 +284,7 @@ int main() {
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                 case SDLK_r:
-                    printf("Recompiling...\n");
+                    printf("Recompiling... ");
                     program.recompile();
                     printf("Done\n");
                     break;
