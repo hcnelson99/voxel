@@ -1,0 +1,68 @@
+Teardown:
+    Do regular draw pass and render to separate buffers:
+    - depth
+    - color
+    - normal
+    - also record velocity for TAA
+
+Also a separate pass on the normals to smooth them out so that the cube edges are a little smooth
+
+Lighting:
+
+Diffuse lighting pass:
+    - Includes contribution from sky dome and dynamic lights
+
+    - Non-dynamic lighting is a mix between sky dome lighting and ambient occlusion
+        - per pixel send out a number of random rays and see if they hit the sky (real ambient occlusion)
+        - rays are 32 meters long
+        - send out 2 rays per pixel (1 on low)
+        - use blue noise!
+            - https://blog.tuxedolabs.com/2018/12/07/the-importance-of-good-noise.html
+        - sample hemisphere centered on the normal
+
+
+Dynamic lighting:
+    - One ray per pixel is shot from the pixel towards the light source, starting in screen space and then moving over to voxel space
+    - https://blog.tuxedolabs.com/2018/10/17/from-screen-space-to-voxel-space.html
+
+Denoise the lighting pass
+    - temporal anti-aliasing helps a lot with this too
+    - "I use denoising by spatially blurring and temporally accumulating the result over time"
+
+- reflections
+    - most reflections are black so it's more like specular occlusion?
+    - color contribution is grabbed from screenspace?
+    - usually black unless it's being grabbed from an emissive material or a light source?
+    - reflections are done with respect to the roughness of the material
+
+- then mix, the diffuse lighting with the colors
+
+
+Teardown doesn't do shadow mapping - it only does lighting from the sky dome. SEUS appears to just do a separate shadow pass alongside the path traced global illumination.
+
+SEUS:
+    https://www.youtube.com/watch?v=7MV26bOSAyk
+
+    - World-space data is stored in the shadow buffers using the shadow map pass.
+        - Just average texture data is stored for use in global illumination.
+
+    Starting 4:05
+    - Raw path traced result - one sample per pixel path tracing with two bounces at half resolution (1/4th sample space)
+    - Then, a temporal filter is done to accumulate samples over time
+        - occlusion events cause problems - new fresh area of the screen accumulating samples looks bad at first (fireflies)
+    - Then do a really wide bilateral blur
+        - has some special handling for disocclusion events
+    - Then standard TAA
+    - Samples aren't invalidated when their lighting changes, which is a problem
+
+https://www.patreon.com/sonicether/posts
+
+- Updates since that video
+    - https://www.patreon.com/posts/update-on-path-20991507
+        - Now doing 1spp
+
+Shadow Mapping:
+    http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-16-shadow-mapping/
+        - This one seemed the best so far
+    https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
+    https://en.wikipedia.org/wiki/Shadow_mapping
