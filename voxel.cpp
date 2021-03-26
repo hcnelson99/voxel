@@ -71,12 +71,7 @@ char *load_file(const char *filename) {
 
 class ShaderProgram {
   public:
-    ShaderProgram() {
-        gl_program = glCreateProgram();
-        vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-        recompile();
-    }
+    ShaderProgram() { recompile(); }
 
     bool compile_shader(GLuint shader, const char *filename) {
         char *code = load_file(filename);
@@ -96,6 +91,10 @@ class ShaderProgram {
     }
 
     bool recompile() {
+        gl_program = glCreateProgram();
+        vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+
         if (!compile_shader(vertex_shader, "vertex.glsl")) {
             return false;
         }
