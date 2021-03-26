@@ -163,6 +163,8 @@ enum class Block : uint8_t {
 class RasterizedRender {
   public:
     void init() {
+        shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
+
         for (int x = 0; x < 16; ++x) {
             for (int y = 0; y < 16; ++y) {
                 for (int z = 0; z < 16; ++z) {
@@ -189,8 +191,6 @@ class RasterizedRender {
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
-
-        shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
     }
 
     void recompile() { shader.recompile(); }
