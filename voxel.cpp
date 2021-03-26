@@ -52,10 +52,10 @@ void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GL
     }
 }
 
-char *load_file(const char *filename) {
-    FILE *f = fopen(filename, "r");
+char *load_file(std::string filename) {
+    FILE *f = fopen(filename.c_str(), "r");
     if (!f) {
-        printf("failed to open file %s\n", filename);
+        std::cout << "failed to open file " << filename << std::endl;
     }
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
@@ -71,20 +71,23 @@ char *load_file(const char *filename) {
 
 class ShaderProgram {
   public:
-    ShaderProgram() { recompile(); }
+    ShaderProgram(std::string vertex_fname, std::string fragment_fname)
+        : vertex_shader_filename(vertex_fname), fragment_shader_filename(fragment_fname) {
+        recompile();
+    }
 
-    bool compile_shader(GLuint shader, const char *filename) {
+    bool compile_shader(GLuint shader, std::string filename) {
         char *code = load_file(filename);
 
         glShaderSource(shader, 1, &code, NULL);
-        glCompileShader(shader);
-
         free(code);
+
+        glCompileShader(shader);
 
         GLint success;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (success != GL_TRUE) {
-            printf("failed to compile shader %s\n", filename);
+            std::cout << "failed to compile file " << filename << std::endl;
             return false;
         }
         return true;
@@ -95,11 +98,11 @@ class ShaderProgram {
         vertex_shader = glCreateShader(GL_VERTEX_SHADER);
         fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
-        if (!compile_shader(vertex_shader, "vertex.glsl")) {
+        if (!compile_shader(vertex_shader, vertex_shader_filename)) {
             return false;
         }
         glAttachShader(gl_program, vertex_shader);
-        if (!compile_shader(fragment_shader, "fragment.glsl")) {
+        if (!compile_shader(fragment_shader, fragment_shader_filename)) {
             return false;
         }
         glAttachShader(gl_program, fragment_shader);
@@ -117,6 +120,7 @@ class ShaderProgram {
     }
 
     GLuint gl_program, vertex_shader, fragment_shader;
+    std::string vertex_shader_filename, fragment_shader_filename;
 };
 
 enum class Axis { X, Y, Z };
@@ -182,7 +186,7 @@ int main() {
     glDebugMessageCallback(gl_debug_message, NULL);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
 
-    ShaderProgram program;
+    ShaderProgram program("vertex.glsl", "fragment.glsl");
 
     enum Block : uint8_t {
         AIR,
