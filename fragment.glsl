@@ -8,16 +8,8 @@ void main() {
     vec3 dFdxPos = dFdx(world_pos);
     vec3 dFdyPos = dFdy(world_pos);
     vec3 normal = normalize(cross(dFdxPos,dFdyPos ));    
+    
+    float albedo = dot(normal, normalize(vec3(2, 3, 1)));
 
-    vec3 color = vec3(1, 0, 1);
-    if (abs(normal.x) > 0) {
-        color = vec3(0.3);
-    } else if (normal.y > 0) {
-        color = vec3(0.5);
-    } else if (normal.y < 0) {
-        color = vec3(0.2);
-    } else if (abs(normal.z) > 0) {
-        color = vec3(0.4);
-    }
-    frag_color = vec4(color, 1);
+    frag_color = vec4(vec3((albedo + 1)/ 2 ), 1);
 }
