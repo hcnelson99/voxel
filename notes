@@ -66,3 +66,18 @@ Shadow Mapping:
         - This one seemed the best so far
     https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
     https://en.wikipedia.org/wiki/Shadow_mapping
+
+Real-time Rendering Ray Tracing Chapter
+    - https://www.realtimerendering.com/Real-Time_Rendering_4th-Real-Time_Ray_Tracing.pdf
+        - 26.4 Coherency (pg 16)?
+
+
+================================================================================
+
+Performance things to compare:
+
+Deferred rendering to gbuffer, then second pass for path trace
+OR
+Just one render call, do all rendering in one frag shader
+
+
