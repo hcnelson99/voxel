@@ -160,97 +160,79 @@ enum class Block : uint8_t {
     Stone,
 };
 
-class RasterizedRender {
+class Game {
   public:
     void init() {
-        shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
+        { // Init SDL + OpenGL
+            if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+                printf("Failed to init video\n");
+                exit(1);
+            }
 
-        for (int x = 0; x < 16; ++x) {
-            for (int y = 0; y < 16; ++y) {
-                for (int z = 0; z < 16; ++z) {
-                    chunk[x][y][z] = rand() % 10 == 0 ? Block::Stone : Block::Air;
-                    if (chunk[x][y][z] == Block::Stone) {
-                        add_square(vbo_data, x, y, z, Axis::X);
-                        add_square(vbo_data, x, y, z, Axis::Y);
-                        add_square(vbo_data, x, y, z, Axis::Z);
-                        add_square(vbo_data, x + 1, y, z, Axis::X);
-                        add_square(vbo_data, x, y + 1, z, Axis::Y);
-                        add_square(vbo_data, x, y, z + 1, Axis::Z);
+            window = SDL_CreateWindow("Voxel", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height,
+                                      SDL_WINDOW_OPENGL);
+
+            if (!window) {
+                printf("failed to init window\n");
+                exit(1);
+            }
+
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+
+            SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+            if (!gl_context) {
+                printf("failed to create gl context\n");
+                exit(1);
+            }
+
+            glewExperimental = GL_TRUE;
+            GLenum res = glewInit();
+            if (res != GLEW_OK) {
+                printf("%s\n", glewGetErrorString(res));
+            }
+
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            glDebugMessageCallback(gl_debug_message, NULL);
+            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
+
+            SDL_SetRelativeMouseMode(SDL_TRUE);
+        }
+
+        { // Init world
+            for (int x = 0; x < 16; ++x) {
+                for (int y = 0; y < 16; ++y) {
+                    for (int z = 0; z < 16; ++z) {
+                        chunk[x][y][z] = rand() % 10 == 0 ? Block::Stone : Block::Air;
+                        if (chunk[x][y][z] == Block::Stone) {
+                            add_square(vbo_data, x, y, z, Axis::X);
+                            add_square(vbo_data, x, y, z, Axis::Y);
+                            add_square(vbo_data, x, y, z, Axis::Z);
+                            add_square(vbo_data, x + 1, y, z, Axis::X);
+                            add_square(vbo_data, x, y + 1, z, Axis::Y);
+                            add_square(vbo_data, x, y, z + 1, Axis::Z);
+                        }
                     }
                 }
             }
         }
 
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vbo_data.size(), vbo_data.data(), GL_STATIC_DRAW);
+        {
+            shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
 
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
+            glGenBuffers(1, &vbo);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vbo_data.size(), vbo_data.data(), GL_STATIC_DRAW);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(0);
-    }
+            glGenVertexArrays(1, &vao);
+            glBindVertexArray(vao);
 
-    void recompile() { shader.recompile(); }
-
-    void render(const glm::mat4 &camera) {
-        glUseProgram(shader.gl_program);
-
-        glUniformMatrix4fv(glGetUniformLocation(shader.gl_program, "camera"), 1, GL_FALSE, (GLfloat *)&camera);
-
-        glDrawArrays(GL_TRIANGLES, 0, vbo_data.size());
-
-        glUseProgram(0);
-    }
-
-    ShaderProgram shader;
-    Block chunk[16][16][16] = {Block::Air};
-    std::vector<glm::vec3> vbo_data;
-    GLuint vbo, vao;
-};
-
-class Game {
-  public:
-    void init() {
-        if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-            printf("Failed to init video\n");
-            exit(1);
+            glBindBuffer(GL_ARRAY_BUFFER, vbo);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(0);
         }
-
-        window = SDL_CreateWindow("Voxel", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height,
-                                  SDL_WINDOW_OPENGL);
-
-        if (!window) {
-            printf("failed to init window\n");
-            exit(1);
-        }
-
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-
-        SDL_GLContext gl_context = SDL_GL_CreateContext(window);
-        if (!gl_context) {
-            printf("failed to create gl context\n");
-            exit(1);
-        }
-
-        glewExperimental = GL_TRUE;
-        GLenum res = glewInit();
-        if (res != GLEW_OK) {
-            printf("%s\n", glewGetErrorString(res));
-        }
-
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(gl_debug_message, NULL);
-        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
-
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-
-        rasterized_render.init();
     }
 
     void loop() {
@@ -300,7 +282,7 @@ class Game {
                     switch (event.key.keysym.sym) {
                     case SDLK_r:
                         printf("Recompiling... ");
-                        rasterized_render.recompile();
+                        shader.recompile();
                         printf("Done\n");
                         break;
                     case SDLK_ESCAPE:
@@ -344,7 +326,12 @@ class Game {
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            rasterized_render.render(camera);
+            {
+                glUseProgram(shader.gl_program);
+                glUniformMatrix4fv(glGetUniformLocation(shader.gl_program, "camera"), 1, GL_FALSE, (GLfloat *)&camera);
+                glDrawArrays(GL_TRIANGLES, 0, vbo_data.size());
+                glUseProgram(0);
+            }
 
             SDL_GL_SwapWindow(window);
         }
@@ -357,13 +344,17 @@ class Game {
 
   private:
     SDL_Window *window = NULL;
-    RasterizedRender rasterized_render;
 
     int width = 1920, height = 1080;
     bool mouse_grabbed = true;
 
     glm::vec3 player_pos = glm::vec3(-5, 8, 0);
     double rotate_x = 0, rotate_y = 0;
+
+    ShaderProgram shader;
+    Block chunk[16][16][16] = {Block::Air};
+    std::vector<glm::vec3> vbo_data;
+    GLuint vbo, vao;
 };
 
 int main() {
