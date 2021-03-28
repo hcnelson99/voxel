@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <chrono>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
@@ -11,6 +12,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/string_cast.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
 
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                       const void *_arg) {
@@ -219,26 +223,45 @@ class Game {
             }
         }
 
-        {
-            shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
+        { // Load terrain.png
+            int x, y, n;
+            unsigned char *data = stbi_load("terrain.png", &x, &y, &n, 0);
+            assert(data != NULL);
+            assert(x == 256 && y == 256 && n == 4);
 
+            printf("%d %d %d %d\n", data[0], data[1], data[2], data[3]);
+
+            glGenTextures(1, &terrain_texture);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, terrain_texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glGenerateMipmap(GL_TEXTURE_2D);
+
+            stbi_image_free(data);
+        }
+
+        {
             glGenBuffers(1, &vbo);
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vbo_data.size(), vbo_data.data(), GL_STATIC_DRAW);
 
             glGenVertexArrays(1, &vao);
             glBindVertexArray(vao);
-
             glBindBuffer(GL_ARRAY_BUFFER, vbo);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(0);
+
+            shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
         }
     }
 
     void loop() {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-        glClearColor(0, 0, 0, 1);
+        glClearColor(1, 0, 1, 1);
 
         auto prev_time = std::chrono::steady_clock::now();
 
@@ -328,7 +351,12 @@ class Game {
 
             {
                 glUseProgram(shader.gl_program);
+
                 glUniformMatrix4fv(glGetUniformLocation(shader.gl_program, "camera"), 1, GL_FALSE, (GLfloat *)&camera);
+
+                // Texture 0
+                glUniform1i(glGetUniformLocation(shader.gl_program, "terrain_texture"), 0);
+
                 glDrawArrays(GL_TRIANGLES, 0, vbo_data.size());
                 glUseProgram(0);
             }
@@ -348,13 +376,14 @@ class Game {
     int width = 1920, height = 1080;
     bool mouse_grabbed = true;
 
-    glm::vec3 player_pos = glm::vec3(-5, 8, 0);
+    glm::vec3 player_pos = glm::vec3(8, 8, -5);
     double rotate_x = 0, rotate_y = 0;
 
     ShaderProgram shader;
     Block chunk[16][16][16] = {Block::Air};
     std::vector<glm::vec3> vbo_data;
     GLuint vbo, vao;
+    GLuint terrain_texture;
 };
 
 int main() {
