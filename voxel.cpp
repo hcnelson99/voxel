@@ -100,35 +100,37 @@ class ShaderProgram {
     }
 
     bool recompile() {
-        gl_program = glCreateProgram();
+        GLuint gl_program_new, vertex_shader, fragment_shader;
+
+        gl_program_new = glCreateProgram();
         vertex_shader = glCreateShader(GL_VERTEX_SHADER);
         fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
         if (!compile_shader(vertex_shader, vertex_shader_filename)) {
             return false;
         }
-        glAttachShader(gl_program, vertex_shader);
+        glAttachShader(gl_program_new, vertex_shader);
         if (!compile_shader(fragment_shader, fragment_shader_filename)) {
             return false;
         }
-        glAttachShader(gl_program, fragment_shader);
-        glLinkProgram(gl_program);
+        glAttachShader(gl_program_new, fragment_shader);
+        glLinkProgram(gl_program_new);
 
         GLint success;
-        glGetProgramiv(gl_program, GL_LINK_STATUS, &success);
+        glGetProgramiv(gl_program_new, GL_LINK_STATUS, &success);
         if (success != GL_TRUE) {
-            printf("Failed to link program\n");
             return false;
         }
 
         for (const auto &pair : attrib_locations) {
-            glBindAttribLocation(gl_program, pair.second, pair.first.c_str());
+            glBindAttribLocation(gl_program_new, pair.second, pair.first.c_str());
         }
 
+        gl_program = gl_program_new;
         return true;
     }
 
-    GLuint gl_program, vertex_shader, fragment_shader;
+    GLuint gl_program;
     std::string vertex_shader_filename, fragment_shader_filename;
     std::map<std::string, int> attrib_locations;
 };
@@ -334,8 +336,9 @@ class Game {
                     switch (event.key.keysym.sym) {
                     case SDLK_r:
                         printf("Recompiling... ");
-                        shader.recompile();
-                        printf("Done\n");
+                        if (shader.recompile()) {
+                            printf("Done\n");
+                        }
                         break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;

@@ -32,14 +32,14 @@ void main() {
         n2 = vec3(0);
     }
 
-    vec2 tileUV = fract(vec2(dot(n1, world_pos), -dot(abs(n2), world_pos)));
+    vec2 tile_uv = fract(vec2(dot(n1, world_pos), -dot(abs(n2), world_pos)));
 
-    vec2 tileSize = vec2(1, 1) / 16;
-    vec2 tileOffset = vec2(block_id % 16, block_id / 16) / 16;
+    vec2 tile_size = vec2(1, 1) / 16;
+    vec2 tile_offset = vec2(block_id % 16, block_id / 16) / 16;
 
-    vec2 texCoord = tileOffset + tileSize * tileUV;
+    vec2 tex_coord = tile_offset + tile_size * tile_uv;
 
-    vec3 color = texture(terrain_texture, texCoord).rgb;
+    vec3 color = texture(terrain_texture, tex_coord).rgb;
 
     frag_color = vec4(color * albedo, 1);
 }
