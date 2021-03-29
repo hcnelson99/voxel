@@ -135,7 +135,7 @@ class ShaderProgram {
 
 enum class Axis { X, Y, Z };
 
-void add_square(std::vector<glm::vec3> &vbo_data, int x, int y, int z, Axis norm) {
+void add_square(std::vector<glm::vec3> &vertex_data, int x, int y, int z, Axis norm) {
     glm::vec3 p0, p1, p2, p3;
     p0 = glm::vec3(x, y, z);
     if (norm == Axis::Z) {
@@ -151,17 +151,19 @@ void add_square(std::vector<glm::vec3> &vbo_data, int x, int y, int z, Axis norm
         p2 = glm::vec3(x, y, z + 1);
         p3 = glm::vec3(x + 1, y, z + 1);
     }
-    vbo_data.push_back(p0);
-    vbo_data.push_back(p1);
-    vbo_data.push_back(p3);
-    vbo_data.push_back(p0);
-    vbo_data.push_back(p2);
-    vbo_data.push_back(p3);
+    vertex_data.push_back(p0);
+    vertex_data.push_back(p1);
+    vertex_data.push_back(p3);
+    vertex_data.push_back(p0);
+    vertex_data.push_back(p2);
+    vertex_data.push_back(p3);
 }
 
 enum class Block : uint8_t {
     Air = 0,
-    Stone,
+    Stone = 1,
+    Dirt = 2,
+    Wood = 4,
 };
 
 class Game {
@@ -205,18 +207,34 @@ class Game {
             SDL_SetRelativeMouseMode(SDL_TRUE);
         }
 
+        std::vector<uint8_t> block_id_data;
+
         { // Init world
             for (int x = 0; x < 16; ++x) {
                 for (int y = 0; y < 16; ++y) {
                     for (int z = 0; z < 16; ++z) {
-                        chunk[x][y][z] = rand() % 10 == 0 ? Block::Stone : Block::Air;
-                        if (chunk[x][y][z] == Block::Stone) {
-                            add_square(vbo_data, x, y, z, Axis::X);
-                            add_square(vbo_data, x, y, z, Axis::Y);
-                            add_square(vbo_data, x, y, z, Axis::Z);
-                            add_square(vbo_data, x + 1, y, z, Axis::X);
-                            add_square(vbo_data, x, y + 1, z, Axis::Y);
-                            add_square(vbo_data, x, y, z + 1, Axis::Z);
+                        int r = rand() % 10;
+                        if (r == 0) {
+                            chunk[x][y][z] = Block::Stone;
+                        } else if (r == 1) {
+                            chunk[x][y][z] = Block::Dirt;
+                        } else if (r == 2) {
+                            chunk[x][y][z] = Block::Wood;
+                        } else {
+                            chunk[x][y][z] = Block::Air;
+                        }
+                        if (chunk[x][y][z] != Block::Air) {
+                            add_square(vertex_data, x, y, z, Axis::X);
+                            add_square(vertex_data, x, y, z, Axis::Y);
+                            add_square(vertex_data, x, y, z, Axis::Z);
+                            add_square(vertex_data, x + 1, y, z, Axis::X);
+                            add_square(vertex_data, x, y + 1, z, Axis::Y);
+                            add_square(vertex_data, x, y, z + 1, Axis::Z);
+
+                            // for each vertex...
+                            for (int i = 0; i < 6 * 3 * 2; i++) {
+                                block_id_data.push_back((uint8_t)chunk[x][y][z]);
+                            }
                         }
                     }
                 }
@@ -228,8 +246,6 @@ class Game {
             unsigned char *data = stbi_load("terrain.png", &x, &y, &n, 0);
             assert(data != NULL);
             assert(x == 256 && y == 256 && n == 4);
-
-            printf("%d %d %d %d\n", data[0], data[1], data[2], data[3]);
 
             glGenTextures(1, &terrain_texture);
             glActiveTexture(GL_TEXTURE0);
@@ -244,17 +260,30 @@ class Game {
         }
 
         {
-            glGenBuffers(1, &vbo);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vbo_data.size(), vbo_data.data(), GL_STATIC_DRAW);
+            GLuint vao, vertices, block_ids;
 
-            glGenVertexArrays(1, &vao);
-            glBindVertexArray(vao);
-            glBindBuffer(GL_ARRAY_BUFFER, vbo);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(0);
+            glGenBuffers(1, &vertices);
+            glBindBuffer(GL_ARRAY_BUFFER, vertices);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vertex_data.size(), vertex_data.data(), GL_STATIC_DRAW);
 
-            shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}});
+            glGenBuffers(1, &block_ids);
+            glBindBuffer(GL_ARRAY_BUFFER, block_ids);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * block_id_data.size(), block_id_data.data(), GL_STATIC_DRAW);
+
+            {
+                glGenVertexArrays(1, &vao);
+                glBindVertexArray(vao);
+
+                glBindBuffer(GL_ARRAY_BUFFER, vertices);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glEnableVertexAttribArray(0);
+
+                glBindBuffer(GL_ARRAY_BUFFER, block_ids);
+                glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, 0, 0);
+                glEnableVertexAttribArray(1);
+            }
+
+            shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}, {"block_id_in", 1}});
         }
     }
 
@@ -357,7 +386,7 @@ class Game {
                 // Texture 0
                 glUniform1i(glGetUniformLocation(shader.gl_program, "terrain_texture"), 0);
 
-                glDrawArrays(GL_TRIANGLES, 0, vbo_data.size());
+                glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
                 glUseProgram(0);
             }
 
@@ -381,8 +410,7 @@ class Game {
 
     ShaderProgram shader;
     Block chunk[16][16][16] = {Block::Air};
-    std::vector<glm::vec3> vbo_data;
-    GLuint vbo, vao;
+    std::vector<glm::vec3> vertex_data;
     GLuint terrain_texture;
 };
 

@@ -3,6 +3,7 @@
 uniform sampler2D terrain_texture;
 
 in vec3 world_pos;
+flat in uint block_id;
 
 out vec4 frag_color; 
 
@@ -34,7 +35,7 @@ void main() {
     vec2 tileUV = fract(vec2(dot(n1, world_pos), -dot(abs(n2), world_pos)));
 
     vec2 tileSize = vec2(1, 1) / 16;
-    vec2 tileOffset = vec2(1, 1) / 16;
+    vec2 tileOffset = vec2(block_id % 16, block_id / 16) / 16;
 
     vec2 texCoord = tileOffset + tileSize * tileUV;
 
