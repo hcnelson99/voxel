@@ -126,6 +126,7 @@ class ShaderProgram {
             glBindAttribLocation(gl_program_new, pair.second, pair.first.c_str());
         }
 
+        // TODO: cleanup old gl_program?
         gl_program = gl_program_new;
         return true;
     }
@@ -261,6 +262,27 @@ class Game {
             stbi_image_free(data);
         }
 
+        { // 3D World Texture
+            std::vector<uint8_t> world_texture_data;
+
+            for (int x = 0; x < 16; x++) {
+                for (int y = 0; y < 16; y++) {
+                    for (int z = 0; z < 16; z++) {
+                        world_texture_data.push_back(x + y + z);
+                    }
+                }
+            }
+
+            glGenTextures(1, &world_texture);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_3D, world_texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, 16, 16, 16, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                         world_texture_data.data());
+        }
+
         {
             GLuint vao, vertices, block_ids;
 
@@ -292,7 +314,7 @@ class Game {
     void loop() {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
-        glClearColor(1, 0, 1, 1);
+        glClearColor(0, 0, 0, 1);
 
         auto prev_time = std::chrono::steady_clock::now();
 
@@ -386,8 +408,8 @@ class Game {
 
                 glUniformMatrix4fv(glGetUniformLocation(shader.gl_program, "camera"), 1, GL_FALSE, (GLfloat *)&camera);
 
-                // Texture 0
                 glUniform1i(glGetUniformLocation(shader.gl_program, "terrain_texture"), 0);
+                glUniform1i(glGetUniformLocation(shader.gl_program, "world_texture"), 1);
 
                 glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
                 glUseProgram(0);
@@ -414,7 +436,7 @@ class Game {
     ShaderProgram shader;
     Block chunk[16][16][16] = {Block::Air};
     std::vector<glm::vec3> vertex_data;
-    GLuint terrain_texture;
+    GLuint terrain_texture, world_texture;
 };
 
 int main() {

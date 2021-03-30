@@ -1,6 +1,7 @@
 #version 410
 
 uniform sampler2D terrain_texture;
+uniform usampler3D world_texture;
 
 in vec3 world_pos;
 flat in uint block_id;
@@ -40,6 +41,18 @@ void main() {
     vec2 tex_coord = tile_offset + tile_size * tile_uv;
 
     vec3 color = texture(terrain_texture, tex_coord).rgb;
+
+    ivec3 block_pos = ivec3(floor(world_pos));
+    block_pos = ivec3(1, 1, 1);
+
+    ivec3 test = textureSize(world_texture, 0);
+
+    uint block_type; // = texelFetch(world_texture, block_pos, 0).r;
+
+    block_type = texture(world_texture, ivec3(5, 5, 5)).r;
+    if (block_type == 1) {
+        color = vec3(1, 1, 0);
+    }
 
     frag_color = vec4(color * albedo, 1);
 }
