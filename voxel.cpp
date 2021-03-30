@@ -255,9 +255,8 @@ class Game {
             glBindTexture(GL_TEXTURE_2D, terrain_texture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-            glGenerateMipmap(GL_TEXTURE_2D);
+            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, x, y);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, x, y, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
             stbi_image_free(data);
         }
@@ -276,11 +275,11 @@ class Game {
             glGenTextures(1, &world_texture);
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_3D, world_texture);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, 16, 16, 16, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
-                         world_texture_data.data());
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexStorage3D(GL_TEXTURE_3D, 1, GL_R8UI, 16, 16, 16);
+            glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 16, 16, 16, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                            world_texture_data.data());
         }
 
         {

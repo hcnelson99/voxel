@@ -49,9 +49,9 @@ void main() {
 
     uint block_type; // = texelFetch(world_texture, block_pos, 0).r;
 
-    block_type = texture(world_texture, ivec3(5, 5, 5)).r;
+    block_type = texture(world_texture, ivec3(15, 15, 15)).r;
     if (block_type == 1) {
-        color = vec3(1, 1, 0);
+        color = vec3(1, 0, 0);
     }
 
     frag_color = vec4(color * albedo, 1);
