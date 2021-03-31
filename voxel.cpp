@@ -186,8 +186,8 @@ class Game {
                 exit(1);
             }
 
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
@@ -262,12 +262,12 @@ class Game {
         }
 
         { // 3D World Texture
-            std::vector<uint8_t> world_texture_data;
+            std::vector<uint8_t> world_buffer_data;
 
-            for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
                 for (int y = 0; y < 16; y++) {
-                    for (int z = 0; z < 16; z++) {
-                        world_texture_data.push_back(x + y + z);
+                    for (int x = 0; x < 16; x++) {
+                        world_buffer_data.push_back((uint8_t)chunk[x][y][z]);
                     }
                 }
             }
@@ -279,7 +279,7 @@ class Game {
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glTexStorage3D(GL_TEXTURE_3D, 1, GL_R8UI, 16, 16, 16);
             glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 16, 16, 16, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
-                            world_texture_data.data());
+                            world_buffer_data.data());
         }
 
         {
@@ -405,11 +405,7 @@ class Game {
             {
                 glUseProgram(shader.gl_program);
 
-                glUniformMatrix4fv(glGetUniformLocation(shader.gl_program, "camera"), 1, GL_FALSE, (GLfloat *)&camera);
-
-                glUniform1i(glGetUniformLocation(shader.gl_program, "terrain_texture"), 0);
-                glUniform1i(glGetUniformLocation(shader.gl_program, "world_texture"), 1);
-
+                glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
                 glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
                 glUseProgram(0);
             }

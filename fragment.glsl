@@ -1,7 +1,8 @@
-#version 410
+#version 430
 
-uniform sampler2D terrain_texture;
-uniform usampler3D world_texture;
+layout (binding = 0) uniform sampler2D terrain_texture;
+layout (binding = 1) uniform usampler3D world_buffer;
+
 
 in vec3 world_pos;
 flat in uint block_id;
@@ -43,16 +44,7 @@ void main() {
     vec3 color = texture(terrain_texture, tex_coord).rgb;
 
     ivec3 block_pos = ivec3(floor(world_pos));
-    block_pos = ivec3(1, 1, 1);
-
-    ivec3 test = textureSize(world_texture, 0);
-
-    uint block_type; // = texelFetch(world_texture, block_pos, 0).r;
-
-    block_type = texture(world_texture, ivec3(15, 15, 15)).r;
-    if (block_type == 1) {
-        color = vec3(1, 0, 0);
-    }
+    uint blid = texelFetch(world_buffer, block_pos, 0).r;
 
     frag_color = vec4(color * albedo, 1);
 }

@@ -1,9 +1,9 @@
-#version 140
+#version 430
 
-uniform mat4 camera;
+layout (location = 0) in vec3 vertex_pos;
+layout (location = 1) in uint block_id_in;
 
-in vec3 vertex_pos;
-in uint block_id_in;
+layout (location = 2) uniform mat4 camera;
 
 out vec3 world_pos;
 flat out uint block_id;
