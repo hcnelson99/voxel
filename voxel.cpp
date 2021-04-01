@@ -294,8 +294,8 @@ class Game {
             glBindTexture(GL_TEXTURE_2D, terrain_texture);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, x, y);
-            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, x, y, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glGenerateMipmap(GL_TEXTURE_2D);
 
             stbi_image_free(data);
         }
@@ -473,8 +473,6 @@ class Game {
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, terrain_texture);
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_3D, world_texture);
 
                 glUseProgram(gshader.gl_program);
 
@@ -494,6 +492,8 @@ class Game {
                 glBindTexture(GL_TEXTURE_2D, g_normal);
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, g_color_spec);
+                glActiveTexture(GL_TEXTURE3);
+                glBindTexture(GL_TEXTURE_3D, world_texture);
 
                 glUseProgram(screenspace_shader.gl_program);
 

@@ -1,7 +1,6 @@
 #version 430
 
 layout (binding = 0) uniform sampler2D terrain_texture;
-layout (binding = 1) uniform usampler3D world_buffer;
 
 
 in vec3 world_pos;
@@ -44,9 +43,6 @@ void main() {
     vec2 tex_coord = tile_offset + tile_size * tile_uv;
 
     vec3 color = texture(terrain_texture, tex_coord).rgb;
-
-    ivec3 block_pos = ivec3(floor(world_pos));
-    uint blid = texelFetch(world_buffer, block_pos, 0).r;
 
     g_position = world_pos;
     g_normal = normal;
