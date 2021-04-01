@@ -7,7 +7,9 @@ layout (binding = 1) uniform usampler3D world_buffer;
 in vec3 world_pos;
 flat in uint block_id;
 
-out vec4 frag_color; 
+layout (location = 0) out vec3 g_position;
+layout (location = 1) out vec3 g_normal;
+layout (location = 2) out vec4 g_color_spec;
 
 void main() { 
     vec3 dFdxPos = dFdx(world_pos);
@@ -46,5 +48,8 @@ void main() {
     ivec3 block_pos = ivec3(floor(world_pos));
     uint blid = texelFetch(world_buffer, block_pos, 0).r;
 
-    frag_color = vec4(color * albedo, 1);
+    g_position = world_pos;
+    g_normal = normal;
+    g_color_spec.rgb = color * albedo; // albedo multiplied in for now...
+    g_color_spec.a = 1; // no specularity for now...
 }

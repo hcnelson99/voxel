@@ -122,11 +122,12 @@ class ShaderProgram {
             return false;
         }
 
+        // TODO: get rid of this since we use layout() now
         for (const auto &pair : attrib_locations) {
             glBindAttribLocation(gl_program_new, pair.second, pair.first.c_str());
         }
 
-        // TODO: cleanup old gl_program?
+        // cleanup old gl_program?
         gl_program = gl_program_new;
         return true;
     }
@@ -210,6 +211,44 @@ class Game {
             SDL_SetRelativeMouseMode(SDL_TRUE);
         }
 
+        {
+            glGenFramebuffers(1, &g_framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+
+            glGenTextures(1, &g_position);
+            glBindTexture(GL_TEXTURE_2D, g_position);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g_position, 0);
+
+            glGenTextures(1, &g_normal);
+            glBindTexture(GL_TEXTURE_2D, g_normal);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, g_normal, 0);
+
+            glGenTextures(1, &g_color_spec);
+            glBindTexture(GL_TEXTURE_2D, g_color_spec);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, g_color_spec, 0);
+
+            GLuint attachments[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+            glDrawBuffers(3, attachments);
+
+            GLuint depth_buffer;
+            glGenRenderbuffers(1, &depth_buffer);
+            glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
+            glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+            glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
+
+            assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
         std::vector<uint8_t> block_id_data;
 
         { // Init world
@@ -283,7 +322,7 @@ class Game {
         }
 
         {
-            GLuint vao, vertices, block_ids;
+            GLuint vertices, block_ids;
 
             glGenBuffers(1, &vertices);
             glBindBuffer(GL_ARRAY_BUFFER, vertices);
@@ -294,8 +333,8 @@ class Game {
             glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * block_id_data.size(), block_id_data.data(), GL_STATIC_DRAW);
 
             {
-                glGenVertexArrays(1, &vao);
-                glBindVertexArray(vao);
+                glGenVertexArrays(1, &gshader_vao);
+                glBindVertexArray(gshader_vao);
 
                 glBindBuffer(GL_ARRAY_BUFFER, vertices);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -306,7 +345,35 @@ class Game {
                 glEnableVertexAttribArray(1);
             }
 
-            shader.init("vertex.glsl", "fragment.glsl", {{"vertex_pos", 0}, {"block_id_in", 1}});
+            gshader.init("gvertex.glsl", "gfragment.glsl", {{"vertex_pos", 0}, {"block_id_in", 1}});
+        }
+
+        {
+            GLuint vertices;
+
+            const GLfloat vertex_data[] = {-1, -1, 0, 0, 0, //
+                                           -1, 1,  0, 0, 1, //
+                                           1,  1,  0, 1, 1, //
+                                           -1, -1, 0, 0, 0, //
+                                           1,  -1, 0, 1, 0, //
+                                           1,  1,  0, 1, 1};
+
+            glGenBuffers(1, &vertices);
+            glBindBuffer(GL_ARRAY_BUFFER, vertices);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_data), vertex_data, GL_STATIC_DRAW);
+
+            {
+                glGenVertexArrays(1, &screenspace_vao);
+                glBindVertexArray(screenspace_vao);
+
+                glBindBuffer(GL_ARRAY_BUFFER, vertices);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, 0);
+                glEnableVertexAttribArray(0);
+                glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (void *)(sizeof(GLfloat) * 3));
+                glEnableVertexAttribArray(1);
+            }
+
+            screenspace_shader.init("svertex.glsl", "sfragment.glsl", {{"in_pos", 0}});
         }
     }
 
@@ -356,20 +423,18 @@ class Game {
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
                     case SDLK_r:
-                        printf("Recompiling... ");
-                        if (shader.recompile()) {
-                            printf("Done\n");
-                        }
+                        printf("Recompiling...");
+                        gshader.recompile();
+                        screenspace_shader.recompile();
+                        printf("Done\n");
                         break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
                         SDL_SetRelativeMouseMode(mouse_grabbed ? SDL_TRUE : SDL_FALSE);
+                        break;
                     }
                 }
             }
-            SDL_GetWindowSize(window, &width, &height);
-            glViewport(0, 0, width, height);
-
             glm::mat4 player_look = glm::rotate((float)glm::radians(rotate_x), glm::vec3(0, 1, 0)) *
                                     glm::rotate((float)glm::radians(-rotate_y), glm::vec3(1, 0, 0));
 
@@ -400,14 +465,40 @@ class Game {
                 player_pos += glm::vec3(0, -move, 0);
             }
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
             {
-                glUseProgram(shader.gl_program);
+                glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                glBindVertexArray(gshader_vao);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, terrain_texture);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_3D, world_texture);
+
+                glUseProgram(gshader.gl_program);
 
                 glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
                 glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
-                glUseProgram(0);
+            }
+
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                glBindVertexArray(screenspace_vao);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, g_position);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, g_normal);
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, g_color_spec);
+
+                glUseProgram(screenspace_shader.gl_program);
+
+                // 6 is the number of vertices
+                glDrawArrays(GL_TRIANGLES, 0, 6);
             }
 
             SDL_GL_SwapWindow(window);
@@ -428,10 +519,14 @@ class Game {
     glm::vec3 player_pos = glm::vec3(8, 8, -5);
     double rotate_x = 0, rotate_y = 0;
 
-    ShaderProgram shader;
+    ShaderProgram gshader, screenspace_shader;
     Block chunk[16][16][16] = {Block::Air};
     std::vector<glm::vec3> vertex_data;
     GLuint terrain_texture, world_texture;
+
+    GLuint g_position, g_normal, g_color_spec;
+    GLuint gshader_vao, screenspace_vao;
+    GLuint g_framebuffer;
 };
 
 int main() {
