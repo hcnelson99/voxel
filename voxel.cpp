@@ -316,9 +316,8 @@ class Game {
             glBindTexture(GL_TEXTURE_3D, world_texture);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexStorage3D(GL_TEXTURE_3D, 1, GL_R8UI, 16, 16, 16);
-            glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 16, 16, 16, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
-                            world_buffer_data.data());
+            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, 16, 16, 16, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                         world_buffer_data.data());
         }
 
         {
