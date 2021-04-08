@@ -137,6 +137,92 @@ class ShaderProgram {
     std::map<std::string, int> attrib_locations;
 };
 
+class Ray {
+  public:
+    Ray(glm::vec3 pos, glm::vec3 dir) : pos(pos), dir(glm::normalize(dir)) {}
+
+    glm::vec3 pos, dir;
+};
+
+class BBox {
+  public:
+    BBox(glm::vec3 min, glm::vec3 max) : min(min), max(max) {}
+
+    bool hit(const Ray &ray, glm::vec2 &times) const {
+
+        // TODO (PathTracer):
+        // Implement ray - bounding box intersection test
+        // If the ray intersected the bounding box within the range given by
+        // [times.x,times.y], update times with the new intersection times.
+
+        glm::vec3 invdir = 1.f / ray.dir;
+
+        float tmin, tmax;
+        if (invdir.x >= 0) {
+            tmin = (min.x - ray.pos.x) * invdir.x;
+            tmax = (max.x - ray.pos.x) * invdir.x;
+        } else {
+            tmin = (max.x - ray.pos.x) * invdir.x;
+            tmax = (min.x - ray.pos.x) * invdir.x;
+        }
+        assert(tmin <= tmax);
+
+        float tymin, tymax;
+
+        if (invdir.y >= 0) {
+            tymin = (min.y - ray.pos.y) * invdir.y;
+            tymax = (max.y - ray.pos.y) * invdir.y;
+        } else {
+            tymin = (max.y - ray.pos.y) * invdir.y;
+            tymax = (min.y - ray.pos.y) * invdir.y;
+        }
+        assert(tymin <= tymax);
+
+        if ((tmin > tymax) || (tymin > tmax))
+            return false;
+
+        if (tymin > tmin)
+            tmin = tymin;
+
+        if (tymax < tmax)
+            tmax = tymax;
+
+        float tzmin, tzmax;
+        if (invdir.z >= 0) {
+            tzmin = (min.z - ray.pos.z) * invdir.z;
+            tzmax = (max.z - ray.pos.z) * invdir.z;
+        } else {
+            tzmin = (max.z - ray.pos.z) * invdir.z;
+            tzmax = (min.z - ray.pos.z) * invdir.z;
+        }
+
+        assert(tzmin <= tzmax);
+
+        if ((tmin > tzmax) || (tzmin > tmax))
+            return false;
+
+        if (tzmin > tmin)
+            tmin = tzmin;
+
+        if (tzmax < tmax)
+            tmax = tzmax;
+
+        bool hit = false;
+        if (times.x <= tmin && tmin <= times.y) {
+            times.y = tmin;
+            hit = true;
+        }
+        if (times.x <= tmax && tmax <= times.y) {
+            times.y = tmax;
+            hit = true;
+        }
+
+        return hit;
+    }
+
+    glm::vec3 min, max;
+};
+
 enum class Axis { X, Y, Z };
 
 void add_square(std::vector<glm::vec3> &vertex_data, int x, int y, int z, Axis norm) {
@@ -169,6 +255,8 @@ enum class Block : uint8_t {
     Dirt = 2,
     Wood = 4,
 };
+
+glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v.w); }
 
 class Game {
   public:
@@ -442,6 +530,8 @@ class Game {
                                          glm::vec3(0, 1, 0));
             glm::mat4 camera = projection * view;
 
+            glm::mat4 iview = glm::inverse(view);
+
             const Uint8 *keystate = SDL_GetKeyboardState(NULL);
             float speed = 8;
             float move = speed * dt;
@@ -463,6 +553,16 @@ class Game {
             if (keystate[SDL_SCANCODE_LSHIFT]) {
                 player_pos += glm::vec3(0, -move, 0);
             }
+
+            glm::vec3 pos = divide_w(iview * glm::vec4(0, 0, 0, 1));
+            glm::vec3 front = divide_w(iview * glm::vec4(0, 0, -1, 1));
+            Ray ray(pos, front - pos);
+
+            BBox bbox(glm::vec3(0, 0, 0), glm::vec3(16, 16, 16));
+
+            glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
+            std::cout << bbox.hit(ray, bounds) << std::endl;
+            std::cout << glm::to_string(bounds) << std::endl;
 
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
@@ -495,6 +595,8 @@ class Game {
                 glBindTexture(GL_TEXTURE_3D, world_texture);
 
                 glUseProgram(screenspace_shader.gl_program);
+
+                glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&iview);
 
                 // 6 is the number of vertices
                 glDrawArrays(GL_TRIANGLES, 0, 6);

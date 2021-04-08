@@ -1,5 +1,7 @@
 #version 430
 
+layout (location = 0) uniform mat4 iview;
+
 layout (binding = 0) uniform sampler2D g_position;
 layout (binding = 1) uniform sampler2D g_normal;
 layout (binding = 2) uniform sampler2D g_color_spec;
