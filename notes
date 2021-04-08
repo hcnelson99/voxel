@@ -18,6 +18,11 @@ Diffuse lighting pass:
         - send out 2 rays per pixel (1 on low)
         - use blue noise!
             - https://blog.tuxedolabs.com/2018/12/07/the-importance-of-good-noise.html
+            - Use golden ratio animated blue noise https://blog.demofox.org/2017/10/31/animating-noise-for-integration-over-time/
+            - Use blue noise texture with 3 channels to sample normal vectors
+                - momentsingraphics.de/Media/BlueNoise/FreeBlueNoiseTextures.zip
+            - Use the generalized golden ratio to animate all 3 channels
+                - http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
         - sample hemisphere centered on the normal
 
 
