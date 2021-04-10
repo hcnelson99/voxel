@@ -299,7 +299,7 @@ class Game {
             SDL_SetRelativeMouseMode(SDL_TRUE);
         }
 
-        {
+        { // Set up frame buffers for offscreen render pass
             glGenFramebuffers(1, &g_framebuffer);
             glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
 
@@ -462,6 +462,33 @@ class Game {
 
             screenspace_shader.init("svertex.glsl", "sfragment.glsl", {{"in_pos", 0}});
         }
+    }
+
+    int sgn(float x) {
+        if (x < 0)
+            return -1;
+        if (x > 0)
+            return 1;
+        return 0;
+    }
+
+    bool in_bounds(glm::vec3 pos) {
+        return 0 <= pos.x && pos.x < 16 && 0 <= pos.y && pos.y < 16 && 0 <= pos.z && pos.z < 16;
+    }
+
+    void raycast(Ray ray) {
+        int x, y, z;
+        if (in_bounds(ray.pos)) {
+            x = ray.pos.x;
+            y = ray.pos.y;
+            z = ray.pos.z;
+        } else {
+            // do something
+        }
+
+        int step_x = sgn(ray.dir.x);
+        int step_y = sgn(ray.dir.y);
+        int step_z = sgn(ray.dir.z);
     }
 
     void loop() {

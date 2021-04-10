@@ -11,7 +11,7 @@ in vec2 uv;
 
 out vec4 frag_color;
 
-void main() { 
+void gbuffer_debug() {
     vec2 uv_local = uv;
     if (uv.x < 0.5 && uv.y < 0.5) {
         uv_local *= 2;
@@ -40,5 +40,9 @@ void main() {
             frag_color = vec4(0.49412, 0.41961, 0.2549, 1);
         }
     }
-    /* frag_color = vec4(uv.y, 0, 0, 1); */
+}
+
+void main() { 
+    frag_color = vec4(texture(g_color_spec, uv).xyz, 1);
+    // gbuffer_debug();
 }
