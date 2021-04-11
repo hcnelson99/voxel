@@ -2,7 +2,7 @@
 
 layout (location = 0) in vec3 vertex_pos;
 layout (location = 1) in uint block_id_in;
-layout (location = 2) in vec2 texture_uv_in;
+layout (location = 2) in uint texture_uv_in;
 
 layout (location = 3) uniform mat4 camera;
 
@@ -14,5 +14,5 @@ void main() {
     gl_Position = camera * vec4(vertex_pos, 1);
     world_pos = vertex_pos;
     block_id = block_id_in;
-    texture_uv = texture_uv_in;
+    texture_uv = vec2(texture_uv_in >> 1, texture_uv_in & 1);
 }

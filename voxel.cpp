@@ -239,7 +239,7 @@ class Game {
     void add_square(int x, int y, int z, Axis norm) {
         glm::vec3 p0, p1, p2, p3;
         p0 = glm::vec3(x, y, z);
-        int o = 1;
+        uint8_t o = 1;
         if (norm == Axis::Z) {
             p1 = glm::vec3(x + 1, y, z);
             p2 = glm::vec3(x, y + 1, z);
@@ -261,14 +261,13 @@ class Game {
         vertex_data.push_back(p2);
         vertex_data.push_back(p3);
 
-        // Use IBO!!
-        vertex_texture_uv_data.push_back(glm::vec2(1, 1));
-        vertex_texture_uv_data.push_back(glm::vec2(1 - o, o));
-        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
+        vertex_texture_uv_data.push_back(3);
+        vertex_texture_uv_data.push_back(2 - o);
+        vertex_texture_uv_data.push_back(0);
 
-        vertex_texture_uv_data.push_back(glm::vec2(1, 1));
-        vertex_texture_uv_data.push_back(glm::vec2(o, 1 - o));
-        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
+        vertex_texture_uv_data.push_back(3);
+        vertex_texture_uv_data.push_back(1 + o);
+        vertex_texture_uv_data.push_back(0);
     }
 
     void init() {
@@ -432,7 +431,7 @@ class Game {
 
             glGenBuffers(1, &vertex_texture_uv);
             glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_uv);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * vertex_texture_uv_data.size(),
+            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * vertex_texture_uv_data.size(),
                          vertex_texture_uv_data.data(), GL_STATIC_DRAW);
 
             {
@@ -448,7 +447,7 @@ class Game {
                 glEnableVertexAttribArray(1);
 
                 glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_uv);
-                glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+                glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0);
                 glEnableVertexAttribArray(2);
             }
 
@@ -670,7 +669,7 @@ class Game {
     ShaderProgram gshader, screenspace_shader;
     Block chunk[16][16][16] = {Block::Air};
     std::vector<glm::vec3> vertex_data;
-    std::vector<glm::vec2> vertex_texture_uv_data;
+    std::vector<uint8_t> vertex_texture_uv_data;
     GLuint terrain_texture, world_texture;
 
     GLuint g_position, g_normal, g_color_spec;
