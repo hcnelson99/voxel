@@ -332,7 +332,7 @@ class Game {
             glBindTexture(GL_TEXTURE_3D, world_texture);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, 16, 16, 16, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world.world_buffer_data);
+            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world.world_buffer_data);
         }
 
         {
@@ -408,7 +408,7 @@ class Game {
     }
 
     bool in_bounds(glm::vec3 pos) {
-        return 0 <= pos.x && pos.x < 16 && 0 <= pos.y && pos.y < 16 && 0 <= pos.z && pos.z < 16;
+        return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
     }
 
     void raycast(Ray ray) {
@@ -520,7 +520,7 @@ class Game {
             glm::vec3 front = divide_w(iview * glm::vec4(0, 0, -1, 1));
             Ray ray(pos, front - pos);
 
-            BBox bbox(glm::vec3(0, 0, 0), glm::vec3(16, 16, 16));
+            BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
 
             glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
             // std::cout << bbox.hit(ray, bounds) << std::endl;
@@ -579,7 +579,7 @@ class Game {
     int width = 1920, height = 1080;
     bool mouse_grabbed = true;
 
-    glm::vec3 player_pos = glm::vec3(8, 8, -5);
+    glm::vec3 player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, -5);
     double rotate_x = 0, rotate_y = 0;
 
     ShaderProgram gshader, screenspace_shader;

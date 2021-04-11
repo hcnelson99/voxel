@@ -37,9 +37,9 @@ struct WorldGeometry {
 
     WorldGeometry() {
         // Init world
-        for (int x = 0; x < 16; ++x) {
-            for (int y = 0; y < 16; ++y) {
-                for (int z = 0; z < 16; ++z) {
+        for (int x = 0; x < WORLD_SIZE; ++x) {
+            for (int y = 0; y < WORLD_SIZE; ++y) {
+                for (int z = 0; z < WORLD_SIZE; ++z) {
                     int r = rand() % 10;
                     Block face_type;
                     if (r == 0) {
