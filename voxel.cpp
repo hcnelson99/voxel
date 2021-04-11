@@ -225,30 +225,6 @@ class BBox {
 
 enum class Axis { X, Y, Z };
 
-void add_square(std::vector<glm::vec3> &vertex_data, int x, int y, int z, Axis norm) {
-    glm::vec3 p0, p1, p2, p3;
-    p0 = glm::vec3(x, y, z);
-    if (norm == Axis::Z) {
-        p1 = glm::vec3(x + 1, y, z);
-        p2 = glm::vec3(x, y + 1, z);
-        p3 = glm::vec3(x + 1, y + 1, z);
-    } else if (norm == Axis::X) {
-        p1 = glm::vec3(x, y + 1, z);
-        p2 = glm::vec3(x, y, z + 1);
-        p3 = glm::vec3(x, y + 1, z + 1);
-    } else if (norm == Axis::Y) {
-        p1 = glm::vec3(x + 1, y, z);
-        p2 = glm::vec3(x, y, z + 1);
-        p3 = glm::vec3(x + 1, y, z + 1);
-    }
-    vertex_data.push_back(p0);
-    vertex_data.push_back(p1);
-    vertex_data.push_back(p3);
-    vertex_data.push_back(p0);
-    vertex_data.push_back(p2);
-    vertex_data.push_back(p3);
-}
-
 enum class Block : uint8_t {
     Air = 0,
     Stone = 1,
@@ -260,6 +236,39 @@ glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v
 
 class Game {
   public:
+    void add_square(int x, int y, int z, Axis norm) {
+        glm::vec3 p0, p1, p2, p3;
+        p0 = glm::vec3(x, y, z);
+        if (norm == Axis::Z) {
+            p1 = glm::vec3(x + 1, y, z);
+            p2 = glm::vec3(x, y + 1, z);
+            p3 = glm::vec3(x + 1, y + 1, z);
+        } else if (norm == Axis::X) {
+            p1 = glm::vec3(x, y + 1, z);
+            p2 = glm::vec3(x, y, z + 1);
+            p3 = glm::vec3(x, y + 1, z + 1);
+        } else if (norm == Axis::Y) {
+            p1 = glm::vec3(x + 1, y, z);
+            p2 = glm::vec3(x, y, z + 1);
+            p3 = glm::vec3(x + 1, y, z + 1);
+        }
+        vertex_data.push_back(p0);
+        vertex_data.push_back(p1);
+        vertex_data.push_back(p3);
+        vertex_data.push_back(p0);
+        vertex_data.push_back(p2);
+        vertex_data.push_back(p3);
+
+        // Use IBO!!
+        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
+        vertex_texture_uv_data.push_back(glm::vec2(1, 0));
+        vertex_texture_uv_data.push_back(glm::vec2(1, 1));
+
+        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
+        vertex_texture_uv_data.push_back(glm::vec2(0, 1));
+        vertex_texture_uv_data.push_back(glm::vec2(1, 1));
+    }
+
     void init() {
         { // Init SDL + OpenGL
             if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -354,12 +363,12 @@ class Game {
                             chunk[x][y][z] = Block::Air;
                         }
                         if (chunk[x][y][z] != Block::Air) {
-                            add_square(vertex_data, x, y, z, Axis::X);
-                            add_square(vertex_data, x, y, z, Axis::Y);
-                            add_square(vertex_data, x, y, z, Axis::Z);
-                            add_square(vertex_data, x + 1, y, z, Axis::X);
-                            add_square(vertex_data, x, y + 1, z, Axis::Y);
-                            add_square(vertex_data, x, y, z + 1, Axis::Z);
+                            add_square(x, y, z, Axis::X);
+                            add_square(x, y, z, Axis::Y);
+                            add_square(x, y, z, Axis::Z);
+                            add_square(x + 1, y, z, Axis::X);
+                            add_square(x, y + 1, z, Axis::Y);
+                            add_square(x, y, z + 1, Axis::Z);
 
                             // for each vertex...
                             for (int i = 0; i < 6 * 3 * 2; i++) {
@@ -409,7 +418,7 @@ class Game {
         }
 
         {
-            GLuint vertices, block_ids;
+            GLuint vertices, block_ids, vertex_texture_uv;
 
             glGenBuffers(1, &vertices);
             glBindBuffer(GL_ARRAY_BUFFER, vertices);
@@ -418,6 +427,11 @@ class Game {
             glGenBuffers(1, &block_ids);
             glBindBuffer(GL_ARRAY_BUFFER, block_ids);
             glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * block_id_data.size(), block_id_data.data(), GL_STATIC_DRAW);
+
+            glGenBuffers(1, &vertex_texture_uv);
+            glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_uv);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec2) * vertex_texture_uv_data.size(),
+                         vertex_texture_uv_data.data(), GL_STATIC_DRAW);
 
             {
                 glGenVertexArrays(1, &gshader_vao);
@@ -430,6 +444,10 @@ class Game {
                 glBindBuffer(GL_ARRAY_BUFFER, block_ids);
                 glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, 0, 0);
                 glEnableVertexAttribArray(1);
+
+                glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_uv);
+                glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+                glEnableVertexAttribArray(2);
             }
 
             gshader.init("gvertex.glsl", "gfragment.glsl", {{"vertex_pos", 0}, {"block_id_in", 1}});
@@ -588,8 +606,8 @@ class Game {
             BBox bbox(glm::vec3(0, 0, 0), glm::vec3(16, 16, 16));
 
             glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
-            std::cout << bbox.hit(ray, bounds) << std::endl;
-            std::cout << glm::to_string(bounds) << std::endl;
+            // std::cout << bbox.hit(ray, bounds) << std::endl;
+            // std::cout << glm::to_string(bounds) << std::endl;
 
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
@@ -602,7 +620,7 @@ class Game {
 
                 glUseProgram(gshader.gl_program);
 
-                glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
+                glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
                 glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
             }
 
@@ -650,6 +668,7 @@ class Game {
     ShaderProgram gshader, screenspace_shader;
     Block chunk[16][16][16] = {Block::Air};
     std::vector<glm::vec3> vertex_data;
+    std::vector<glm::vec2> vertex_texture_uv_data;
     GLuint terrain_texture, world_texture;
 
     GLuint g_position, g_normal, g_color_spec;

@@ -44,5 +44,5 @@ void gbuffer_debug() {
 
 void main() { 
     frag_color = vec4(texture(g_color_spec, uv).xyz, 1);
-    // gbuffer_debug();
+    gbuffer_debug();
 }
