@@ -21,7 +21,7 @@ void main() {
     albedo = (albedo + 1) / 2;
 
     vec2 tile_size = vec2(1, 1) / 16;
-    vec2 tile_offset = vec2(80 % 16, 80 / 16) / 16;
+    vec2 tile_offset = vec2(block_id % 16, block_id / 16) / 16;
 
     vec2 tex_coord = tile_offset + tile_size * texture_uv;
 
