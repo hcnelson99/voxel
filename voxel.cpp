@@ -16,6 +16,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#include "world.h"
+
+WorldGeometry world;
+
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                       const void *_arg) {
     switch (type) {
@@ -223,52 +227,10 @@ class BBox {
     glm::vec3 min, max;
 };
 
-enum class Axis { X, Y, Z };
-
-enum class Block : uint8_t {
-    Air = 0,
-    Stone = 1,
-    Dirt = 2,
-    Wood = 4,
-};
-
 glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v.w); }
 
 class Game {
   public:
-    void add_square(int x, int y, int z, Axis norm) {
-        glm::vec3 p0, p1, p2, p3;
-        p0 = glm::vec3(x, y, z);
-        uint8_t o = 1;
-        if (norm == Axis::Z) {
-            p1 = glm::vec3(x + 1, y, z);
-            p2 = glm::vec3(x, y + 1, z);
-            p3 = glm::vec3(x + 1, y + 1, z);
-        } else if (norm == Axis::X) {
-            p1 = glm::vec3(x, y + 1, z);
-            p2 = glm::vec3(x, y, z + 1);
-            p3 = glm::vec3(x, y + 1, z + 1);
-            o = 0;
-        } else if (norm == Axis::Y) {
-            p1 = glm::vec3(x + 1, y, z);
-            p2 = glm::vec3(x, y, z + 1);
-            p3 = glm::vec3(x + 1, y, z + 1);
-        }
-        vertex_data.push_back(p0);
-        vertex_data.push_back(p1);
-        vertex_data.push_back(p3);
-        vertex_data.push_back(p0);
-        vertex_data.push_back(p2);
-        vertex_data.push_back(p3);
-
-        vertex_texture_uv_data.push_back(3);
-        vertex_texture_uv_data.push_back(2 - o);
-        vertex_texture_uv_data.push_back(0);
-
-        vertex_texture_uv_data.push_back(3);
-        vertex_texture_uv_data.push_back(1 + o);
-        vertex_texture_uv_data.push_back(0);
-    }
 
     void init() {
         { // Init SDL + OpenGL
@@ -347,40 +309,6 @@ class Game {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
-        std::vector<uint8_t> block_id_data;
-
-        { // Init world
-            for (int x = 0; x < 16; ++x) {
-                for (int y = 0; y < 16; ++y) {
-                    for (int z = 0; z < 16; ++z) {
-                        int r = rand() % 10;
-                        if (r == 0) {
-                            chunk[x][y][z] = Block::Stone;
-                        } else if (r == 1) {
-                            chunk[x][y][z] = Block::Dirt;
-                        } else if (r == 2) {
-                            chunk[x][y][z] = Block::Wood;
-                        } else {
-                            chunk[x][y][z] = Block::Air;
-                        }
-                        if (chunk[x][y][z] != Block::Air) {
-                            add_square(x, y, z, Axis::X);
-                            add_square(x, y, z, Axis::Y);
-                            add_square(x, y, z, Axis::Z);
-                            add_square(x + 1, y, z, Axis::X);
-                            add_square(x, y + 1, z, Axis::Y);
-                            add_square(x, y, z + 1, Axis::Z);
-
-                            // for each vertex...
-                            for (int i = 0; i < 6 * 3 * 2; i++) {
-                                block_id_data.push_back((uint8_t)chunk[x][y][z]);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         { // Load terrain.png
             int x, y, n;
             unsigned char *data = stbi_load("terrain.png", &x, &y, &n, 0);
@@ -399,23 +327,12 @@ class Game {
         }
 
         { // 3D World Texture
-            std::vector<uint8_t> world_buffer_data;
-
-            for (int z = 0; z < 16; z++) {
-                for (int y = 0; y < 16; y++) {
-                    for (int x = 0; x < 16; x++) {
-                        world_buffer_data.push_back((uint8_t)chunk[x][y][z]);
-                    }
-                }
-            }
-
             glGenTextures(1, &world_texture);
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_3D, world_texture);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, 16, 16, 16, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
-                         world_buffer_data.data());
+            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, 16, 16, 16, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world.world_buffer_data);
         }
 
         {
@@ -423,16 +340,15 @@ class Game {
 
             glGenBuffers(1, &vertices);
             glBindBuffer(GL_ARRAY_BUFFER, vertices);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * vertex_data.size(), vertex_data.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * world.num_vertices, world.vertex_data, GL_STATIC_DRAW);
 
             glGenBuffers(1, &block_ids);
             glBindBuffer(GL_ARRAY_BUFFER, block_ids);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * block_id_data.size(), block_id_data.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * world.num_vertices, world.block_face_data, GL_STATIC_DRAW);
 
             glGenBuffers(1, &vertex_texture_uv);
             glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_uv);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * vertex_texture_uv_data.size(),
-                         vertex_texture_uv_data.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * world.num_vertices, world.vertex_texture_uv_data, GL_STATIC_DRAW);
 
             {
                 glGenVertexArrays(1, &gshader_vao);
@@ -622,7 +538,7 @@ class Game {
                 glUseProgram(gshader.gl_program);
 
                 glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
-                glDrawArrays(GL_TRIANGLES, 0, vertex_data.size());
+                glDrawArrays(GL_TRIANGLES, 0, world.num_vertices);
             }
 
             {
@@ -667,9 +583,6 @@ class Game {
     double rotate_x = 0, rotate_y = 0;
 
     ShaderProgram gshader, screenspace_shader;
-    Block chunk[16][16][16] = {Block::Air};
-    std::vector<glm::vec3> vertex_data;
-    std::vector<uint8_t> vertex_texture_uv_data;
     GLuint terrain_texture, world_texture;
 
     GLuint g_position, g_normal, g_color_spec;
