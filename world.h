@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <glm/glm.hpp>
+#include <GL/glew.h>
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
 #define WORLD_SIZE 16
@@ -22,12 +23,14 @@ enum class Block : uint8_t {
 };
 
 // Stores data for vertices that is passed into shader
-struct WorldGeometry {
-  private:
-    // maps logical block coordinate to index into list of vertices
-    int block_coordinates[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
-
+class WorldGeometry {
   public:
+    struct OpenGLBuffers {
+        GLuint vertices;
+        GLuint block_ids;
+        GLuint vertex_texture_uv;
+    };
+
     uint8_t world_buffer_data[BLOCKS] = {};
 
     // the block type for each vertex
@@ -41,22 +44,22 @@ struct WorldGeometry {
 
     unsigned int num_vertices = 0;
 
-    WorldGeometry() {
-        for (int x = 0; x < WORLD_SIZE; ++x) {
-            for (int y = 0; y < WORLD_SIZE; ++y) {
-                for (int z = 0; z < WORLD_SIZE; ++z) {
-                    block_coordinates[x][y][z] = -1;
-                }
-            }
-        }
-
-        randomly_initialize();
-    }
-
   private:
+    OpenGLBuffers buffers;
+
+    // maps logical block coordinate to index into list of vertices
+    int block_coordinates[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
+
     void randomly_initialize();
     void set_block(int x, int y, int z, Block block);
     void delete_block(int x, int y, int z);
     void add_square(Block block_face_type, int &vertex, int x, int y, int z, Axis norm);
+
+  public:
+    // this is used instead of constructor because GL functions need to be
+    // initialized by GLEW first
+    void initialize();
+
+    OpenGLBuffers &get_buffers() { return buffers; }
 };
 

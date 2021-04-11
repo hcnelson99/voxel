@@ -309,6 +309,10 @@ class Game {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
+        {
+          world.initialize();
+        }
+
         { // Load terrain.png
             int x, y, n;
             unsigned char *data = stbi_load("terrain.png", &x, &y, &n, 0);
@@ -336,33 +340,21 @@ class Game {
         }
 
         {
-            GLuint vertices, block_ids, vertex_texture_uv;
-
-            glGenBuffers(1, &vertices);
-            glBindBuffer(GL_ARRAY_BUFFER, vertices);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * world.num_vertices, world.vertex_data, GL_STATIC_DRAW);
-
-            glGenBuffers(1, &block_ids);
-            glBindBuffer(GL_ARRAY_BUFFER, block_ids);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * world.num_vertices, world.block_face_data, GL_STATIC_DRAW);
-
-            glGenBuffers(1, &vertex_texture_uv);
-            glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_uv);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * world.num_vertices, world.vertex_texture_uv_data, GL_STATIC_DRAW);
+            WorldGeometry::OpenGLBuffers &world_buffers = world.get_buffers();
 
             {
                 glGenVertexArrays(1, &gshader_vao);
                 glBindVertexArray(gshader_vao);
 
-                glBindBuffer(GL_ARRAY_BUFFER, vertices);
+                glBindBuffer(GL_ARRAY_BUFFER, world_buffers.vertices);
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
                 glEnableVertexAttribArray(0);
 
-                glBindBuffer(GL_ARRAY_BUFFER, block_ids);
+                glBindBuffer(GL_ARRAY_BUFFER, world_buffers.block_ids);
                 glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, 0, 0);
                 glEnableVertexAttribArray(1);
 
-                glBindBuffer(GL_ARRAY_BUFFER, vertex_texture_uv);
+                glBindBuffer(GL_ARRAY_BUFFER, world_buffers.vertex_texture_uv);
                 glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0);
                 glEnableVertexAttribArray(2);
             }
