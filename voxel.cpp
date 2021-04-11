@@ -239,6 +239,7 @@ class Game {
     void add_square(int x, int y, int z, Axis norm) {
         glm::vec3 p0, p1, p2, p3;
         p0 = glm::vec3(x, y, z);
+        int o = 1;
         if (norm == Axis::Z) {
             p1 = glm::vec3(x + 1, y, z);
             p2 = glm::vec3(x, y + 1, z);
@@ -247,6 +248,7 @@ class Game {
             p1 = glm::vec3(x, y + 1, z);
             p2 = glm::vec3(x, y, z + 1);
             p3 = glm::vec3(x, y + 1, z + 1);
+            o = 0;
         } else if (norm == Axis::Y) {
             p1 = glm::vec3(x + 1, y, z);
             p2 = glm::vec3(x, y, z + 1);
@@ -260,13 +262,13 @@ class Game {
         vertex_data.push_back(p3);
 
         // Use IBO!!
-        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
-        vertex_texture_uv_data.push_back(glm::vec2(1, 0));
         vertex_texture_uv_data.push_back(glm::vec2(1, 1));
+        vertex_texture_uv_data.push_back(glm::vec2(1 - o, o));
+        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
 
-        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
-        vertex_texture_uv_data.push_back(glm::vec2(0, 1));
         vertex_texture_uv_data.push_back(glm::vec2(1, 1));
+        vertex_texture_uv_data.push_back(glm::vec2(o, 1 - o));
+        vertex_texture_uv_data.push_back(glm::vec2(0, 0));
     }
 
     void init() {
