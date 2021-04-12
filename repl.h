@@ -35,9 +35,13 @@ struct Repl {
                 case 'h':
                     printf("Help:\n");
                     printf("  h - print this help message\n");
+                    printf("  r - reset the world\n");
                     printf("  l - toggle logging to stderr\n");
                     printf("  o [filename] - open a world file\n");
                     printf("  s [filename] - save world to a file\n");
+                    break;
+                case 'r':
+                    world.reset();
                     break;
                 case 'l':
                     Log::toggle_logging();

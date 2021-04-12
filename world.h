@@ -179,7 +179,22 @@ class World : public WorldGeometry {
 
     void raycast(Ray ray);
 
+    void reset();
     bool load(const char *filepath);
     bool save(const char *filepath);
     void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
+
+  private:
+    void _derive_geometry_from_world_buffer() {
+        num_vertices = 0;
+        std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
+
+        for (int x = 0; x < WORLD_SIZE; ++x) {
+            for (int y = 0; y < WORLD_SIZE; ++y) {
+                for (int z = 0; z < WORLD_SIZE; ++z) {
+                    set_block(x, y, z, world_buffer_data[zyx_major(x, y, z)]);
+                }
+            }
+        }
+    }
 };
