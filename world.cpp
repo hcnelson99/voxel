@@ -22,6 +22,13 @@ void WorldGeometry::initialize() {
     glGenBuffers(1, &buffers.vertex_texture_uv);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex_texture_uv);
     glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, vertex_texture_uv_data, GL_DYNAMIC_DRAW);
+
+    glGenTextures(1, &buffers.world_texture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_3D, buffers.world_texture);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world_buffer_data);
 }
 
 void WorldGeometry::sync_buffers(int start, int end) {
@@ -31,6 +38,11 @@ void WorldGeometry::sync_buffers(int start, int end) {
     _SYNC_BUFFERS_COPY(buffers.block_ids, sizeof(uint8_t), block_face_data);
     _SYNC_BUFFERS_COPY(buffers.vertices, sizeof(glm::vec3), vertex_data);
     _SYNC_BUFFERS_COPY(buffers.vertex_texture_uv, sizeof(uint8_t), vertex_texture_uv_data);
+
+    {
+        glBindTexture(GL_TEXTURE_3D, buffers.world_texture);
+        glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world_buffer_data);
+    }
 }
 
 template <bool sync>
@@ -64,11 +76,11 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
         num_vertices = vertex;
     }
 
+    world_buffer_data[ZYX_MAJOR(x, y, z)] = (uint8_t)block;
+
     if (sync) {
         sync_buffers(original_vertex, vertex);
     }
-
-    world_buffer_data[ZYX_MAJOR(x, y, z)] = (uint8_t)block;
 }
 
 template <bool sync>

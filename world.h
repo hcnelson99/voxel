@@ -5,7 +5,7 @@
 #include <GL/glew.h>
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
-#define WORLD_SIZE 16
+#define WORLD_SIZE (16)
 
 #define VERTICES_PER_BLOCK (6 * 3 * 2) // 6 faces, 2 triangles per face
 #define BLOCKS (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE)
@@ -37,6 +37,7 @@ class WorldGeometry {
         GLuint block_ids;
         GLuint vertices;
         GLuint vertex_texture_uv;
+        GLuint world_texture;
     };
 
     uint8_t world_buffer_data[BLOCKS] = {};

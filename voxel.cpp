@@ -330,15 +330,6 @@ class Game {
             stbi_image_free(data);
         }
 
-        { // 3D World Texture
-            glGenTextures(1, &world_texture);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_3D, world_texture);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-            glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world.world_buffer_data);
-        }
-
         {
             WorldGeometry::OpenGLBuffers &world_buffers = world.get_buffers();
 
@@ -550,7 +541,7 @@ class Game {
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, g_color_spec);
                 glActiveTexture(GL_TEXTURE3);
-                glBindTexture(GL_TEXTURE_3D, world_texture);
+                glBindTexture(GL_TEXTURE_3D, world.get_buffers().world_texture);
 
                 glUseProgram(screenspace_shader.gl_program);
 
