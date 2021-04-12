@@ -57,7 +57,9 @@ def rotate(ai, aj):
 
 def pack(x, y=None, z=None):
     global slot
+    doRotate = True
     if y is None:
+        doRotate = False
         y = x
     if z is None:
         z = x
@@ -68,12 +70,13 @@ def pack(x, y=None, z=None):
     copy((z % 16, (z // 16) + 4), ((slot + 4) % 16, (slot + 4) // 16))
     copy((z % 16, (z // 16) + 4), ((slot + 5) % 16, (slot + 5) // 16))
 
-    rotate((slot + 3) % 16, (slot + 3) // 16)
-    rotate((slot + 4) % 16, (slot + 4) // 16)
-    rotate((slot + 4) % 16, (slot + 4) // 16)
-    rotate((slot + 5) % 16, (slot + 5) // 16)
-    rotate((slot + 5) % 16, (slot + 5) // 16)
-    rotate((slot + 5) % 16, (slot + 5) // 16)
+    if doRotate:
+        rotate((slot + 3) % 16, (slot + 3) // 16)
+        rotate((slot + 4) % 16, (slot + 4) // 16)
+        rotate((slot + 4) % 16, (slot + 4) // 16)
+        rotate((slot + 5) % 16, (slot + 5) // 16)
+        rotate((slot + 5) % 16, (slot + 5) // 16)
+        rotate((slot + 5) % 16, (slot + 5) // 16)
     slot += 6
 
 pack(1) # stone
