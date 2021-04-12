@@ -76,12 +76,13 @@ void WorldGeometry::sync_buffers() {
     const int start = 0;
     const int end = num_vertices;
 
-#define _SYNC_BUFFERS_COPY(buffer, size, ptr)                                                                          \
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);                                                                             \
-    glBufferSubData(GL_ARRAY_BUFFER, (start), ((end) - (start)) * (size), &ptr[start])
-    _SYNC_BUFFERS_COPY(buffers.block_ids, sizeof(uint8_t), block_face_data);
-    _SYNC_BUFFERS_COPY(buffers.vertices, sizeof(glm::vec3), vertex_data);
-    _SYNC_BUFFERS_COPY(buffers.vertex_texture_uv, sizeof(uint8_t), vertex_texture_uv_data);
+    const auto copy = [&](GLuint buffer, size_t size, auto *ptr) {
+        glBindBuffer(GL_ARRAY_BUFFER, buffer);
+        glBufferSubData(GL_ARRAY_BUFFER, (start), ((end) - (start)) * (size), &ptr[start]);
+    };
+    copy(buffers.block_ids, sizeof(uint8_t), block_face_data);
+    copy(buffers.vertices, sizeof(glm::vec3), vertex_data);
+    copy(buffers.vertex_texture_uv, sizeof(uint8_t), vertex_texture_uv_data);
 
     {
         glBindTexture(GL_TEXTURE_3D, buffers.world_texture);
@@ -120,7 +121,7 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
         num_vertices = vertex;
     }
 
-    world_buffer_data[ZYX_MAJOR(x, y, z)] = block;
+    world_buffer_data[zyx_major(x, y, z)] = block;
 }
 
 void WorldGeometry::delete_block(int x, int y, int z) {
@@ -129,15 +130,17 @@ void WorldGeometry::delete_block(int x, int y, int z) {
         int vertex = block_id * VERTICES_PER_BLOCK;
         num_vertices -= VERTICES_PER_BLOCK;
 
-        world_buffer_data[ZYX_MAJOR(x, y, z)] = Block::Air;
+        world_buffer_data[zyx_major(x, y, z)] = Block::Air;
 
         block_coordinates_to_id[x][y][z] = -1;
 
         if (vertex != num_vertices) {
-#define _DELETE_BLOCK_SWAP(p, s) memcpy(&p[vertex], &p[num_vertices], s *VERTICES_PER_BLOCK)
-            _DELETE_BLOCK_SWAP(block_face_data, sizeof(uint8_t));
-            _DELETE_BLOCK_SWAP(vertex_data, sizeof(glm::vec3));
-            _DELETE_BLOCK_SWAP(vertex_texture_uv_data, sizeof(uint8_t));
+            const auto swap = [&](auto *ptr, size_t size) {
+                memcpy(&ptr[vertex], &ptr[num_vertices], size * VERTICES_PER_BLOCK);
+            };
+            swap(block_face_data, sizeof(uint8_t));
+            swap(vertex_data, sizeof(glm::vec3));
+            swap(vertex_texture_uv_data, sizeof(uint8_t));
 
             const Vec3 &c = block_coordinate_order[num_vertices / VERTICES_PER_BLOCK];
             block_coordinates_to_id[c.x][c.y][c.z] = block_id;

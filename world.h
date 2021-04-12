@@ -11,7 +11,7 @@
 #define BLOCKS (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE)
 #define VERTICES (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE * VERTICES_PER_BLOCK)
 
-#define ZYX_MAJOR(x, y, z) ((z)*WORLD_SIZE * WORLD_SIZE + (y)*WORLD_SIZE + (x))
+inline int zyx_major(int x, int y, int z) { return ((z)*WORLD_SIZE * WORLD_SIZE + (y)*WORLD_SIZE + (x)); }
 
 enum class Axis : uint8_t { X = 0, Y = 1, Z = 2 };
 
