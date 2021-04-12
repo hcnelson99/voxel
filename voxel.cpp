@@ -16,9 +16,15 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#include "repl.h"
 #include "world.h"
 
 World world;
+Repl repl;
+
+size_t Log::frames = 0;
+ctime_t Log::prev_time = std::chrono::steady_clock::now();
+bool Log::enabled = false;
 
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                       const void *_arg) {
@@ -556,6 +562,8 @@ class Game {
             }
 
             SDL_GL_SwapWindow(window);
+
+            world.log_frame();
         }
     }
 
@@ -585,6 +593,9 @@ int main() {
     Game game;
 
     game.init();
+
+    pthread_t repl_thread;
+    pthread_create(&repl_thread, NULL, repl.read, NULL);
 
     game.loop();
 

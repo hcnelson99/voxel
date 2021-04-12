@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "log.h"
+
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
 #define WORLD_SIZE (16)
 
@@ -176,4 +178,5 @@ class World : public WorldGeometry {
 
     bool load(const std::string &filepath);
     bool save(const std::string &filepath);
+    void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
 };
