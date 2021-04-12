@@ -27,6 +27,32 @@ struct Orientation {
     Axis axis() const { return _axis; }
     static Orientation from(uint8_t o) { return Orientation(o); }
 
+    uint8_t plane_orientation(const Orientation &o) const {
+        if (_orientation == PosX._orientation) {
+            return 2;
+        } else if (_orientation == NegX._orientation) {
+            return 0;
+        } else if (_orientation == PosY._orientation) {
+            return 3;
+        } else if (_orientation == NegY._orientation) {
+            return 1;
+        } else if (_orientation == PosZ._orientation && o.axis() == Axis::X) {
+            return 2;
+        } else if (_orientation == PosZ._orientation && o == PosY) {
+            return 1;
+        } else if (_orientation == PosZ._orientation && o == NegY) {
+            return 3;
+        } else if (_orientation == NegZ._orientation && o.axis() == Axis::X) {
+            return 0;
+        } else if (_orientation == NegZ._orientation && o == PosY) {
+            return 3;
+        } else if (_orientation == NegZ._orientation && o == NegY) {
+            return 1;
+        } else {
+            assert(false);
+        }
+    }
+
     private:
         uint8_t _orientation;
         Axis _axis;
@@ -54,11 +80,16 @@ class Block {
         static const int OrientationWidth = 3;
 
     public:
+        // number of types of blocks before it in terrain.png
         enum BlockType {
-            Air   = 0 << OrientationWidth,
-            Stone = 1 << OrientationWidth,
-            Dirt  = 2 << OrientationWidth,
-            Wood  = 4 << OrientationWidth,
+            Air              = 0  << OrientationWidth,
+            Stone            = 1  << OrientationWidth,
+            Dirt             = 2 << OrientationWidth,
+            Wood             = 3 << OrientationWidth,
+            ActiveRedstone   = 4 << OrientationWidth,
+            InactiveRedstone = 5 << OrientationWidth,
+            DelayGate        = 6 << OrientationWidth,
+            NotGate          = 7 << OrientationWidth,
         };
 
         Block() = default;
@@ -73,12 +104,13 @@ class Block {
 
         uint8_t texture_id(const Orientation orientation) const {
             Orientation bor = get_orientation();
+            // each block has 6 tiles in terrain.png that represent rotations
             if (bor == orientation) {
-                return 4;
+                return (_block >> 3) * 6 + 1;
             } else if (bor.axis() == orientation.axis()) {
-                return 5;
+                return (_block >> 3) * 6 + 0;
             } else {
-                return 0;
+                return (_block >> 3) * 6 + 2 + bor.plane_orientation(orientation);
             }
         }
 
@@ -131,7 +163,10 @@ class WorldGeometry {
 
     void sync_buffers();
 
+    int ro = 0;
     void randomize() {
+        int o = (ro++) % 6;
+        srand(1);
         for (int x = 0; x < WORLD_SIZE; ++x) {
             for (int y = 0; y < WORLD_SIZE; ++y) {
                 for (int z = 0; z < WORLD_SIZE; ++z) {
@@ -142,12 +177,12 @@ class WorldGeometry {
                     } else if (r == 1) {
                         block = Block::Dirt;
                     } else if (r == 2) {
-                        block = Block::Wood;
+                        block = Block::NotGate;
                     } else {
                         block = Block::Air;
                     }
 
-                    block.set_orientation(Orientation::from(rand() % 6));
+                    block.set_orientation(Orientation::from(o));
 
                     set_block(x, y, z, block);
                 }
