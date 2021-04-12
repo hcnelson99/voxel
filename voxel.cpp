@@ -23,10 +23,6 @@
 
 World world;
 
-size_t Log::frames = 0;
-ctime_t Log::prev_time = std::chrono::steady_clock::now();
-bool Log::enabled = false;
-
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                       const void *_arg) {
     switch (type) {
@@ -314,6 +310,8 @@ class Game {
 
         bool running = true;
         while (running) {
+            Repl::lock();
+
             bool cast_ray_this_frame = false;
 
             auto time = std::chrono::steady_clock::now();
@@ -454,6 +452,8 @@ class Game {
             SDL_GL_SwapWindow(window);
 
             world.log_frame();
+
+            Repl::unlock();
         }
     }
 
