@@ -13,15 +13,15 @@ void WorldGeometry::initialize() {
 
     glGenBuffers(1, &buffers.block_ids);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.block_ids);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, block_face_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, block_face_data, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &buffers.vertices);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.vertices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * VERTICES, vertex_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * VERTICES, vertex_data, GL_DYNAMIC_DRAW);
 
     glGenBuffers(1, &buffers.vertex_texture_uv);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex_texture_uv);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, vertex_texture_uv_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, vertex_texture_uv_data, GL_DYNAMIC_DRAW);
 }
 
 void WorldGeometry::sync_buffers(int start, int end) {
