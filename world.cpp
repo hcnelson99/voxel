@@ -89,20 +89,17 @@ void WorldGeometry::delete_block(int x, int y, int z) {
 
         world_buffer_data[ZYX_MAJOR(x, y, z)] = (uint8_t)Block::Air;
 
-        int remainder = num_vertices - vertex;
+        block_coordinates_to_id[x][y][z] = -1;
 
-#define _DELETE_BLOCK_MOVE(p, s) memmove(&p[vertex], &p[vertex + VERTICES_PER_BLOCK], remainder * s)
-        _DELETE_BLOCK_MOVE(block_face_data, sizeof(uint8_t));
-        _DELETE_BLOCK_MOVE(vertex_data, sizeof(glm::vec3));
-        _DELETE_BLOCK_MOVE(vertex_texture_uv_data, sizeof(uint8_t));
+        if (vertex != num_vertices) {
+#define _DELETE_BLOCK_SWAP(p, s) memcpy(&p[vertex], &p[num_vertices], s * VERTICES_PER_BLOCK)
+            _DELETE_BLOCK_SWAP(block_face_data, sizeof(uint8_t));
+            _DELETE_BLOCK_SWAP(vertex_data, sizeof(glm::vec3));
+            _DELETE_BLOCK_SWAP(vertex_texture_uv_data, sizeof(uint8_t));
 
-        {
-            for (int i = block_id + 1; i <= num_vertices / VERTICES_PER_BLOCK; i++) {
-                const Vec3 &c = block_coordinate_order[i];
-                block_coordinate_order[i - 1] = c;
-                block_coordinates_to_id[c.x][c.y][c.z] -= 1;
-            }
-            block_coordinates_to_id[x][y][z] = -1;
+            const Vec3 &c = block_coordinate_order[num_vertices / VERTICES_PER_BLOCK];
+            block_coordinates_to_id[c.x][c.y][c.z] = block_id;
+            block_coordinate_order[block_id] = Vec3(c.x, c.y, c.z);
         }
     }
 }
