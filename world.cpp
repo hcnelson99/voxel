@@ -1,13 +1,14 @@
 #include "world.h"
 
+const Orientation Orientation::NegX(0);
+const Orientation Orientation::PosX(1);
+const Orientation Orientation::NegY(2);
+const Orientation Orientation::PosY(3);
+const Orientation Orientation::NegZ(4);
+const Orientation Orientation::PosZ(5);
+
 void WorldGeometry::initialize() {
-    for (int x = 0; x < WORLD_SIZE; ++x) {
-        for (int y = 0; y < WORLD_SIZE; ++y) {
-            for (int z = 0; z < WORLD_SIZE; ++z) {
-                block_coordinates_to_id[x][y][z] = -1;
-            }
-        }
-    }
+    std::fill((int*)block_coordinates_to_id, (int*)block_coordinates_to_id + BLOCKS, -1);
 
     randomize();
 
@@ -49,7 +50,7 @@ void WorldGeometry::sync_buffers() {
 }
 
 void WorldGeometry::set_block(int x, int y, int z, Block block) {
-    if (block == Block::Air) {
+    if (block.is(Block::BlockType::Air)) {
         delete_block(x, y, z);
         return;
     }
@@ -67,18 +68,18 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
     }
     const int original_vertex = vertex;
 
-    _add_square(block, vertex, x, y, z, Axis::X);
-    _add_square(block, vertex, x, y, z, Axis::Y);
-    _add_square(block, vertex, x, y, z, Axis::Z);
-    _add_square(block, vertex, x + 1, y, z, Axis::X);
-    _add_square(block, vertex, x, y + 1, z, Axis::Y);
-    _add_square(block, vertex, x, y, z + 1, Axis::Z);
+    _add_square(block, vertex, x, y, z, Orientation::PosX);
+    _add_square(block, vertex, x, y, z, Orientation::PosY);
+    _add_square(block, vertex, x, y, z, Orientation::PosZ);
+    _add_square(block, vertex, x + 1, y, z, Orientation::NegX);
+    _add_square(block, vertex, x, y + 1, z, Orientation::NegY);
+    _add_square(block, vertex, x, y, z + 1, Orientation::NegZ);
 
     if (new_block) {
         num_vertices = vertex;
     }
 
-    world_buffer_data[ZYX_MAJOR(x, y, z)] = (uint8_t)block;
+    world_buffer_data[ZYX_MAJOR(x, y, z)] = block;
 }
 
 void WorldGeometry::delete_block(int x, int y, int z) {
@@ -87,7 +88,7 @@ void WorldGeometry::delete_block(int x, int y, int z) {
         int vertex = block_id * VERTICES_PER_BLOCK;
         num_vertices -= VERTICES_PER_BLOCK;
 
-        world_buffer_data[ZYX_MAJOR(x, y, z)] = (uint8_t)Block::Air;
+        world_buffer_data[ZYX_MAJOR(x, y, z)] = Block::Air;
 
         block_coordinates_to_id[x][y][z] = -1;
 
@@ -104,20 +105,20 @@ void WorldGeometry::delete_block(int x, int y, int z) {
     }
 }
 
-void WorldGeometry::_add_square(Block block_face_type, int &vertex, int x, int y, int z, Axis norm) {
+void WorldGeometry::_add_square(Block block, int &vertex, int x, int y, int z, Orientation face) {
     glm::vec3 p0, p1, p2, p3;
     p0 = glm::vec3(x, y, z);
     uint8_t o = 1;
-    if (norm == Axis::Z) {
+    if (face.axis() == Axis::Z) {
         p1 = glm::vec3(x + 1, y, z);
         p2 = glm::vec3(x, y + 1, z);
         p3 = glm::vec3(x + 1, y + 1, z);
-    } else if (norm == Axis::X) {
+    } else if (face.axis() == Axis::X) {
         p1 = glm::vec3(x, y + 1, z);
         p2 = glm::vec3(x, y, z + 1);
         p3 = glm::vec3(x, y + 1, z + 1);
         o = 0;
-    } else if (norm == Axis::Y) {
+    } else if (face.axis() == Axis::Y) {
         p1 = glm::vec3(x + 1, y, z);
         p2 = glm::vec3(x, y, z + 1);
         p3 = glm::vec3(x + 1, y, z + 1);
@@ -148,7 +149,7 @@ void WorldGeometry::_add_square(Block block_face_type, int &vertex, int x, int y
     }
 
     for (unsigned int i = 0; i < 6; i++) {
-        block_face_data[vertex + i] = (uint8_t)block_face_type;
+        block_face_data[vertex + i] = block.texture_id(face);
     }
 
     vertex += 6;

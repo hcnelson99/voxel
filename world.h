@@ -13,13 +13,80 @@
 
 #define ZYX_MAJOR(x, y, z) ((z) * WORLD_SIZE * WORLD_SIZE + (y) * WORLD_SIZE + (x))
 
-enum class Axis { X, Y, Z };
+enum class Axis : uint8_t { X = 0, Y = 1, Z = 2 };
 
-enum class Block : uint8_t {
-    Air = 0,
-    Stone = 1,
-    Dirt = 2,
-    Wood = 4,
+struct Orientation {
+    static const Orientation PosX;
+    static const Orientation NegX;
+    static const Orientation PosY;
+    static const Orientation NegY;
+    static const Orientation PosZ;
+    static const Orientation NegZ;
+
+    operator uint8_t() const { return _orientation; }
+    Axis axis() const { return _axis; }
+    static Orientation from(uint8_t o) { return Orientation(o); }
+
+    private:
+        uint8_t _orientation;
+        Axis _axis;
+        Orientation(int o) {
+            _orientation = o;
+            if (o == 0 || o == 1) {
+                _axis = Axis::X;
+            } else if (o == 2 || o == 3) {
+                _axis = Axis::Y;
+            } else if (o == 4 || o == 5) {
+                _axis = Axis::Z;
+            } else {
+                _orientation = 0;
+                _axis = Axis::X;
+            }
+        }
+};
+
+class Block {
+    private:
+        uint8_t _block = 0;
+
+        static const uint8_t TypeMask = 248; // 5 high bits
+        static const uint8_t OrientationMask = 7; // 3 low bits
+        static const int OrientationWidth = 3;
+
+    public:
+        enum BlockType {
+            Air   = 0 << OrientationWidth,
+            Stone = 1 << OrientationWidth,
+            Dirt  = 2 << OrientationWidth,
+            Wood  = 4 << OrientationWidth,
+        };
+
+        Block() = default;
+
+        Block(BlockType type, Orientation orientation=Orientation::PosX) {
+            _block = type | orientation;
+        }
+
+        bool is(BlockType type) const { return (_block & TypeMask) == type; }
+        Orientation get_orientation() const { return Orientation::from(_block & OrientationMask); }
+        operator uint8_t() const { return _block; }
+
+        uint8_t texture_id(const Orientation orientation) const {
+            Orientation bor = get_orientation();
+            if (bor == orientation) {
+                return 4;
+            } else if (bor.axis() == orientation.axis()) {
+                return 5;
+            } else {
+                return 0;
+            }
+        }
+
+        void rotate() {
+            _block = (_block & TypeMask) | Orientation::from((get_orientation() + 1));
+        }
+
+        void set_orientation(Orientation bor) { _block = (_block & TypeMask) | bor; }
 };
 
 struct Vec3 {
@@ -69,18 +136,20 @@ class WorldGeometry {
             for (int y = 0; y < WORLD_SIZE; ++y) {
                 for (int z = 0; z < WORLD_SIZE; ++z) {
                     int r = rand() % 10;
-                    Block face_type;
+                    Block block;
                     if (r == 0) {
-                        face_type = Block::Stone;
+                        block= Block::Stone;
                     } else if (r == 1) {
-                        face_type = Block::Dirt;
+                        block = Block::Dirt;
                     } else if (r == 2) {
-                        face_type = Block::Wood;
+                        block = Block::Wood;
                     } else {
-                        face_type = Block::Air;
+                        block = Block::Air;
                     }
 
-                    set_block(x, y, z, face_type);
+                    block.set_orientation(Orientation::from(rand() % 6));
+
+                    set_block(x, y, z, block);
                 }
             }
         }
@@ -93,6 +162,6 @@ class WorldGeometry {
     int block_coordinates_to_id[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
     Vec3 block_coordinate_order[BLOCKS];
 
-    void _add_square(Block block_face_type, int &vertex, int x, int y, int z, Axis norm);
+    void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
 };
 
