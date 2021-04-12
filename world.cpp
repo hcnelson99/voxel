@@ -1,5 +1,6 @@
 #include "world.h"
 
+#include <algorithm>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -275,29 +276,90 @@ bool in_bounds(glm::vec3 pos) {
     return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
 }
 
+float clamp(float x, float min, float max) {
+    if (x < min)
+        return min;
+    if (x > max)
+        return max;
+    return x;
+};
+
 void World::raycast(Ray ray) {
-    printf("raycasting...");
-    int x, y, z;
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
 
         glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
 
         if (!bbox.hit(ray, bounds)) {
-            printf("missed bbox\n");
             return;
         }
 
-        printf("  hit bbox");
-
         ray.pos += ray.dir * bounds.y;
-    } else {
-        printf("in bounds");
     }
+
+    int x = clamp(ray.pos.x, 0, WORLD_SIZE - 1);
+    int y = clamp(ray.pos.y, 0, WORLD_SIZE - 1);
+    int z = clamp(ray.pos.z, 0, WORLD_SIZE - 1);
 
     int step_x = sgn(ray.dir.x);
     int step_y = sgn(ray.dir.y);
     int step_z = sgn(ray.dir.z);
 
-    printf("\n");
+    // assert(0 <= x && x < WORLD_SIZE);
+    // assert(0 <= y && y < WORLD_SIZE);
+    // assert(0 <= z && z < WORLD_SIZE);
+
+    // assert(x <= ray.pos.x && ray.pos.x <= x + step_x);
+    // assert(y <= ray.pos.y && ray.pos.y <= y + step_y);
+    // assert(z <= ray.pos.z && ray.pos.z <= z + step_z);
+
+    int next_x = step_x == 1 ? 1 : 0;
+    int next_y = step_y == 1 ? 1 : 0;
+    int next_z = step_z == 1 ? 1 : 0;
+
+    float t_max_x = (x + next_x - ray.pos.x) / ray.dir.x;
+    float t_max_y = (y + next_y - ray.pos.y) / ray.dir.y;
+    float t_max_z = (z + next_z - ray.pos.z) / ray.dir.z;
+
+    float t_delta_x = fabs(1.f / ray.dir.x);
+    float t_delta_y = fabs(1.f / ray.dir.y);
+    float t_delta_z = fabs(1.f / ray.dir.z);
+
+    int just_out_x = step_x == 1 ? WORLD_SIZE : -1;
+    int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
+    int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
+
+    while (true) {
+        if (t_max_x < t_max_y) {
+            if (t_max_x < t_max_z) {
+                x += step_x;
+                if (x == just_out_x) {
+                    return;
+                }
+                t_max_x += t_delta_x;
+            } else {
+                z += step_z;
+                if (z == just_out_z) {
+                    return;
+                }
+                t_max_z += t_delta_z;
+            }
+        } else {
+            if (t_max_y < t_max_z) {
+                y += step_y;
+                if (y == just_out_y) {
+                    return;
+                }
+                t_max_y += t_delta_y;
+
+            } else {
+                z += step_z;
+                if (z == just_out_z) {
+                    return;
+                }
+                t_max_z += t_delta_z;
+            }
+        }
+        set_block(x, y, z, Block::Wood);
+    }
 }

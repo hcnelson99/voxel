@@ -363,6 +363,10 @@ class Game {
                         fprintf(stderr, "randomizing world\n");
                         world.randomize();
                         break;
+                    case SDLK_e:
+                        fprintf(stderr, "randomizing world\n");
+                        world.wireframe();
+                        break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
                         SDL_SetRelativeMouseMode(mouse_grabbed ? SDL_TRUE : SDL_FALSE);
