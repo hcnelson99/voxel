@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "world.h"
 
 const Orientation Orientation::NegX(0);
@@ -8,7 +10,7 @@ const Orientation Orientation::NegZ(4);
 const Orientation Orientation::PosZ(5);
 
 void WorldGeometry::initialize() {
-    std::fill((int*)block_coordinates_to_id, (int*)block_coordinates_to_id + BLOCKS, -1);
+    std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
 
     randomize();
 
@@ -29,23 +31,25 @@ void WorldGeometry::initialize() {
     glBindTexture(GL_TEXTURE_3D, buffers.world_texture);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world_buffer_data);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                 world_buffer_data);
 }
 
 void WorldGeometry::sync_buffers() {
     const int start = 0;
     const int end = num_vertices;
 
-#define _SYNC_BUFFERS_COPY(buffer, size, ptr) \
-        glBindBuffer(GL_ARRAY_BUFFER, buffer);\
-        glBufferSubData(GL_ARRAY_BUFFER, (start), ((end) - (start)) * (size), &ptr[start])
+#define _SYNC_BUFFERS_COPY(buffer, size, ptr)                                                                          \
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);                                                                             \
+    glBufferSubData(GL_ARRAY_BUFFER, (start), ((end) - (start)) * (size), &ptr[start])
     _SYNC_BUFFERS_COPY(buffers.block_ids, sizeof(uint8_t), block_face_data);
     _SYNC_BUFFERS_COPY(buffers.vertices, sizeof(glm::vec3), vertex_data);
     _SYNC_BUFFERS_COPY(buffers.vertex_texture_uv, sizeof(uint8_t), vertex_texture_uv_data);
 
     {
         glBindTexture(GL_TEXTURE_3D, buffers.world_texture);
-        glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world_buffer_data);
+        glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                        world_buffer_data);
     }
 }
 
@@ -93,7 +97,7 @@ void WorldGeometry::delete_block(int x, int y, int z) {
         block_coordinates_to_id[x][y][z] = -1;
 
         if (vertex != num_vertices) {
-#define _DELETE_BLOCK_SWAP(p, s) memcpy(&p[vertex], &p[num_vertices], s * VERTICES_PER_BLOCK)
+#define _DELETE_BLOCK_SWAP(p, s) memcpy(&p[vertex], &p[num_vertices], s *VERTICES_PER_BLOCK)
             _DELETE_BLOCK_SWAP(block_face_data, sizeof(uint8_t));
             _DELETE_BLOCK_SWAP(vertex_data, sizeof(glm::vec3));
             _DELETE_BLOCK_SWAP(vertex_texture_uv_data, sizeof(uint8_t));

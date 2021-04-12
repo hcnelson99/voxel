@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vector>
-#include <glm/glm.hpp>
 #include <GL/glew.h>
+#include <glm/glm.hpp>
+#include <vector>
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
 #define WORLD_SIZE (16)
@@ -11,7 +11,7 @@
 #define BLOCKS (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE)
 #define VERTICES (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE * VERTICES_PER_BLOCK)
 
-#define ZYX_MAJOR(x, y, z) ((z) * WORLD_SIZE * WORLD_SIZE + (y) * WORLD_SIZE + (x))
+#define ZYX_MAJOR(x, y, z) ((z)*WORLD_SIZE * WORLD_SIZE + (y)*WORLD_SIZE + (x))
 
 enum class Axis : uint8_t { X = 0, Y = 1, Z = 2 };
 
@@ -53,72 +53,68 @@ struct Orientation {
         }
     }
 
-    private:
-        uint8_t _orientation;
-        Axis _axis;
-        Orientation(int o) {
-            _orientation = o;
-            if (o == 0 || o == 1) {
-                _axis = Axis::X;
-            } else if (o == 2 || o == 3) {
-                _axis = Axis::Y;
-            } else if (o == 4 || o == 5) {
-                _axis = Axis::Z;
-            } else {
-                _orientation = 0;
-                _axis = Axis::X;
-            }
+  private:
+    uint8_t _orientation;
+    Axis _axis;
+    Orientation(int o) {
+        _orientation = o;
+        if (o == 0 || o == 1) {
+            _axis = Axis::X;
+        } else if (o == 2 || o == 3) {
+            _axis = Axis::Y;
+        } else if (o == 4 || o == 5) {
+            _axis = Axis::Z;
+        } else {
+            _orientation = 0;
+            _axis = Axis::X;
         }
+    }
 };
 
 class Block {
-    private:
-        uint8_t _block = 0;
+  private:
+    uint8_t _block = 0;
 
-        static const uint8_t TypeMask = 248; // 5 high bits
-        static const uint8_t OrientationMask = 7; // 3 low bits
-        static const int OrientationWidth = 3;
+    static const uint8_t TypeMask = 248;      // 5 high bits
+    static const uint8_t OrientationMask = 7; // 3 low bits
+    static const int OrientationWidth = 3;
 
-    public:
-        // number of types of blocks before it in terrain.png
-        enum BlockType {
-            Air              = 0  << OrientationWidth,
-            Stone            = 1  << OrientationWidth,
-            Dirt             = 2 << OrientationWidth,
-            Wood             = 3 << OrientationWidth,
-            ActiveRedstone   = 4 << OrientationWidth,
-            InactiveRedstone = 5 << OrientationWidth,
-            DelayGate        = 6 << OrientationWidth,
-            NotGate          = 7 << OrientationWidth,
-        };
+  public:
+    // number of types of blocks before it in terrain.png
+    enum BlockType {
+        Air = 0 << OrientationWidth,
+        Stone = 1 << OrientationWidth,
+        Dirt = 2 << OrientationWidth,
+        Wood = 3 << OrientationWidth,
+        ActiveRedstone = 4 << OrientationWidth,
+        InactiveRedstone = 5 << OrientationWidth,
+        DelayGate = 6 << OrientationWidth,
+        NotGate = 7 << OrientationWidth,
+    };
 
-        Block() = default;
+    Block() = default;
 
-        Block(BlockType type, Orientation orientation=Orientation::PosX) {
-            _block = type | orientation;
+    Block(BlockType type, Orientation orientation = Orientation::PosX) { _block = type | orientation; }
+
+    bool is(BlockType type) const { return (_block & TypeMask) == type; }
+    Orientation get_orientation() const { return Orientation::from(_block & OrientationMask); }
+    operator uint8_t() const { return _block; }
+
+    uint8_t texture_id(const Orientation orientation) const {
+        Orientation bor = get_orientation();
+        // each block has 6 tiles in terrain.png that represent rotations
+        if (bor == orientation) {
+            return (_block >> 3) * 6 + 1;
+        } else if (bor.axis() == orientation.axis()) {
+            return (_block >> 3) * 6 + 0;
+        } else {
+            return (_block >> 3) * 6 + 2 + bor.plane_orientation(orientation);
         }
+    }
 
-        bool is(BlockType type) const { return (_block & TypeMask) == type; }
-        Orientation get_orientation() const { return Orientation::from(_block & OrientationMask); }
-        operator uint8_t() const { return _block; }
+    void rotate() { _block = (_block & TypeMask) | Orientation::from((get_orientation() + 1)); }
 
-        uint8_t texture_id(const Orientation orientation) const {
-            Orientation bor = get_orientation();
-            // each block has 6 tiles in terrain.png that represent rotations
-            if (bor == orientation) {
-                return (_block >> 3) * 6 + 1;
-            } else if (bor.axis() == orientation.axis()) {
-                return (_block >> 3) * 6 + 0;
-            } else {
-                return (_block >> 3) * 6 + 2 + bor.plane_orientation(orientation);
-            }
-        }
-
-        void rotate() {
-            _block = (_block & TypeMask) | Orientation::from((get_orientation() + 1));
-        }
-
-        void set_orientation(Orientation bor) { _block = (_block & TypeMask) | bor; }
+    void set_orientation(Orientation bor) { _block = (_block & TypeMask) | bor; }
 };
 
 struct Vec3 {
@@ -173,7 +169,7 @@ class WorldGeometry {
                     int r = rand() % 10;
                     Block block;
                     if (r == 0) {
-                        block= Block::Stone;
+                        block = Block::Stone;
                     } else if (r == 1) {
                         block = Block::Dirt;
                     } else if (r == 2) {
@@ -199,4 +195,3 @@ class WorldGeometry {
 
     void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
 };
-
