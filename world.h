@@ -191,7 +191,10 @@ class World : public WorldGeometry {
         WorldGeometry::randomize();
         redstone_dirty = true;
     }
-    void wireframe() { WorldGeometry::wireframe(); }
+    void wireframe() {
+        WorldGeometry::wireframe();
+        redstone_dirty = true;
+    }
 
   private:
     RedstoneCircuit redstone;
