@@ -462,7 +462,7 @@ class Game {
                         break;
                     case SDLK_q:
                         printf("randomizing world\n");
-                        world.randomize<true>();
+                        world.randomize();
                         break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
@@ -512,6 +512,8 @@ class Game {
             glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
             // std::cout << bbox.hit(ray, bounds) << std::endl;
             // std::cout << glm::to_string(bounds) << std::endl;
+
+            world.sync_buffers();
 
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);

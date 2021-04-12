@@ -59,15 +59,11 @@ class WorldGeometry {
 
     OpenGLBuffers &get_buffers() { return buffers; }
 
-    template <bool sync>
     void set_block(int x, int y, int z, Block block);
-    template <bool sync>
     void delete_block(int x, int y, int z);
 
-    void sync_buffers() { sync_buffers(0, num_vertices); }
-    void sync_buffers(int start, int end);
+    void sync_buffers();
 
-    template <bool sync>
     void randomize() {
         for (int x = 0; x < WORLD_SIZE; ++x) {
             for (int y = 0; y < WORLD_SIZE; ++y) {
@@ -84,13 +80,9 @@ class WorldGeometry {
                         face_type = Block::Air;
                     }
 
-                    set_block<false>(x, y, z, face_type);
+                    set_block(x, y, z, face_type);
                 }
             }
-        }
-
-        if (sync) {
-            sync_buffers();
         }
     }
 

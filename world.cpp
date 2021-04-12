@@ -9,7 +9,7 @@ void WorldGeometry::initialize() {
         }
     }
 
-    randomize<false>();
+    randomize();
 
     glGenBuffers(1, &buffers.block_ids);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.block_ids);
@@ -31,7 +31,10 @@ void WorldGeometry::initialize() {
     glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE, world_buffer_data);
 }
 
-void WorldGeometry::sync_buffers(int start, int end) {
+void WorldGeometry::sync_buffers() {
+    const int start = 0;
+    const int end = num_vertices;
+
 #define _SYNC_BUFFERS_COPY(buffer, size, ptr) \
         glBindBuffer(GL_ARRAY_BUFFER, buffer);\
         glBufferSubData(GL_ARRAY_BUFFER, (start), ((end) - (start)) * (size), &ptr[start])
@@ -45,10 +48,9 @@ void WorldGeometry::sync_buffers(int start, int end) {
     }
 }
 
-template <bool sync>
 void WorldGeometry::set_block(int x, int y, int z, Block block) {
     if (block == Block::Air) {
-        delete_block<sync>(x, y, z);
+        delete_block(x, y, z);
         return;
     }
 
@@ -77,13 +79,8 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
     }
 
     world_buffer_data[ZYX_MAJOR(x, y, z)] = (uint8_t)block;
-
-    if (sync) {
-        sync_buffers(original_vertex, vertex);
-    }
 }
 
-template <bool sync>
 void WorldGeometry::delete_block(int x, int y, int z) {
     int block_id = block_coordinates_to_id[x][y][z];
     if (block_id != -1) {
@@ -106,10 +103,6 @@ void WorldGeometry::delete_block(int x, int y, int z) {
                 block_coordinates_to_id[c.x][c.y][c.z] -= 1;
             }
             block_coordinates_to_id[x][y][z] = -1;
-        }
-
-        if (sync) {
-            sync_buffers(vertex, num_vertices);
         }
     }
 }
