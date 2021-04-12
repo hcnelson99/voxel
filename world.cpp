@@ -205,6 +205,30 @@ void WorldGeometry::_add_square(Block block, int &vertex, int x, int y, int z, O
     vertex += 6;
 }
 
+void WorldGeometry::randomize() {
+    for (int x = 0; x < WORLD_SIZE; ++x) {
+        for (int y = 0; y < WORLD_SIZE; ++y) {
+            for (int z = 0; z < WORLD_SIZE; ++z) {
+                int r = rand() % 10;
+                Block block;
+                if (r == 0) {
+                    block = Block::Stone;
+                } else if (r == 1) {
+                    block = Block::Dirt;
+                } else if (r == 2) {
+                    block = Block::NotGate;
+                } else {
+                    block = Block::Air;
+                }
+
+                block.set_orientation(Orientation::from(rand() % 6));
+
+                set_block(x, y, z, block);
+            }
+        }
+    }
+}
+
 void World::reset() {
     std::fill((int *)world_buffer_data, (int *)world_buffer_data + BLOCKS, 0);
     _derive_geometry_from_world_buffer();

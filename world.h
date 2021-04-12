@@ -112,37 +112,7 @@ class WorldGeometry {
     unsigned int get_num_vertices() const { return num_vertices; }
     const OpenGLBuffers &get_buffers() const { return buffers; }
 
-    void set_block(int x, int y, int z, Block block);
-    void delete_block(int x, int y, int z);
-
     void sync_buffers();
-
-    int ro = 0;
-    void randomize() {
-        int o = (ro++) % 6;
-        srand(1);
-        for (int x = 0; x < WORLD_SIZE; ++x) {
-            for (int y = 0; y < WORLD_SIZE; ++y) {
-                for (int z = 0; z < WORLD_SIZE; ++z) {
-                    int r = rand() % 10;
-                    Block block;
-                    if (r == 0) {
-                        block = Block::Stone;
-                    } else if (r == 1) {
-                        block = Block::Dirt;
-                    } else if (r == 2) {
-                        block = Block::NotGate;
-                    } else {
-                        block = Block::Air;
-                    }
-
-                    block.set_orientation(Orientation::from(o));
-
-                    set_block(x, y, z, block);
-                }
-            }
-        }
-    }
 
   protected:
     OpenGLBuffers buffers;
@@ -170,21 +140,43 @@ class WorldGeometry {
         Vec3 block_coordinate_order[BLOCKS];
     };
 
+    void set_block(int x, int y, int z, Block block);
+    void delete_block(int x, int y, int z);
+    void randomize();
+
     void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
+};
+
+class RedstoneCircuit {
+  public:
+    RedstoneCircuit(WorldGeometry *geometry) {}
+
+    void tick() {}
+    void rebuild() {}
 };
 
 class World : public WorldGeometry {
   public:
+    World() : redstone(this) {}
+
     void initialize() { WorldGeometry::initialize(); }
 
     void raycast(Ray ray);
+
+    void tick() { redstone.tick(); }
 
     void reset();
     bool load(const char *filepath);
     bool save(const char *filepath);
     void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
 
+    void set_block(int x, int y, int z, Block block) { WorldGeometry::set_block(x, y, z, block); }
+    void delete_block(int x, int y, int z) { WorldGeometry::delete_block(x, y, z); }
+    void randomize() { WorldGeometry::randomize(); }
+
   private:
+    RedstoneCircuit redstone;
+
     void _derive_geometry_from_world_buffer() {
         num_vertices = 0;
         std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);

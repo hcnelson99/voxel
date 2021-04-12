@@ -453,6 +453,8 @@ class Game {
 
             world.log_frame();
 
+            world.tick();
+
             Repl::unlock();
         }
     }
