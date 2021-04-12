@@ -7,9 +7,9 @@
 typedef std::chrono::steady_clock::time_point ctime_t;
 
 struct Log {
-    static size_t frames;
-    static ctime_t prev_time;
-    static bool enabled;
+    inline static size_t frames = 0;
+    inline static ctime_t prev_time = std::chrono::steady_clock::now();
+    inline static bool enabled = false;
 
     static void toggle_logging(bool on) {
         enabled = on;

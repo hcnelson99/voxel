@@ -206,6 +206,52 @@ void WorldGeometry::_add_square(Block block, int &vertex, int x, int y, int z, O
     vertex += 6;
 }
 
+void WorldGeometry::randomize() {
+    for (int x = 0; x < WORLD_SIZE; ++x) {
+        for (int y = 0; y < WORLD_SIZE; ++y) {
+            for (int z = 0; z < WORLD_SIZE; ++z) {
+                int r = rand() % 10;
+                Block block;
+                if (r == 0) {
+                    block = Block::Stone;
+                } else if (r == 1) {
+                    block = Block::Dirt;
+                } else if (r == 2) {
+                    block = Block::NotGate;
+                } else {
+                    block = Block::Air;
+                }
+
+                block.set_orientation(Orientation::from(rand() % 6));
+
+                set_block(x, y, z, block);
+            }
+        }
+    }
+}
+
+void WorldGeometry::wireframe() {
+    for (int x = 0; x < WORLD_SIZE; ++x) {
+        for (int y = 0; y < WORLD_SIZE; ++y) {
+            for (int z = 0; z < WORLD_SIZE; ++z) {
+                int a = x == 0 || x == WORLD_SIZE - 1;
+                int b = y == 0 || y == WORLD_SIZE - 1;
+                int c = z == 0 || z == WORLD_SIZE - 1;
+                if (a + b + c >= 2) {
+                    set_block(x, y, z, Block::Stone);
+                } else {
+                    set_block(x, y, z, Block::Air);
+                }
+            }
+        }
+    }
+}
+
+void World::reset() {
+    std::fill((int *)world_buffer_data, (int *)world_buffer_data + BLOCKS, 0);
+    _derive_geometry_from_world_buffer();
+}
+
 bool World::load(const char *filepath) {
     int fd = open(filepath, O_RDONLY);
 
@@ -226,16 +272,7 @@ bool World::load(const char *filepath) {
 
     close(fd);
 
-    num_vertices = 0;
-    std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
-
-    for (int x = 0; x < WORLD_SIZE; ++x) {
-        for (int y = 0; y < WORLD_SIZE; ++y) {
-            for (int z = 0; z < WORLD_SIZE; ++z) {
-                set_block(x, y, z, world_buffer_data[zyx_major(x, y, z)]);
-            }
-        }
-    }
+    _derive_geometry_from_world_buffer();
 
     return true;
 }
