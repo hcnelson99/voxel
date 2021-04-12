@@ -128,6 +128,7 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
         num_vertices = vertex;
     }
 
+    block_map[x][y][z] = block;
     world_buffer_data[zyx_major(x, y, z)] = block;
 }
 
@@ -137,6 +138,7 @@ void WorldGeometry::delete_block(int x, int y, int z) {
         int vertex = block_id * VERTICES_PER_BLOCK;
         num_vertices -= VERTICES_PER_BLOCK;
 
+        block_map[x][y][z] = Block::Air;
         world_buffer_data[zyx_major(x, y, z)] = Block::Air;
 
         block_coordinates_to_id[x][y][z] = -1;
@@ -248,8 +250,8 @@ void WorldGeometry::wireframe() {
 }
 
 void World::reset() {
-    std::fill((int *)world_buffer_data, (int *)world_buffer_data + BLOCKS, 0);
-    _derive_geometry_from_world_buffer();
+    std::fill((int *)block_map, (int *)block_map + BLOCKS, 0);
+    _derive_geometry_from_block_map();
 }
 
 bool World::load(const char *filepath) {
@@ -262,7 +264,7 @@ bool World::load(const char *filepath) {
 
     const size_t size = BLOCKS * sizeof(Block);
 
-    if (read(fd, world_buffer_data, size) == -1) {
+    if (read(fd, block_map, size) == -1) {
         close(fd);
         perror("Error loading world file");
         return false;
@@ -272,7 +274,7 @@ bool World::load(const char *filepath) {
 
     close(fd);
 
-    _derive_geometry_from_world_buffer();
+    _derive_geometry_from_block_map();
 
     return true;
 }
@@ -288,7 +290,7 @@ bool World::save(const char *filepath) {
 
     const size_t size = BLOCKS * sizeof(Block);
 
-    if (write(fd, world_buffer_data, size) == -1) {
+    if (write(fd, block_map, size) == -1) {
         close(fd);
         perror("Error saving to file");
         return false;

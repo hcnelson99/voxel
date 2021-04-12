@@ -119,7 +119,7 @@ class WorldGeometry {
 
     // buffers that are directly used by OpenGL
     struct {
-        Block world_buffer_data[BLOCKS] = {};
+        uint8_t world_buffer_data[BLOCKS] = {};
 
         // the block type for each vertex
         uint8_t block_face_data[VERTICES];
@@ -134,6 +134,8 @@ class WorldGeometry {
     // extra fields used to maintain geometry but not used by OpenGL
     struct {
         unsigned int num_vertices = 0;
+
+        Block block_map[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
 
         // maps logical block coordinate to index into list of vertices
         int block_coordinates_to_id[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
@@ -195,14 +197,14 @@ class World : public WorldGeometry {
     RedstoneCircuit redstone;
     bool redstone_dirty = false;
 
-    void _derive_geometry_from_world_buffer() {
+    void _derive_geometry_from_block_map() {
         num_vertices = 0;
         std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
 
         for (int x = 0; x < WORLD_SIZE; ++x) {
             for (int y = 0; y < WORLD_SIZE; ++y) {
                 for (int z = 0; z < WORLD_SIZE; ++z) {
-                    set_block(x, y, z, world_buffer_data[zyx_major(x, y, z)]);
+                    set_block(x, y, z, block_map[x][y][z]);
                 }
             }
         }
