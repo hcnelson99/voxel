@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <stdio.h>
+#include <unistd.h>
 #include <vector>
 
 #include <GL/glew.h>
@@ -317,7 +318,6 @@ class Game {
 
         {
             world.initialize();
-            world.load("test.world");
             world.sync_buffers();
         }
 
@@ -471,7 +471,6 @@ class Game {
                     case SDLK_q:
                         fprintf(stderr, "randomizing world\n");
                         world.randomize();
-                        world.save("test.world");
                         break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
@@ -590,13 +589,35 @@ class Game {
     GLuint g_framebuffer;
 };
 
-int main() {
+int main(int argc, char *argv[]) {
     Game game;
+
+    // parse command line arguments
+    {
+        int opt;
+        while ((opt = getopt(argc, argv, "v")) != -1) {
+            switch (opt) {
+            case 'v':
+                Log::toggle_logging(true);
+                break;
+            default:
+                fprintf(stderr, "Usage: %s [-v] [file]\n", argv[0]);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
 
     game.init();
 
-    pthread_t repl_thread;
-    pthread_create(&repl_thread, NULL, Repl::read, NULL);
+    // load file if specified
+    if (optind < argc) {
+        world.load(argv[optind]);
+    }
+
+    {
+        pthread_t repl_thread;
+        pthread_create(&repl_thread, NULL, Repl::read, NULL);
+    }
 
     game.loop();
 
