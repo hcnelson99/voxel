@@ -54,8 +54,8 @@ class Block {
   private:
     uint8_t _block = 0;
 
-    static const uint8_t TypeMask = 248;      // 5 high bits
-    static const uint8_t OrientationMask = 7; // 3 low bits
+    static const uint8_t TypeMask = 0b11111000;
+    static const uint8_t OrientationMask = 0b111;
     static const int OrientationWidth = 3;
 
   public:
