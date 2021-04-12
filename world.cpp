@@ -9,6 +9,45 @@ const Orientation Orientation::PosY(3);
 const Orientation Orientation::NegZ(4);
 const Orientation Orientation::PosZ(5);
 
+uint8_t Orientation::plane_orientation(const Orientation &o) const {
+    // TODO: change to bitmask to reduce branching
+    if (_orientation == PosX._orientation) {
+        return 2;
+    } else if (_orientation == NegX._orientation) {
+        return 0;
+    } else if (_orientation == PosY._orientation) {
+        return 3;
+    } else if (_orientation == NegY._orientation) {
+        return 1;
+    } else if (_orientation == PosZ._orientation && o.axis() == Axis::X) {
+        return 2;
+    } else if (_orientation == PosZ._orientation && o == PosY) {
+        return 1;
+    } else if (_orientation == PosZ._orientation && o == NegY) {
+        return 3;
+    } else if (_orientation == NegZ._orientation && o.axis() == Axis::X) {
+        return 0;
+    } else if (_orientation == NegZ._orientation && o == PosY) {
+        return 3;
+    } else if (_orientation == NegZ._orientation && o == NegY) {
+        return 1;
+    } else {
+        assert(false);
+    }
+}
+
+uint8_t Block::texture_id(const Orientation orientation) const {
+    Orientation bor = get_orientation();
+    // each block has 6 tiles in terrain.png that represent rotations
+    if (bor == orientation) {
+        return (_block >> 3) * 6 + 1;
+    } else if (bor.axis() == orientation.axis()) {
+        return (_block >> 3) * 6 + 0;
+    } else {
+        return (_block >> 3) * 6 + 2 + bor.plane_orientation(orientation);
+    }
+}
+
 void WorldGeometry::initialize() {
     std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
 
