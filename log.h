@@ -11,14 +11,15 @@ struct Log {
     static ctime_t prev_time;
     static bool enabled;
 
-    static void toggle_logging() {
-        enabled = !enabled;
+    static void toggle_logging(bool on) {
+        enabled = on;
         if (enabled) {
             printf("logging enabled\n");
         } else {
             printf("logging disabled\n");
         }
     }
+    static void toggle_logging() { toggle_logging(!enabled); }
 
     static void log_frame_world(unsigned int num_blocks) {
         if (enabled) {
