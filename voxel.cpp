@@ -18,7 +18,7 @@
 
 #include "world.h"
 
-WorldGeometry world;
+World world;
 
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                       const void *_arg) {
@@ -308,7 +308,11 @@ class Game {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
-        { world.initialize(); }
+        {
+            world.initialize();
+            world.load("test.world");
+            world.sync_buffers();
+        }
 
         { // Load terrain.png
             int x, y, n;
@@ -460,6 +464,7 @@ class Game {
                     case SDLK_q:
                         printf("randomizing world\n");
                         world.randomize();
+                        world.save("test.world");
                         break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;

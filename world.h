@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
+#include <string>
 #include <vector>
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
@@ -145,7 +146,7 @@ class WorldGeometry {
 
     // buffers that are directly used by OpenGL
     struct {
-        uint8_t world_buffer_data[BLOCKS] = {};
+        Block world_buffer_data[BLOCKS] = {};
 
         // the block type for each vertex
         uint8_t block_face_data[VERTICES];
@@ -155,16 +156,24 @@ class WorldGeometry {
 
         // the texture position of each vertex
         uint8_t vertex_texture_uv_data[VERTICES];
-
-        unsigned int num_vertices = 0;
     };
 
     // extra fields used to maintain geometry but not used by OpenGL
     struct {
+        unsigned int num_vertices = 0;
+
         // maps logical block coordinate to index into list of vertices
         int block_coordinates_to_id[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
         Vec3 block_coordinate_order[BLOCKS];
     };
 
     void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
+};
+
+class World : public WorldGeometry {
+  public:
+    void initialize() { WorldGeometry::initialize(); }
+
+    bool load(const std::string &filepath);
+    bool save(const std::string &filepath);
 };

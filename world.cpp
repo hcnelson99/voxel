@@ -1,4 +1,10 @@
+#include <fcntl.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "world.h"
 
@@ -197,4 +203,62 @@ void WorldGeometry::_add_square(Block block, int &vertex, int x, int y, int z, O
     }
 
     vertex += 6;
+}
+
+bool World::load(const std::string &filepath) {
+    int fd = open(filepath.c_str(), O_RDONLY);
+
+    if (fd == -1) {
+        fprintf(stderr, "Error opening world file to load: %s\n", filepath.c_str());
+        return false;
+    }
+
+    const size_t size = BLOCKS * sizeof(Block);
+
+    if (read(fd, world_buffer_data, size) == -1) {
+        close(fd);
+        perror("Error loading world file");
+        return false;
+    }
+
+    fprintf(stderr, "Loaded world from: %s\n", filepath.c_str());
+
+    close(fd);
+
+    num_vertices = 0;
+    std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
+
+    for (int x = 0; x < WORLD_SIZE; ++x) {
+        for (int y = 0; y < WORLD_SIZE; ++y) {
+            for (int z = 0; z < WORLD_SIZE; ++z) {
+                set_block(x, y, z, world_buffer_data[zyx_major(x, y, z)]);
+            }
+        }
+    }
+
+    return true;
+}
+
+bool World::save(const std::string &filepath) {
+    int fd = open(filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+
+    if (fd == -1) {
+        fprintf(stderr, "Error opening world file to save: %s\n", filepath.c_str());
+        perror("Error opening file for saving");
+        return false;
+    }
+
+    const size_t size = BLOCKS * sizeof(Block);
+
+    if (write(fd, world_buffer_data, size) == -1) {
+        close(fd);
+        perror("Error saving to file");
+        return false;
+    }
+
+    fprintf(stderr, "Saved world to: %s\n", filepath.c_str());
+
+    close(fd);
+
+    return true;
 }
