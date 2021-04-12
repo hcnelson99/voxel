@@ -274,6 +274,8 @@ class Game {
             glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
 
             SDL_SetRelativeMouseMode(SDL_TRUE);
+            // do not adaptive sync
+            SDL_GL_SetSwapInterval(0);
         }
 
         { // Set up frame buffers for offscreen render pass
@@ -439,11 +441,11 @@ class Game {
                     int dx = event.motion.xrel;
                     int dy = event.motion.yrel;
 
-                    float speed = 10;
+                    float speed = 0.05f;
 
                     if (mouse_grabbed) {
-                        rotate_x -= speed * dt * dx;
-                        rotate_y -= speed * dt * dy;
+                        rotate_x -= speed * dx;
+                        rotate_y -= speed * dy;
                         if (rotate_y > 89) {
                             rotate_y = 89;
                         } else if (rotate_y < -89) {

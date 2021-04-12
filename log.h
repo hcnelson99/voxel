@@ -27,7 +27,8 @@ struct Log {
             double since_last_frame = std::chrono::duration<double>(now - prev_time).count();
             prev_time = now;
 
-            fprintf(stderr, "> frame(%lu) blocks(%u) ms(%.1f)\n", frame, num_blocks, since_last_frame * 1000);
+            fprintf(stderr, "> frame(%lu) blocks(%u) ms(%.1f) fps(%.1f)\n", frame, num_blocks, since_last_frame * 1000,
+                    1.f / since_last_frame);
         }
     }
 };
