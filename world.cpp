@@ -51,8 +51,6 @@ uint8_t Block::texture_id(const Orientation orientation) const {
 void WorldGeometry::initialize() {
     std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
 
-    randomize();
-
     glGenBuffers(1, &buffers.block_ids);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.block_ids);
     glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, block_face_data, GL_DYNAMIC_DRAW);

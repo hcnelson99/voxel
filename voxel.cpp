@@ -231,7 +231,6 @@ glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v
 
 class Game {
   public:
-
     void init() {
         { // Init SDL + OpenGL
             if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -309,9 +308,7 @@ class Game {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
-        {
-          world.initialize();
-        }
+        { world.initialize(); }
 
         { // Load terrain.png
             int x, y, n;
@@ -331,7 +328,7 @@ class Game {
         }
 
         {
-            WorldGeometry::OpenGLBuffers &world_buffers = world.get_buffers();
+            const WorldGeometry::OpenGLBuffers &world_buffers = world.get_buffers();
 
             {
                 glGenVertexArrays(1, &gshader_vao);
@@ -527,7 +524,7 @@ class Game {
                 glUseProgram(gshader.gl_program);
 
                 glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
-                glDrawArrays(GL_TRIANGLES, 0, world.num_vertices);
+                glDrawArrays(GL_TRIANGLES, 0, world.get_num_vertices());
             }
 
             {

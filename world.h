@@ -101,24 +101,12 @@ class WorldGeometry {
         GLuint world_texture;
     };
 
-    uint8_t world_buffer_data[BLOCKS] = {};
-
-    // the block type for each vertex
-    uint8_t block_face_data[VERTICES];
-
-    // the position of each vertex
-    glm::vec3 vertex_data[VERTICES];
-
-    // the texture position of each vertex
-    uint8_t vertex_texture_uv_data[VERTICES];
-
-    unsigned int num_vertices = 0;
-
     // this is used instead of constructor because GL functions need to be
     // initialized by GLEW first
     void initialize();
 
-    OpenGLBuffers &get_buffers() { return buffers; }
+    unsigned int get_num_vertices() const { return num_vertices; }
+    const OpenGLBuffers &get_buffers() const { return buffers; }
 
     void set_block(int x, int y, int z, Block block);
     void delete_block(int x, int y, int z);
@@ -152,12 +140,31 @@ class WorldGeometry {
         }
     }
 
-  private:
+  protected:
     OpenGLBuffers buffers;
 
-    // maps logical block coordinate to index into list of vertices
-    int block_coordinates_to_id[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
-    Vec3 block_coordinate_order[BLOCKS];
+    // buffers that are directly used by OpenGL
+    struct {
+        uint8_t world_buffer_data[BLOCKS] = {};
+
+        // the block type for each vertex
+        uint8_t block_face_data[VERTICES];
+
+        // the position of each vertex
+        glm::vec3 vertex_data[VERTICES];
+
+        // the texture position of each vertex
+        uint8_t vertex_texture_uv_data[VERTICES];
+
+        unsigned int num_vertices = 0;
+    };
+
+    // extra fields used to maintain geometry but not used by OpenGL
+    struct {
+        // maps logical block coordinate to index into list of vertices
+        int block_coordinates_to_id[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
+        Vec3 block_coordinate_order[BLOCKS];
+    };
 
     void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
 };
