@@ -164,20 +164,36 @@ class World : public WorldGeometry {
 
     void raycast(Ray ray);
 
-    void tick() { redstone.tick(); }
+    void tick() {
+        if (redstone_dirty) {
+            redstone_dirty = false;
+            redstone.rebuild();
+        }
+        redstone.tick();
+    }
 
     void reset();
     bool load(const char *filepath);
     bool save(const char *filepath);
     void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
 
-    void set_block(int x, int y, int z, Block block) { WorldGeometry::set_block(x, y, z, block); }
-    void delete_block(int x, int y, int z) { WorldGeometry::delete_block(x, y, z); }
-    void randomize() { WorldGeometry::randomize(); }
+    void set_block(int x, int y, int z, Block block) {
+        WorldGeometry::set_block(x, y, z, block);
+        redstone_dirty = true;
+    }
+    void delete_block(int x, int y, int z) {
+        WorldGeometry::delete_block(x, y, z);
+        redstone_dirty = true;
+    }
+    void randomize() {
+        WorldGeometry::randomize();
+        redstone_dirty = true;
+    }
     void wireframe() { WorldGeometry::wireframe(); }
 
   private:
     RedstoneCircuit redstone;
+    bool redstone_dirty = false;
 
     void _derive_geometry_from_world_buffer() {
         num_vertices = 0;
