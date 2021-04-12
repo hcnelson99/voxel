@@ -28,6 +28,7 @@ struct Orientation {
     static Orientation from(uint8_t o) { return Orientation(o); }
 
     uint8_t plane_orientation(const Orientation &o) const {
+        // TODO: change to bitmask to reduce branching
         if (_orientation == PosX._orientation) {
             return 2;
         } else if (_orientation == NegX._orientation) {
