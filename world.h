@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "log.h"
+#include "ray.h"
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
 #define WORLD_SIZE (16)
@@ -175,6 +176,8 @@ class WorldGeometry {
 class World : public WorldGeometry {
   public:
     void initialize() { WorldGeometry::initialize(); }
+
+    void raycast(Ray ray);
 
     bool load(const char *filepath);
     bool save(const char *filepath);

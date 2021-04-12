@@ -16,6 +16,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#include "ray.h"
 #include "repl.h"
 #include "world.h"
 
@@ -144,92 +145,6 @@ class ShaderProgram {
     GLuint gl_program;
     std::string vertex_shader_filename, fragment_shader_filename;
     std::map<std::string, int> attrib_locations;
-};
-
-class Ray {
-  public:
-    Ray(glm::vec3 pos, glm::vec3 dir) : pos(pos), dir(glm::normalize(dir)) {}
-
-    glm::vec3 pos, dir;
-};
-
-class BBox {
-  public:
-    BBox(glm::vec3 min, glm::vec3 max) : min(min), max(max) {}
-
-    bool hit(const Ray &ray, glm::vec2 &times) const {
-
-        // TODO (PathTracer):
-        // Implement ray - bounding box intersection test
-        // If the ray intersected the bounding box within the range given by
-        // [times.x,times.y], update times with the new intersection times.
-
-        glm::vec3 invdir = 1.f / ray.dir;
-
-        float tmin, tmax;
-        if (invdir.x >= 0) {
-            tmin = (min.x - ray.pos.x) * invdir.x;
-            tmax = (max.x - ray.pos.x) * invdir.x;
-        } else {
-            tmin = (max.x - ray.pos.x) * invdir.x;
-            tmax = (min.x - ray.pos.x) * invdir.x;
-        }
-        assert(tmin <= tmax);
-
-        float tymin, tymax;
-
-        if (invdir.y >= 0) {
-            tymin = (min.y - ray.pos.y) * invdir.y;
-            tymax = (max.y - ray.pos.y) * invdir.y;
-        } else {
-            tymin = (max.y - ray.pos.y) * invdir.y;
-            tymax = (min.y - ray.pos.y) * invdir.y;
-        }
-        assert(tymin <= tymax);
-
-        if ((tmin > tymax) || (tymin > tmax))
-            return false;
-
-        if (tymin > tmin)
-            tmin = tymin;
-
-        if (tymax < tmax)
-            tmax = tymax;
-
-        float tzmin, tzmax;
-        if (invdir.z >= 0) {
-            tzmin = (min.z - ray.pos.z) * invdir.z;
-            tzmax = (max.z - ray.pos.z) * invdir.z;
-        } else {
-            tzmin = (max.z - ray.pos.z) * invdir.z;
-            tzmax = (min.z - ray.pos.z) * invdir.z;
-        }
-
-        assert(tzmin <= tzmax);
-
-        if ((tmin > tzmax) || (tzmin > tmax))
-            return false;
-
-        if (tzmin > tmin)
-            tmin = tzmin;
-
-        if (tzmax < tmax)
-            tmax = tzmax;
-
-        bool hit = false;
-        if (times.x <= tmin && tmin <= times.y) {
-            times.y = tmin;
-            hit = true;
-        }
-        if (times.x <= tmax && tmax <= times.y) {
-            times.y = tmax;
-            hit = true;
-        }
-
-        return hit;
-    }
-
-    glm::vec3 min, max;
 };
 
 glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v.w); }
@@ -390,33 +305,6 @@ class Game {
         }
     }
 
-    int sgn(float x) {
-        if (x < 0)
-            return -1;
-        if (x > 0)
-            return 1;
-        return 0;
-    }
-
-    bool in_bounds(glm::vec3 pos) {
-        return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
-    }
-
-    void raycast(Ray ray) {
-        int x, y, z;
-        if (in_bounds(ray.pos)) {
-            x = ray.pos.x;
-            y = ray.pos.y;
-            z = ray.pos.z;
-        } else {
-            // do something
-        }
-
-        int step_x = sgn(ray.dir.x);
-        int step_y = sgn(ray.dir.y);
-        int step_z = sgn(ray.dir.z);
-    }
-
     void loop() {
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
@@ -426,6 +314,8 @@ class Game {
 
         bool running = true;
         while (running) {
+            bool cast_ray_this_frame = false;
+
             auto time = std::chrono::steady_clock::now();
             double dt = std::chrono::duration<double>(time - prev_time).count();
             prev_time = time;
@@ -459,6 +349,7 @@ class Game {
                             SDL_SetRelativeMouseMode(SDL_TRUE);
                         }
                     }
+                    cast_ray_this_frame = true;
                     break;
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
@@ -512,15 +403,14 @@ class Game {
                 player_pos += glm::vec3(0, -move, 0);
             }
 
-            glm::vec3 pos = divide_w(iview * glm::vec4(0, 0, 0, 1));
-            glm::vec3 front = divide_w(iview * glm::vec4(0, 0, -1, 1));
-            Ray ray(pos, front - pos);
+            if (cast_ray_this_frame) {
+                glm::vec3 pos = divide_w(iview * glm::vec4(0, 0, 0, 1));
+                glm::vec3 front = divide_w(iview * glm::vec4(0, 0, -1, 1));
 
-            BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
+                Ray ray(pos, front - pos);
 
-            glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
-            // std::cout << bbox.hit(ray, bounds) << std::endl;
-            // std::cout << glm::to_string(bounds) << std::endl;
+                world.raycast(ray);
+            }
 
             world.sync_buffers();
 

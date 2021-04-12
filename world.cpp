@@ -1,3 +1,5 @@
+#include "world.h"
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
@@ -5,8 +7,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-
-#include "world.h"
 
 const Orientation Orientation::NegX(0);
 const Orientation Orientation::PosX(1);
@@ -261,4 +261,43 @@ bool World::save(const char *filepath) {
     close(fd);
 
     return true;
+}
+
+int sgn(float x) {
+    if (x < 0)
+        return -1;
+    if (x > 0)
+        return 1;
+    return 0;
+}
+
+bool in_bounds(glm::vec3 pos) {
+    return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
+}
+
+void World::raycast(Ray ray) {
+    printf("raycasting...");
+    int x, y, z;
+    if (!in_bounds(ray.pos)) {
+        BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
+
+        glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
+
+        if (!bbox.hit(ray, bounds)) {
+            printf("missed bbox\n");
+            return;
+        }
+
+        printf("  hit bbox");
+
+        ray.pos += ray.dir * bounds.y;
+    } else {
+        printf("in bounds");
+    }
+
+    int step_x = sgn(ray.dir.x);
+    int step_y = sgn(ray.dir.y);
+    int step_z = sgn(ray.dir.z);
+
+    printf("\n");
 }
