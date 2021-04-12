@@ -24,37 +24,37 @@ void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GL
                       const void *_arg) {
     switch (type) {
     case GL_DEBUG_TYPE_ERROR:
-        printf("ERROR");
+        fprintf(stderr, "ERROR");
         break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        printf("DEPRECATED_BEHAVIOR");
+        fprintf(stderr, "DEPRECATED_BEHAVIOR");
         break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        printf("UNDEFINED_BEHAVIOR");
+        fprintf(stderr, "UNDEFINED_BEHAVIOR");
         break;
     case GL_DEBUG_TYPE_PORTABILITY:
-        printf("PORTABILITY");
+        fprintf(stderr, "PORTABILITY");
         break;
     case GL_DEBUG_TYPE_PERFORMANCE:
-        printf("PERFORMANCE");
+        fprintf(stderr, "PERFORMANCE");
         break;
     case GL_DEBUG_TYPE_OTHER:
         return;
     }
 
-    printf(" (");
+    fprintf(stderr, " (");
     switch (severity) {
     case GL_DEBUG_SEVERITY_LOW:
-        printf("LOW");
+        fprintf(stderr, "LOW");
         break;
     case GL_DEBUG_SEVERITY_MEDIUM:
-        printf("MEDIUM");
+        fprintf(stderr, "MEDIUM");
         break;
     case GL_DEBUG_SEVERITY_HIGH:
-        printf("HIGH");
+        fprintf(stderr, "HIGH");
         break;
     }
-    printf("): %s\n", message);
+    fprintf(stderr, "): %s\n", message);
 
     if (severity == GL_DEBUG_SEVERITY_HIGH && source != GL_DEBUG_SOURCE_SHADER_COMPILER) {
         exit(1);
@@ -234,7 +234,7 @@ class Game {
     void init() {
         { // Init SDL + OpenGL
             if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-                printf("Failed to init video\n");
+                fprintf(stderr, "Failed to init video\n");
                 exit(1);
             }
 
@@ -242,7 +242,7 @@ class Game {
                                       SDL_WINDOW_OPENGL);
 
             if (!window) {
-                printf("failed to init window\n");
+                fprintf(stderr, "failed to init window\n");
                 exit(1);
             }
 
@@ -253,14 +253,14 @@ class Game {
 
             SDL_GLContext gl_context = SDL_GL_CreateContext(window);
             if (!gl_context) {
-                printf("failed to create gl context\n");
+                fprintf(stderr, "failed to create gl context\n");
                 exit(1);
             }
 
             glewExperimental = GL_TRUE;
             GLenum res = glewInit();
             if (res != GLEW_OK) {
-                printf("%s\n", glewGetErrorString(res));
+                fprintf(stderr, "%s\n", glewGetErrorString(res));
             }
 
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -456,13 +456,13 @@ class Game {
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
                     case SDLK_r:
-                        printf("Recompiling...");
+                        fprintf(stderr, "Recompiling...");
                         gshader.recompile();
                         screenspace_shader.recompile();
-                        printf("Done\n");
+                        fprintf(stderr, "Done\n");
                         break;
                     case SDLK_q:
-                        printf("randomizing world\n");
+                        fprintf(stderr, "randomizing world\n");
                         world.randomize();
                         world.save("test.world");
                         break;
