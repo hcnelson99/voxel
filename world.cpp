@@ -205,11 +205,11 @@ void WorldGeometry::_add_square(Block block, int &vertex, int x, int y, int z, O
     vertex += 6;
 }
 
-bool World::load(const std::string &filepath) {
-    int fd = open(filepath.c_str(), O_RDONLY);
+bool World::load(const char *filepath) {
+    int fd = open(filepath, O_RDONLY);
 
     if (fd == -1) {
-        fprintf(stderr, "Error opening world file to load: %s\n", filepath.c_str());
+        fprintf(stderr, "Error opening world file to load: %s\n", filepath);
         return false;
     }
 
@@ -221,7 +221,7 @@ bool World::load(const std::string &filepath) {
         return false;
     }
 
-    fprintf(stderr, "Loaded world from: %s\n", filepath.c_str());
+    fprintf(stderr, "Loaded world from: %s\n", filepath);
 
     close(fd);
 
@@ -239,11 +239,11 @@ bool World::load(const std::string &filepath) {
     return true;
 }
 
-bool World::save(const std::string &filepath) {
-    int fd = open(filepath.c_str(), O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
+bool World::save(const char *filepath) {
+    int fd = open(filepath, O_RDWR | O_CREAT | O_TRUNC, (mode_t)0600);
 
     if (fd == -1) {
-        fprintf(stderr, "Error opening world file to save: %s\n", filepath.c_str());
+        fprintf(stderr, "Error opening world file to save: %s\n", filepath);
         perror("Error opening file for saving");
         return false;
     }
@@ -256,7 +256,7 @@ bool World::save(const std::string &filepath) {
         return false;
     }
 
-    fprintf(stderr, "Saved world to: %s\n", filepath.c_str());
+    fprintf(stderr, "Saved world to: %s\n", filepath);
 
     close(fd);
 

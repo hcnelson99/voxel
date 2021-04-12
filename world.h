@@ -176,7 +176,7 @@ class World : public WorldGeometry {
   public:
     void initialize() { WorldGeometry::initialize(); }
 
-    bool load(const std::string &filepath);
-    bool save(const std::string &filepath);
+    bool load(const char *filepath);
+    bool save(const char *filepath);
     void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
 };

@@ -20,7 +20,6 @@
 #include "world.h"
 
 World world;
-Repl repl;
 
 size_t Log::frames = 0;
 ctime_t Log::prev_time = std::chrono::steady_clock::now();
@@ -597,7 +596,7 @@ int main() {
     game.init();
 
     pthread_t repl_thread;
-    pthread_create(&repl_thread, NULL, repl.read, NULL);
+    pthread_create(&repl_thread, NULL, Repl::read, NULL);
 
     game.loop();
 
