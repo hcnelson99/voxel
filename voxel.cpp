@@ -469,6 +469,10 @@ class Game {
                         screenspace_shader.recompile();
                         printf("Done\n");
                         break;
+                    case SDLK_q:
+                        printf("randomizing world\n");
+                        world.randomize<true>();
+                        break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
                         SDL_SetRelativeMouseMode(mouse_grabbed ? SDL_TRUE : SDL_FALSE);

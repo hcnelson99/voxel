@@ -22,12 +22,20 @@ enum class Block : uint8_t {
     Wood = 4,
 };
 
+struct Vec3 {
+    int x;
+    int y;
+    int z;
+    Vec3() : x(0), y(0), z(0) {}
+    Vec3(int x, int y, int z) : x(x), y(y), z(z) {}
+};
+
 // Stores data for vertices that is passed into shader
 class WorldGeometry {
   public:
     struct OpenGLBuffers {
-        GLuint vertices;
         GLuint block_ids;
+        GLuint vertices;
         GLuint vertex_texture_uv;
     };
 
@@ -44,22 +52,54 @@ class WorldGeometry {
 
     unsigned int num_vertices = 0;
 
-  private:
-    OpenGLBuffers buffers;
-
-    // maps logical block coordinate to index into list of vertices
-    int block_coordinates[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
-
-    void randomly_initialize();
-    void set_block(int x, int y, int z, Block block);
-    void delete_block(int x, int y, int z);
-    void add_square(Block block_face_type, int &vertex, int x, int y, int z, Axis norm);
-
-  public:
     // this is used instead of constructor because GL functions need to be
     // initialized by GLEW first
     void initialize();
 
     OpenGLBuffers &get_buffers() { return buffers; }
+
+    template <bool sync>
+    void set_block(int x, int y, int z, Block block);
+    template <bool sync>
+    void delete_block(int x, int y, int z);
+
+    void sync_buffers() { sync_buffers(0, num_vertices); }
+    void sync_buffers(int start, int end);
+
+    template <bool sync>
+    void randomize() {
+        for (int x = 0; x < WORLD_SIZE; ++x) {
+            for (int y = 0; y < WORLD_SIZE; ++y) {
+                for (int z = 0; z < WORLD_SIZE; ++z) {
+                    int r = rand() % 10;
+                    Block face_type;
+                    if (r == 0) {
+                        face_type = Block::Stone;
+                    } else if (r == 1) {
+                        face_type = Block::Dirt;
+                    } else if (r == 2) {
+                        face_type = Block::Wood;
+                    } else {
+                        face_type = Block::Air;
+                    }
+
+                    set_block<false>(x, y, z, face_type);
+                }
+            }
+        }
+
+        if (sync) {
+            sync_buffers();
+        }
+    }
+
+  private:
+    OpenGLBuffers buffers;
+
+    // maps logical block coordinate to index into list of vertices
+    int block_coordinates_to_id[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
+    Vec3 block_coordinate_order[BLOCKS];
+
+    void _add_square(Block block_face_type, int &vertex, int x, int y, int z, Axis norm);
 };
 
