@@ -327,13 +327,12 @@ void World::raycast(Ray ray) {
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
 
-        glm::vec2 bounds(0, std::numeric_limits<float>::infinity());
-
-        if (!bbox.hit(ray, bounds)) {
+        float t = bbox.hit(ray);
+        if (t < 0) {
             return;
         }
 
-        ray.pos += ray.dir * bounds.y;
+        ray.pos += ray.dir * t;
     }
 
     int x = clamp(ray.pos.x, 0, WORLD_SIZE - 1);

@@ -13,7 +13,7 @@ class BBox {
   public:
     BBox(glm::vec3 min, glm::vec3 max) : min(min), max(max) {}
 
-    bool hit(const Ray &ray, glm::vec2 &times) const {
+    float hit(const Ray &ray) const {
         glm::vec3 invdir = 1.f / ray.dir;
 
         float tmin, tmax;
@@ -38,7 +38,7 @@ class BBox {
         assert(tymin <= tymax);
 
         if ((tmin > tymax) || (tymin > tmax))
-            return false;
+            return -1;
 
         if (tymin > tmin)
             tmin = tymin;
@@ -58,7 +58,7 @@ class BBox {
         assert(tzmin <= tzmax);
 
         if ((tmin > tzmax) || (tzmin > tmax))
-            return false;
+            return -1;
 
         if (tzmin > tmin)
             tmin = tzmin;
@@ -66,17 +66,14 @@ class BBox {
         if (tzmax < tmax)
             tmax = tzmax;
 
-        bool hit = false;
-        if (times.x <= tmin && tmin <= times.y) {
-            times.y = tmin;
-            hit = true;
+        if (tmin >= 0) {
+            return tmin;
         }
-        if (times.x <= tmax && tmax <= times.y) {
-            times.y = tmax;
-            hit = true;
+        if (tmax >= 0) {
+            return tmax;
         }
 
-        return hit;
+        return -1;
     }
 
     glm::vec3 min, max;
