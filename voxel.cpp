@@ -365,6 +365,11 @@ class Game {
                         fprintf(stderr, "randomizing world\n");
                         world.wireframe();
                         break;
+                    case SDLK_t:
+                        fprintf(stderr, "toggling render mode\n");
+                        render_mode += 1;
+                        render_mode %= 2;
+                        break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
                         SDL_SetRelativeMouseMode(mouse_grabbed ? SDL_TRUE : SDL_FALSE);
@@ -381,6 +386,7 @@ class Game {
             glm::mat4 camera = projection * view;
 
             glm::mat4 iview = glm::inverse(view);
+            glm::mat4 icamera = glm::inverse(camera);
 
             const Uint8 *keystate = SDL_GetKeyboardState(NULL);
             float speed = 8;
@@ -447,7 +453,8 @@ class Game {
 
                 glUseProgram(screenspace_shader.gl_program);
 
-                glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&iview);
+                glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&icamera);
+                glUniform1ui(1, render_mode);
 
                 // 6 is the number of vertices
                 glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -483,6 +490,8 @@ class Game {
     GLuint g_position, g_normal, g_color_spec;
     GLuint gshader_vao, screenspace_vao;
     GLuint g_framebuffer;
+
+    unsigned int render_mode = 0;
 };
 
 int main(int argc, char *argv[]) {

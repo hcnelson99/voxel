@@ -368,6 +368,7 @@ void World::raycast(Ray ray) {
     int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
     int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
 
+    set_block(x, y, z, Block::Wood);
     while (true) {
         if (t_max_x < t_max_y) {
             if (t_max_x < t_max_z) {

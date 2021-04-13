@@ -77,6 +77,7 @@ class Block {
     Block(BlockType type, Orientation orientation = Orientation::PosX) { _block = type | orientation; }
 
     bool is(BlockType type) const { return (_block & TypeMask) == type; }
+
     Orientation get_orientation() const { return Orientation::from(_block & OrientationMask); }
     operator uint8_t() const { return _block; }
 
