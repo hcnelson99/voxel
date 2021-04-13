@@ -195,10 +195,8 @@ uint raycast(vec3 pos, vec3 dir) {
 
 
 vec4 raytrace(vec2 uv) {
-    uv = uv * 2 - 1;
-
-    vec3 pos = divide_w(icamera * vec4(0, 0, 0, 1));
-    vec3 front = divide_w(icamera * vec4(uv, 1, 1));
+    vec3 pos = divide_w(icamera * vec4(0, 0, -1, 1));
+    vec3 front = divide_w(icamera * vec4(uv * 2 - 1, 1, 1));
     vec3 dir = normalize(front - pos);
 
     uint blid = raycast(pos, dir);
