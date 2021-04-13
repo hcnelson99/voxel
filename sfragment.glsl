@@ -7,6 +7,7 @@ layout (binding = 0) uniform sampler2D g_position;
 layout (binding = 1) uniform sampler2D g_normal;
 layout (binding = 2) uniform sampler2D g_color_spec;
 layout (binding = 3) uniform usampler3D world_buffer;
+layout (binding = 4) uniform sampler2D terrain_texture;
 
 
 in vec2 uv;
@@ -193,8 +194,6 @@ uint raycast(vec3 pos, vec3 dir) {
 
 
 
-float width = 1920;
-float height = 1080;
 vec4 raytrace(vec2 uv) {
     uv = uv * 2 - 1;
 
@@ -228,11 +227,42 @@ void gbuffer_debug() {
     }
 }
 
+float width = 1920;
+float height = 1080;
+float aspect_ratio = width / height;
+
+float crosshair_size = 0.04;
+vec2 crosshair_box = vec2(crosshair_size / aspect_ratio, crosshair_size);
+
+
+void draw_crosshair(vec2 uv) {
+    vec2 center = vec2(0.5, 0.5);
+    vec2 uv_min = center - crosshair_box / 2;
+    vec2 uv_max = center + crosshair_box / 2;
+
+    if (uv.x < uv_min.x || uv.y < uv_min.y || uv.x > uv_max.x || uv.y > uv_max.y) {
+        return;
+    }
+
+    vec2 crosshair_uv = (uv - uv_min) / (uv_max - uv_min);
+
+    vec2 tile_size = vec2(1, 1) / 16;
+    vec2 tile_offset = vec2(0, 14) / 16;
+
+    vec2 tex_coord = tile_offset + tile_size * crosshair_uv;
+
+    vec4 tex_color = texture(terrain_texture, tex_coord);
+    frag_color = vec4(mix(frag_color.rgb, tex_color.rgb, tex_color.a * 0.7), tex_color.a * 0.7);
+}
+
 void main() { 
     if (render_mode == 0) {
         frag_color = vec4(texture(g_color_spec, uv).xyz, 1);
     } else  {
         frag_color = raytrace(uv);
     }
+
+    draw_crosshair(uv);
+
     /* gbuffer_debug(); */
 }

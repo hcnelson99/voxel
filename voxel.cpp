@@ -450,6 +450,8 @@ class Game {
                 glBindTexture(GL_TEXTURE_2D, g_color_spec);
                 glActiveTexture(GL_TEXTURE3);
                 glBindTexture(GL_TEXTURE_3D, world.get_buffers().world_texture);
+                glActiveTexture(GL_TEXTURE4);
+                glBindTexture(GL_TEXTURE_2D, terrain_texture);
 
                 glUseProgram(screenspace_shader.gl_program);
 
