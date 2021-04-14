@@ -369,6 +369,10 @@ void World::raycast(Ray ray, Block block, bool prev) {
     int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
     int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
 
+    if (get_block(x, y, z) != Block::Air && !prev) {
+        set_block(x, y, z, block);
+    }
+
     while (true) {
         int prev_x = x, prev_y = y, prev_z = z;
 
