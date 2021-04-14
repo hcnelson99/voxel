@@ -143,6 +143,7 @@ class WorldGeometry {
         Vec3 block_coordinate_order[BLOCKS];
     };
 
+    Block get_block(int x, int y, int z);
     void set_block(int x, int y, int z, Block block);
     void delete_block(int x, int y, int z);
     void randomize();
@@ -165,7 +166,7 @@ class World : public WorldGeometry {
 
     void initialize() { WorldGeometry::initialize(); }
 
-    void raycast(Ray ray);
+    void raycast(Ray ray, Block block, bool prev);
 
     void tick() {
         if (redstone_dirty) {
@@ -180,6 +181,7 @@ class World : public WorldGeometry {
     bool save(const char *filepath);
     void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
 
+    Block get_block(int x, int y, int z) { return WorldGeometry::get_block(x, y, z); }
     void set_block(int x, int y, int z, Block block) {
         WorldGeometry::set_block(x, y, z, block);
         redstone_dirty = true;

@@ -329,7 +329,7 @@ class Game {
         while (running) {
             Repl::lock();
 
-            bool cast_ray_this_frame = false;
+            enum class PlayerMouseModify { None, PlaceBlock, BreakBlock } player_mouse_modify = PlayerMouseModify::None;
 
             auto time = std::chrono::steady_clock::now();
             double dt = std::chrono::duration<double>(time - prev_time).count();
@@ -363,8 +363,10 @@ class Game {
                             mouse_grabbed = true;
                             SDL_SetRelativeMouseMode(SDL_TRUE);
                         }
+                        player_mouse_modify = PlayerMouseModify::BreakBlock;
+                    } else if (event.button.button == SDL_BUTTON_RIGHT) {
+                        player_mouse_modify = PlayerMouseModify::PlaceBlock;
                     }
-                    cast_ray_this_frame = true;
                     break;
                 case SDL_KEYDOWN:
                     switch (event.key.keysym.sym) {
@@ -427,13 +429,16 @@ class Game {
                 player_pos += glm::vec3(0, -move, 0);
             }
 
-            if (cast_ray_this_frame) {
+            if (player_mouse_modify != PlayerMouseModify::None) {
                 glm::vec3 pos = divide_w(iview * glm::vec4(0, 0, 0, 1));
                 glm::vec3 front = divide_w(iview * glm::vec4(0, 0, -1, 1));
 
                 Ray ray(pos, front - pos);
 
-                world.raycast(ray);
+                Block block = player_mouse_modify == PlayerMouseModify::PlaceBlock ? Block::Wood : Block::Air;
+                bool prev = player_mouse_modify == PlayerMouseModify::PlaceBlock;
+
+                world.raycast(ray, block, prev);
             }
 
             world.tick();

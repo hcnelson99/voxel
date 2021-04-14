@@ -98,6 +98,8 @@ void WorldGeometry::sync_buffers() {
     }
 }
 
+Block WorldGeometry::get_block(int x, int y, int z) { return block_map[x][y][z]; }
+
 void WorldGeometry::set_block(int x, int y, int z, Block block) {
     if (block.is(Block::BlockType::Air)) {
         delete_block(x, y, z);
@@ -323,7 +325,7 @@ float clamp(float x, float min, float max) {
     return x;
 };
 
-void World::raycast(Ray ray) {
+void World::raycast(Ray ray, Block block, bool prev) {
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
 
@@ -367,8 +369,9 @@ void World::raycast(Ray ray) {
     int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
     int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
 
-    set_block(x, y, z, Block::Wood);
     while (true) {
+        int prev_x = x, prev_y = y, prev_z = z;
+
         if (t_max_x < t_max_y) {
             if (t_max_x < t_max_z) {
                 x += step_x;
@@ -399,6 +402,13 @@ void World::raycast(Ray ray) {
                 t_max_z += t_delta_z;
             }
         }
-        set_block(x, y, z, Block::Wood);
+        if (get_block(x, y, z) != Block::Air) {
+            if (prev) {
+                set_block(prev_x, prev_y, prev_z, block);
+            } else {
+                set_block(x, y, z, block);
+            }
+            return;
+        }
     }
 }
