@@ -213,7 +213,6 @@ void gbuffer_debug() {
         uv_local.x *= 2;
         uv_local.y = uv_local.y * 2 - 1;
         vec3 norm = texture(g_normal, uv_local).xyz;
-        norm.xz = -norm.xz;
         frag_color = vec4(norm, 1);
     } else if (uv.x >= 0.5 && uv.y < 0.5) {
         uv_local.y *= 2;
@@ -258,30 +257,57 @@ int blue_noise_size = textureSize(blue_noise, 0).x;
 
 vec4 generalized_golden_ratio = vec4(1.6180368732830122, 1.3247179943111884, 1.2207440862420311, 1.167303978412138);
 
-float ambient_occlusion(vec2 uv) {
+float STEP = 0.0005f;
+
+vec4 generate_noise(vec2 uv, uint frame_number, uint i) {
+    return mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * 7 + i * 3) % 2243), 1.0);
+}
+
+float ambient_occlusion_ray(vec2 uv, uint i) {
     vec3 pos = texture(g_position, uv).xyz;
     vec3 normal = texture(g_normal, uv).xyz;
 
-    uint number_rays = 50;
+    vec4 noise = generate_noise(uv, frame_number, i);
+
+    vec3 dir = normalize(noise.xyz * 2 - 1);
+
+    if (dot(normal, dir) < 0) {
+        dir = -dir;
+    }
+
+    uint blid = raycast(pos + normal * STEP, dir);
+
+    if (blid == 0 && dir.y > 0) {
+        return 1;
+    }
+    return 0;
+}
+
+float shadow_ray(vec2 uv, uint i) {
+    vec3 pos = texture(g_position, uv).xyz;
+    vec3 normal = texture(g_normal, uv).xyz;
+
+    vec3 light = vec3(25, 100, 50) + (generate_noise(uv, frame_number, i).xyz * 2 - 1) * vec3(10, 10, 10);
+    vec3 dir = normalize(light - pos);
+
+    if (raycast(pos + normal * STEP, dir) == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+float lighting(vec2 uv) {
+
+    uint number_rays = 10;
 
     float brightness = 0;
 
+
     for (int i = 0; i < number_rays; i++) {
-        vec4 noise = mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * number_rays + i) % 256), 1.0);
-
-        vec3 dir = normalize(noise.xyz * 2 - 1);
-
-        if (dot(normal, dir) < 0) {
-            dir = -dir;
-        }
-
-        uint blid = raycast(pos + dir * 0.005f, dir);
-
-        if (blid == 0) {
-            brightness += 1;
-        }
+        brightness += ambient_occlusion_ray(uv, i);
+        brightness += shadow_ray(uv, i);
     }
-    brightness /= number_rays;
+    brightness /= 2 * number_rays;
 
     return brightness;
 }
@@ -289,14 +315,13 @@ float ambient_occlusion(vec2 uv) {
 void main() { 
     if (render_mode == 0) {
         vec3 color = texture(g_color_spec, uv).xyz;
-        float brightness = ambient_occlusion(uv);
+        float brightness = lighting(uv);
 
         frag_color = vec4(color * brightness, 1);
-    } else  {
-        frag_color = raytrace(uv);
+    } else {
+        gbuffer_debug();
     }
 
     draw_crosshair(uv);
 
-    /* gbuffer_debug(); */
 }
