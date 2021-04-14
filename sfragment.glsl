@@ -2,13 +2,14 @@
 
 layout (location = 0) uniform mat4 icamera;
 layout (location = 1) uniform uint render_mode;
+layout (location = 2) uniform uint frame_number;
 
 layout (binding = 0) uniform sampler2D g_position;
 layout (binding = 1) uniform sampler2D g_normal;
 layout (binding = 2) uniform sampler2D g_color_spec;
 layout (binding = 3) uniform usampler3D world_buffer;
 layout (binding = 4) uniform sampler2D terrain_texture;
-
+layout (binding = 5) uniform sampler2D blue_noise;
 
 in vec2 uv;
 
@@ -253,9 +254,44 @@ void draw_crosshair(vec2 uv) {
     frag_color = vec4(mix(frag_color.rgb, tex_color.rgb, tex_color.a * 0.7), tex_color.a * 0.7);
 }
 
+int blue_noise_size = textureSize(blue_noise, 0).x;
+
+vec4 generalized_golden_ratio = vec4(1.6180368732830122, 1.3247179943111884, 1.2207440862420311, 1.167303978412138);
+
+float ambient_occlusion(vec2 uv) {
+    vec3 pos = texture(g_position, uv).xyz;
+    vec3 normal = texture(g_normal, uv).xyz;
+
+    uint number_rays = 10;
+
+    float brightness = 0;
+
+    for (int i = 0; i < number_rays; i++) {
+        vec4 noise = mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * number_rays + i) % 256), 1.0);
+
+        vec3 dir = normalize(noise.xyz);
+
+        if (dot(normal, dir) < 0) {
+            dir = -dir;
+        }
+
+        uint blid = raycast(pos + dir * 0.005f, dir);
+
+        if (blid == 0) {
+            brightness += 1;
+        }
+    }
+    brightness /= number_rays;
+
+    return brightness;
+}
+
 void main() { 
     if (render_mode == 0) {
-        frag_color = vec4(texture(g_color_spec, uv).xyz, 1);
+        vec3 color = texture(g_color_spec, uv).xyz;
+        float brightness = ambient_occlusion(uv);
+
+        frag_color = vec4(color * brightness, 1);
     } else  {
         frag_color = raytrace(uv);
     }

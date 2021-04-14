@@ -249,6 +249,22 @@ class Game {
             stbi_image_free(data);
         }
 
+        { // Load blue_noise.png
+            int x, y, n;
+            unsigned char *data = stbi_load("blue_noise.png", &x, &y, &n, 0);
+            assert(data != NULL);
+            assert(x == 512 && y == 512 && n == 4);
+
+            glGenTextures(1, &blue_noise_texture);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, blue_noise_texture);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, x, y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+            stbi_image_free(data);
+        }
+
         {
             const WorldGeometry::OpenGLBuffers &world_buffers = world.get_buffers();
 
@@ -308,6 +324,7 @@ class Game {
 
         auto prev_time = std::chrono::steady_clock::now();
 
+        unsigned int frame_number = 0;
         bool running = true;
         while (running) {
             Repl::lock();
@@ -419,6 +436,8 @@ class Game {
                 world.raycast(ray);
             }
 
+            world.tick();
+
             world.sync_buffers();
 
             {
@@ -452,11 +471,14 @@ class Game {
                 glBindTexture(GL_TEXTURE_3D, world.get_buffers().world_texture);
                 glActiveTexture(GL_TEXTURE4);
                 glBindTexture(GL_TEXTURE_2D, terrain_texture);
+                glActiveTexture(GL_TEXTURE5);
+                glBindTexture(GL_TEXTURE_2D, blue_noise_texture);
 
                 glUseProgram(screenspace_shader.gl_program);
 
                 glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&icamera);
                 glUniform1ui(1, render_mode);
+                glUniform1ui(2, frame_number);
 
                 // 6 is the number of vertices
                 glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -466,9 +488,8 @@ class Game {
 
             world.log_frame();
 
-            world.tick();
-
             Repl::unlock();
+            frame_number++;
         }
     }
 
@@ -487,7 +508,7 @@ class Game {
     double rotate_x = 0, rotate_y = 0;
 
     ShaderProgram gshader, screenspace_shader;
-    GLuint terrain_texture, world_texture;
+    GLuint terrain_texture, world_texture, blue_noise_texture;
 
     GLuint g_position, g_normal, g_color_spec;
     GLuint gshader_vao, screenspace_vao;
