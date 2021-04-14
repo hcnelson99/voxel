@@ -369,7 +369,7 @@ void World::raycast(Ray ray, Block block, bool prev) {
     int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
     int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
 
-    if (get_block(x, y, z) != Block::Air && !prev) {
+    if (!get_block(x, y, z).is(Block::Air) && !prev) {
         set_block(x, y, z, block);
     }
 
@@ -406,7 +406,7 @@ void World::raycast(Ray ray, Block block, bool prev) {
                 t_max_z += t_delta_z;
             }
         }
-        if (get_block(x, y, z) != Block::Air) {
+        if (!get_block(x, y, z).is(Block::Air)) {
             if (prev) {
                 set_block(prev_x, prev_y, prev_z, block);
             } else {

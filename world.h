@@ -76,7 +76,7 @@ class Block {
 
     Block(BlockType type, Orientation orientation = Orientation::PosX) { _block = type | orientation; }
 
-    bool is(BlockType type) const { return (_block & TypeMask) == type; }
+    bool is(BlockType type) const { return (_block & TypeMask) == (type & TypeMask); }
 
     Orientation get_orientation() const { return Orientation::from(_block & OrientationMask); }
     operator uint8_t() const { return _block; }
@@ -86,6 +86,9 @@ class Block {
     void rotate() { _block = (_block & TypeMask) | Orientation::from((get_orientation() + 1)); }
 
     void set_orientation(Orientation bor) { _block = (_block & TypeMask) | bor; }
+
+    bool operator==(const Block &other) { return (_block & TypeMask) == (other._block & TypeMask); }
+    bool operator!=(const Block &other) { return !(*this == other); }
 };
 
 struct Vec3 {
