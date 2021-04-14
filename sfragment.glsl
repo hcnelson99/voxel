@@ -262,14 +262,14 @@ float ambient_occlusion(vec2 uv) {
     vec3 pos = texture(g_position, uv).xyz;
     vec3 normal = texture(g_normal, uv).xyz;
 
-    uint number_rays = 10;
+    uint number_rays = 50;
 
     float brightness = 0;
 
     for (int i = 0; i < number_rays; i++) {
         vec4 noise = mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * number_rays + i) % 256), 1.0);
 
-        vec3 dir = normalize(noise.xyz);
+        vec3 dir = normalize(noise.xyz * 2 - 1);
 
         if (dot(normal, dir) < 0) {
             dir = -dir;
