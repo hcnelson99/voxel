@@ -271,8 +271,12 @@ vec4 generalized_golden_ratio = vec4(1.6180368732830122, 1.3247179943111884, 1.2
 
 float STEP = 0.0005f;
 
+uint rays_per_pixel = 2;
+uint bounces_per_pixel = 2;
+
+uint noise_per_pixel = rays_per_pixel * bounces_per_pixel * 2;
 vec4 generate_noise(vec2 uv, uint frame_number, uint i) {
-    return mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * 7 + i * 3) % 2243), 1.0);
+    return mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * 4 + i) % 2243), 1.0);
 }
 
 vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
@@ -288,7 +292,7 @@ vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
 
 vec3 blid_to_emissive_color(uint blid) {
     if (blid == 5) {
-        return vec3(5, 0, 0);
+        return normalize(vec3(0.9, 0.05, 0.04)) * 5;
     }  else if (blid == 3) {
         return normalize(vec3(255, 147, 41)) * 5;
     }
@@ -303,12 +307,11 @@ vec3 light(vec3 pos, vec3 normal, uint i) {
     uint blid = lookup(ivec3(pos - normal * STEP));
     res += blid_to_emissive_color(blid) / 4;
 
-    uint num_bounces = 2;
-    for (int bounce = 0; bounce < num_bounces; bounce++) {
-        uint j = i * num_bounces + bounce;
+    for (int bounce = 0; bounce < bounces_per_pixel; bounce++) {
+        uint j = i * bounces_per_pixel + 2 * bounce;
         vec3 brightness = shadow_ray(pos, normal, j);
 
-        vec4 noise = generate_noise(uv, frame_number, j);
+        vec4 noise = generate_noise(uv, frame_number, j + 1);
         vec3 dir = normalize(noise.xyz * 2 - 1);
         if (dot(normal, dir) < 0) {
             dir = -dir;
@@ -332,14 +335,13 @@ vec3 lighting(vec2 uv) {
 
     vec3 brightness = vec3(0);
 
-    uint number_rays = 2;
-    for (int i = 0; i < number_rays; i++) {
+    for (int i = 0; i < rays_per_pixel; i++) {
         vec3 pos = texture(g_position, uv).xyz;
         vec3 normal = texture(g_normal, uv).xyz;
         brightness += light(pos, normal, i);
     }
 
-    brightness /=  number_rays;
+    brightness /= rays_per_pixel;
 
     return brightness;
 }

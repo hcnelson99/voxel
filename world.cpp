@@ -248,10 +248,7 @@ void WorldGeometry::wireframe() {
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                int a = x == 0 || x == WORLD_SIZE - 1;
-                int b = y == 0 || y == WORLD_SIZE - 1;
-                int c = z == 0 || z == WORLD_SIZE - 1;
-                if (a + b + c >= 2) {
+                if (y < 3 || (x == WORLD_SIZE - 1 && z == WORLD_SIZE - 1)) {
                     set_block(x, y, z, Block::Stone);
                 } else {
                     set_block(x, y, z, Block::Air);
