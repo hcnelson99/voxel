@@ -149,6 +149,7 @@ class WorldGeometry {
     Block get_block(int x, int y, int z);
     void set_block(int x, int y, int z, Block block);
     void delete_block(int x, int y, int z);
+    void rotate_block(int x, int y, int z);
     void randomize();
     void wireframe();
 
@@ -172,7 +173,9 @@ class World : public WorldGeometry {
         redstone_dirty = true;
     }
 
-    void raycast(Ray ray, Block block, bool prev);
+    enum class PlayerMouseModify { PlaceBlock, BreakBlock, RotateBlock };
+
+    void player_click(Ray ray, Block block, PlayerMouseModify player_action);
 
     void tick() {
         if (redstone_dirty) {

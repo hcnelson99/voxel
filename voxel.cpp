@@ -3,6 +3,7 @@
 #include <glm/gtx/transform.hpp>
 #include <iostream>
 #include <map>
+#include <optional>
 #include <stdio.h>
 #include <unistd.h>
 #include <vector>
@@ -324,12 +325,14 @@ class Game {
 
         auto prev_time = std::chrono::steady_clock::now();
 
+        Block player_block_selection = Block::Wood;
+
         unsigned int frame_number = 0;
         bool running = true;
         while (running) {
             Repl::lock();
 
-            enum class PlayerMouseModify { None, PlaceBlock, BreakBlock } player_mouse_modify = PlayerMouseModify::None;
+            std::optional<World::PlayerMouseModify> player_mouse_modify = std::nullopt;
 
             auto time = std::chrono::steady_clock::now();
             double dt = std::chrono::duration<double>(time - prev_time).count();
@@ -363,9 +366,11 @@ class Game {
                             mouse_grabbed = true;
                             SDL_SetRelativeMouseMode(SDL_TRUE);
                         }
-                        player_mouse_modify = PlayerMouseModify::BreakBlock;
+                        player_mouse_modify = World::PlayerMouseModify::BreakBlock;
                     } else if (event.button.button == SDL_BUTTON_RIGHT) {
-                        player_mouse_modify = PlayerMouseModify::PlaceBlock;
+                        player_mouse_modify = World::PlayerMouseModify::PlaceBlock;
+                    } else if (event.button.button == SDL_BUTTON_MIDDLE) {
+                        player_mouse_modify = World::PlayerMouseModify::RotateBlock;
                     }
                     break;
                 case SDL_KEYDOWN:
@@ -388,6 +393,24 @@ class Game {
                         fprintf(stderr, "toggling render mode\n");
                         render_mode += 1;
                         render_mode %= 2;
+                        break;
+                    case SDLK_1:
+                        player_block_selection = Block::Stone;
+                        break;
+                    case SDLK_2:
+                        player_block_selection = Block::Dirt;
+                        break;
+                    case SDLK_3:
+                        player_block_selection = Block::Wood;
+                        break;
+                    case SDLK_4:
+                        player_block_selection = Block::InactiveRedstone;
+                        break;
+                    case SDLK_5:
+                        player_block_selection = Block::DelayGate;
+                        break;
+                    case SDLK_6:
+                        player_block_selection = Block::NotGate;
                         break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
@@ -429,16 +452,13 @@ class Game {
                 player_pos += glm::vec3(0, -move, 0);
             }
 
-            if (player_mouse_modify != PlayerMouseModify::None) {
+            if (player_mouse_modify.has_value()) {
                 glm::vec3 pos = divide_w(iview * glm::vec4(0, 0, 0, 1));
                 glm::vec3 front = divide_w(iview * glm::vec4(0, 0, -1, 1));
 
                 Ray ray(pos, front - pos);
 
-                Block block = player_mouse_modify == PlayerMouseModify::PlaceBlock ? Block::Wood : Block::Air;
-                bool prev = player_mouse_modify == PlayerMouseModify::PlaceBlock;
-
-                world.raycast(ray, block, prev);
+                world.player_click(ray, player_block_selection, player_mouse_modify.value());
             }
 
             world.tick();

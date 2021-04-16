@@ -1,6 +1,6 @@
 CXXFLAGS=-g -std=c++17 -pthread -lSDL2 -lGLEW -lX11 -lGLU -lGL -DGLM_ENABLE_EXPERIMENTAL
 
-SOURCES=voxel.cpp world.cpp redstone.cpp
+SOURCES=voxel.cpp world.cpp
 HEADERS=world.h log.h repl.h ray.h
 
 voxel: $(SOURCES) $(HEADERS)

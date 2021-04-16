@@ -160,6 +160,12 @@ void WorldGeometry::delete_block(int x, int y, int z) {
     }
 }
 
+void WorldGeometry::rotate_block(int x, int y, int z) {
+    Block block = get_block(x, y, z);
+    block.rotate();
+    set_block(x, y, z, block);
+}
+
 void WorldGeometry::_add_square(Block block, int &vertex, int x, int y, int z, Orientation face) {
     glm::vec3 p0, p1, p2, p3;
     p0 = glm::vec3(x, y, z);
@@ -326,7 +332,7 @@ float clamp(float x, float min, float max) {
     return x;
 };
 
-void World::raycast(Ray ray, Block block, bool prev) {
+void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) {
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
 
@@ -370,8 +376,12 @@ void World::raycast(Ray ray, Block block, bool prev) {
     int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
     int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
 
-    if (!get_block(x, y, z).is(Block::Air) && !prev) {
-        set_block(x, y, z, block);
+    if (!get_block(x, y, z).is(Block::Air)) {
+        if (player_action == PlayerMouseModify::BreakBlock) {
+            set_block(x, y, z, Block::Air);
+        } else if (player_action == PlayerMouseModify::RotateBlock) {
+            rotate_block(x, y, z);
+        }
     }
 
     while (true) {
@@ -408,10 +418,12 @@ void World::raycast(Ray ray, Block block, bool prev) {
             }
         }
         if (!get_block(x, y, z).is(Block::Air)) {
-            if (prev) {
+            if (player_action == PlayerMouseModify::PlaceBlock) {
                 set_block(prev_x, prev_y, prev_z, block);
-            } else {
-                set_block(x, y, z, block);
+            } else if (player_action == PlayerMouseModify::BreakBlock) {
+                set_block(x, y, z, Block::Air);
+            } else if (player_action == PlayerMouseModify::RotateBlock) {
+                rotate_block(x, y, z);
             }
             return;
         }

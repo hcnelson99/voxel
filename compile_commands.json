@@ -1,0 +1,22 @@
+[
+ {
+  "directory": "/home/henry/voxel",
+  "arguments": [
+   "g++",
+   "-o",
+   "voxel",
+   "voxel.cpp",
+   "world.cpp",
+   "-g",
+   "-std=c++17",
+   "-pthread",
+   "-lSDL2",
+   "-lGLEW",
+   "-lX11",
+   "-lGLU",
+   "-lGL",
+   "-DGLM_ENABLE_EXPERIMENTAL"
+  ],
+  "file": "world.cpp"
+ }
+]
