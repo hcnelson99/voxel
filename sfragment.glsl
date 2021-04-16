@@ -303,12 +303,11 @@ vec3 light(vec3 pos, vec3 normal, uint i) {
     uint blid = lookup(ivec3(pos - normal * STEP));
     res += blid_to_emissive_color(blid) / 4;
 
-    uint num_bounces = 3;
+    uint num_bounces = 2;
     for (int bounce = 0; bounce < num_bounces; bounce++) {
         vec3 brightness = shadow_ray(pos, normal, i);
 
         vec4 noise = generate_noise(uv, frame_number, i);
-        // dir of ambient bounce
         vec3 dir = normalize(noise.xyz * 2 - 1);
         if (dot(normal, dir) < 0) {
             dir = -dir;
@@ -332,7 +331,7 @@ vec3 lighting(vec2 uv) {
 
     vec3 brightness = vec3(0);
 
-    uint number_rays = 10;
+    uint number_rays = 2;
     for (int i = 0; i < number_rays; i++) {
         vec3 pos = texture(g_position, uv).xyz;
         vec3 normal = texture(g_normal, uv).xyz;
