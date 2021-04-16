@@ -277,6 +277,7 @@ bool World::load(const char *filepath) {
     close(fd);
 
     _derive_geometry_from_block_map();
+    redstone_dirty = true;
 
     return true;
 }

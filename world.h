@@ -167,7 +167,10 @@ class World : public WorldGeometry {
   public:
     World() : redstone(this) {}
 
-    void initialize() { WorldGeometry::initialize(); }
+    void initialize() {
+        WorldGeometry::initialize();
+        redstone_dirty = true;
+    }
 
     void raycast(Ray ray, Block block, bool prev);
 
