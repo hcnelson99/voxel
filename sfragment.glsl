@@ -49,79 +49,11 @@ bool in_bounds(vec3 pos) {
     return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
 }
 
-float bbox_hit(vec3 bbox_min, vec3 bbox_max, vec3 pos, vec3 dir) {
-    vec3 invdir = 1.f / dir;
-
-    float tmin, tmax;
-    if (invdir.x >= 0) {
-        tmin = (bbox_min.x - pos.x) * invdir.x;
-        tmax = (bbox_max.x - pos.x) * invdir.x;
-    } else {
-        tmin = (bbox_max.x - pos.x) * invdir.x;
-        tmax = (bbox_min.x - pos.x) * invdir.x;
-    }
-
-    float tymin, tymax;
-
-    if (invdir.y >= 0) {
-        tymin = (bbox_min.y - pos.y) * invdir.y;
-        tymax = (bbox_max.y - pos.y) * invdir.y;
-    } else {
-        tymin = (bbox_max.y - pos.y) * invdir.y;
-        tymax = (bbox_min.y - pos.y) * invdir.y;
-    }
-
-    if ((tmin > tymax) || (tymin > tmax))
-        return -1;
-
-    if (tymin > tmin)
-        tmin = tymin;
-
-    if (tymax < tmax)
-        tmax = tymax;
-
-    float tzmin, tzmax;
-    if (invdir.z >= 0) {
-        tzmin = (bbox_min.z - pos.z) * invdir.z;
-        tzmax = (bbox_max.z - pos.z) * invdir.z;
-    } else {
-        tzmin = (bbox_max.z - pos.z) * invdir.z;
-        tzmax = (bbox_min.z - pos.z) * invdir.z;
-    }
-
-    if ((tmin > tzmax) || (tzmin > tmax))
-        return -1;
-
-    if (tzmin > tmin)
-        tmin = tzmin;
-
-    if (tzmax < tmax)
-        tmax = tzmax;
-
-    bool hit = false;
-
-    if (tmin >= 0) {
-        return tmin;
-    }
-    if (tmax >= 0) {
-        return tmax;
-    }
-    return -1;
-}
-
 uint raycast(vec3 pos, vec3 dir) {
     uint res;
 
     if (!in_bounds(pos)) {
-        vec3 bbox_min = vec3(0, 0, 0);
-        vec3 bbox_max = vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE);
-
-        float t = bbox_hit(bbox_min, bbox_max, pos, dir);
-        if (t >= 0) {
-            pos += dir * t;
-        } else {
-            return 0;
-        }
+        return 0;
     }
     
 
@@ -194,6 +126,86 @@ uint raycast(vec3 pos, vec3 dir) {
 }
 
 
+uint raycast_pos(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
+    uint res;
+
+    if (!in_bounds(pos)) {
+        return 0;
+    }
+    
+
+    int x = int(clamp(pos.x, 0, WORLD_SIZE - 1));
+    int y = int(clamp(pos.y, 0, WORLD_SIZE - 1));
+    int z = int(clamp(pos.z, 0, WORLD_SIZE - 1));
+
+    int step_x = int(sign(dir.x));
+    int step_y = int(sign(dir.y));
+    int step_z = int(sign(dir.z));
+
+    int next_x = step_x == 1 ? 1 : 0;
+    int next_y = step_y == 1 ? 1 : 0;
+    int next_z = step_z == 1 ? 1 : 0;
+
+    float t_max_x = (x + next_x - pos.x) / dir.x;
+    float t_max_y = (y + next_y - pos.y) / dir.y;
+    float t_max_z = (z + next_z - pos.z) / dir.z;
+
+    float t_delta_x = abs(1.f / dir.x);
+    float t_delta_y = abs(1.f / dir.y);
+    float t_delta_z = abs(1.f / dir.z);
+
+    int just_out_x = step_x == 1 ? int(WORLD_SIZE) : -1;
+    int just_out_y = step_y == 1 ? int(WORLD_SIZE) : -1;
+    int just_out_z = step_z == 1 ? int(WORLD_SIZE) : -1;
+
+    res = lookup(ivec3(x, y, z));
+    if (res != 0) {
+        return res;
+    }
+
+    for (int i = 0; i < 1000; ++i) {
+        vec3 prev_t_max = vec3(t_max_x, t_max_y, t_max_z);
+        vec3 prev_pos = vec3(x, y, z);
+        if (t_max_x < t_max_y) {
+            if (t_max_x < t_max_z) {
+                x += step_x;
+                if (x == just_out_x) {
+                    return 0;
+                }
+                t_max_x += t_delta_x;
+            } else {
+                z += step_z;
+                if (z == just_out_z) {
+                    return 0;
+                }
+                t_max_z += t_delta_z;
+            }
+        } else {
+            if (t_max_y < t_max_z) {
+                y += step_y;
+                if (y == just_out_y) {
+                    return 0;
+                }
+                t_max_y += t_delta_y;
+
+            } else {
+                z += step_z;
+                if (z == just_out_z) {
+                    return 0;
+                }
+                t_max_z += t_delta_z;
+            }
+        }
+        res = lookup(ivec3(x, y, z));
+        if (res != 0) {
+            float t = min(prev_t_max.x, min(prev_t_max.y, prev_t_max.z));
+            dest_pos = pos + dir * t;
+            normal = prev_pos - vec3(x, y, z);
+            return res;
+        }
+    }
+    return 0;
+}
 
 vec4 raytrace(vec2 uv) {
     vec3 pos = divide_w(icamera * vec4(0, 0, -1, 1));
@@ -263,51 +275,71 @@ vec4 generate_noise(vec2 uv, uint frame_number, uint i) {
     return mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * 7 + i * 3) % 2243), 1.0);
 }
 
-float ambient_occlusion_ray(vec2 uv, uint i) {
-    vec3 pos = texture(g_position, uv).xyz;
-    vec3 normal = texture(g_normal, uv).xyz;
-
-    vec4 noise = generate_noise(uv, frame_number, i);
-
-    vec3 dir = normalize(noise.xyz * 2 - 1);
-
-    if (dot(normal, dir) < 0) {
-        dir = -dir;
-    }
-
-    uint blid = raycast(pos + normal * STEP, dir);
-
-    if (blid == 0 && dir.y > 0) {
-        return 1;
-    }
-    return 0;
-}
-
-float shadow_ray(vec2 uv, uint i) {
-    vec3 pos = texture(g_position, uv).xyz;
-    vec3 normal = texture(g_normal, uv).xyz;
-
+vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
     vec3 light = vec3(25, 100, 50) + (generate_noise(uv, frame_number, i).xyz * 2 - 1) * vec3(10, 10, 10);
     vec3 dir = normalize(light - pos);
 
     if (raycast(pos + normal * STEP, dir) == 0) {
-        return 1;
+        vec3 sunlight_color = vec3(255, 241, 224) / 255.f;
+        return 0.2 * sunlight_color * max(dot(normal, dir), 0);
     }
-    return 0;
+    return vec3(0);
 }
 
-float lighting(vec2 uv) {
+vec3 blid_to_emissive_color(uint blid) {
+    if (blid == 5) {
+        return vec3(5, 0, 0);
+    }  else if (blid == 3) {
+        return normalize(vec3(255, 147, 41)) * 5;
+    }
+    return vec3(0, 0, 0);
+}
+
+
+vec3 light(vec3 pos, vec3 normal, uint i) {
+    vec3 res = vec3(0, 0, 0);
+    float contribution = 1;
+
+    uint blid = lookup(ivec3(pos - normal * STEP));
+    res += blid_to_emissive_color(blid) / 4;
+
+    uint num_bounces = 3;
+    for (int bounce = 0; bounce < num_bounces; bounce++) {
+        vec3 brightness = shadow_ray(pos, normal, i);
+
+        vec4 noise = generate_noise(uv, frame_number, i);
+        // dir of ambient bounce
+        vec3 dir = normalize(noise.xyz * 2 - 1);
+        if (dot(normal, dir) < 0) {
+            dir = -dir;
+        }
+        vec3 new_pos, new_normal;
+        uint blid = raycast_pos(pos + normal * STEP, dir, new_pos, new_normal);
+        vec3 dist = new_pos - pos;
+        brightness += blid_to_emissive_color(blid) / max(dot(dist, dist), 1);
+
+        res += contribution * brightness;
+        if (blid == 0) break;
+        contribution *= max(dot(dir, normal), 0);
+        pos = new_pos;
+        normal = new_normal;
+    }
+
+    return res;
+}
+
+vec3 lighting(vec2 uv) {
+
+    vec3 brightness = vec3(0);
 
     uint number_rays = 10;
-
-    float brightness = 0;
-
-
     for (int i = 0; i < number_rays; i++) {
-        brightness += ambient_occlusion_ray(uv, i);
-        brightness += shadow_ray(uv, i);
+        vec3 pos = texture(g_position, uv).xyz;
+        vec3 normal = texture(g_normal, uv).xyz;
+        brightness += light(pos, normal, i);
     }
-    brightness /= 2 * number_rays;
+
+    brightness /=  number_rays;
 
     return brightness;
 }
@@ -315,9 +347,9 @@ float lighting(vec2 uv) {
 void main() { 
     if (render_mode == 0) {
         vec3 color = texture(g_color_spec, uv).xyz;
-        float brightness = lighting(uv);
+        vec3 brightness = lighting(uv);
 
-        frag_color = vec4(color * brightness, 1);
+        frag_color = vec4(color * pow(brightness, vec3(1.f / 2.2)), 1);
     } else {
         gbuffer_debug();
     }
