@@ -2,12 +2,16 @@
 
 #include <algorithm>
 #include <fcntl.h>
+#include <iostream>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 const Orientation Orientation::NegX(0);
 const Orientation Orientation::PosX(1);
@@ -417,6 +421,7 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
                 t_max_z += t_delta_z;
             }
         }
+
         if (!get_block(x, y, z).is(Block::Air)) {
             if (player_action == PlayerMouseModify::PlaceBlock) {
                 set_block(prev_x, prev_y, prev_z, block);
@@ -424,6 +429,20 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
                 set_block(x, y, z, Block::Air);
             } else if (player_action == PlayerMouseModify::RotateBlock) {
                 rotate_block(x, y, z);
+
+                // How to compute intersection location:
+
+                // printf("%f %f %f\n", ray.pos.x, ray.pos.y, ray.pos.z);
+                // printf("%d %d %d\n", x, y, z);
+                // if (x != prev_x) {
+                //     t_max_x -= t_delta_x;
+                // } else if (y != prev_y) {
+                //     t_max_y -= t_delta_y;
+                // } else if (z != prev_z) {
+                //     t_max_z -= t_delta_z;
+                // }
+                // float t = std::min(t_max_x, std::min(t_max_y, t_max_z));
+                // std::cout << glm::to_string(ray.pos + ray.dir * t) << std::endl;
             }
             return;
         }
