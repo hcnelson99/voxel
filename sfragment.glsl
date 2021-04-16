@@ -287,7 +287,7 @@ vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
     if (raycast(pos + normal * STEP, dir) == 0) {
         return 0.5 * sunlight_color * max(dot(normal, dir), 0);
     }
-    return 0.05 * sunlight_color;
+    return vec3(0.01) * sunlight_color;
 }
 
 vec3 blid_to_emissive_color(uint blid) {
@@ -351,7 +351,9 @@ void main() {
         vec3 color = texture(g_color_spec, uv).xyz;
         vec3 brightness = lighting(uv);
 
-        frag_color = vec4(color * pow(brightness, vec3(1.f / 2.2)), 1);
+        vec3 gamma_corrected_brightness = pow(brightness, vec3(1.f / 2.2));
+
+        frag_color = vec4(color * min(gamma_corrected_brightness, vec3(1, 1, 1)), 1);
     } else {
         gbuffer_debug();
     }

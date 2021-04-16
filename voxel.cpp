@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <chrono>
+#include <glm/gtx/dual_quaternion.hpp>
 #include <glm/gtx/transform.hpp>
 #include <iostream>
 #include <map>
@@ -146,6 +147,8 @@ class ShaderProgram {
 };
 
 glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v.w); }
+
+glm::vec3 project(glm::vec3 u, glm::vec3 v) { return (glm::dot(u, v) / glm::dot(v, v)) * v; }
 
 class Game {
   public:
@@ -433,19 +436,30 @@ class Game {
             const Uint8 *keystate = SDL_GetKeyboardState(NULL);
             float speed = 8;
             float move = speed * dt;
+            glm::vec3 velocity(0, 0, 0);
+
             if (keystate[SDL_SCANCODE_W]) {
-                player_pos += glm::vec3(player_look * glm::vec4(0, 0, move, 1));
+                velocity += glm::vec3(player_look * glm::vec4(0, 0, 1, 1));
             }
             if (keystate[SDL_SCANCODE_S]) {
-                player_pos += glm::vec3(player_look * glm::vec4(0, 0, -move, 1));
+                velocity += glm::vec3(player_look * glm::vec4(0, 0, -1, 1));
             }
             if (keystate[SDL_SCANCODE_A]) {
-                player_pos += glm::vec3(player_look * glm::vec4(move, 0, 0, 1));
+                velocity += glm::vec3(player_look * glm::vec4(1, 0, 0, 1));
             }
             if (keystate[SDL_SCANCODE_D]) {
-                player_pos += glm::vec3(player_look * glm::vec4(-move, 0, 0, 1));
+                velocity += glm::vec3(player_look * glm::vec4(-1, 0, 0, 1));
             }
+
+            velocity = velocity - project(velocity, glm::vec3(0, 1, 0));
+            if (glm::length(velocity) != 0) {
+                velocity = glm::normalize(velocity);
+            }
+            velocity *= move;
+            player_pos += velocity;
+
             if (keystate[SDL_SCANCODE_SPACE]) {
+
                 player_pos += glm::vec3(0, move, 0);
             }
             if (keystate[SDL_SCANCODE_LSHIFT]) {
