@@ -276,14 +276,14 @@ vec4 generate_noise(vec2 uv, uint frame_number, uint i) {
 }
 
 vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
-    vec3 light = vec3(25, 100, 50) + (generate_noise(uv, frame_number, i).xyz * 2 - 1) * vec3(10, 10, 10);
+    vec3 light = vec3(25, 100, 50) + (generate_noise(uv, frame_number, i).xyz * 2 - 1) * vec3(4, 4, 4);
     vec3 dir = normalize(light - pos);
 
+    vec3 sunlight_color = vec3(255, 241, 224) / 255.f;
     if (raycast(pos + normal * STEP, dir) == 0) {
-        vec3 sunlight_color = vec3(255, 241, 224) / 255.f;
-        return 0.2 * sunlight_color * max(dot(normal, dir), 0);
+        return 0.5 * sunlight_color * max(dot(normal, dir), 0);
     }
-    return vec3(0);
+    return 0.05 * sunlight_color;
 }
 
 vec3 blid_to_emissive_color(uint blid) {
@@ -305,9 +305,10 @@ vec3 light(vec3 pos, vec3 normal, uint i) {
 
     uint num_bounces = 2;
     for (int bounce = 0; bounce < num_bounces; bounce++) {
-        vec3 brightness = shadow_ray(pos, normal, i);
+        uint j = i * num_bounces + bounce;
+        vec3 brightness = shadow_ray(pos, normal, j);
 
-        vec4 noise = generate_noise(uv, frame_number, i);
+        vec4 noise = generate_noise(uv, frame_number, j);
         vec3 dir = normalize(noise.xyz * 2 - 1);
         if (dot(normal, dir) < 0) {
             dir = -dir;
