@@ -199,6 +199,10 @@ class World : public WorldGeometry {
         WorldGeometry::delete_block(x, y, z);
         redstone_dirty = true;
     }
+    void rotate_block(int x, int y, int z) {
+        WorldGeometry::rotate_block(x, y, z);
+        redstone_dirty = true;
+    }
     void randomize() {
         WorldGeometry::randomize();
         redstone_dirty = true;
