@@ -85,7 +85,7 @@ char *load_file(std::string filename) {
 
 class ShaderProgram {
   public:
-    void init(std::string vertex_fname, std::string fragment_fname, std::map<std::string, int> attribs) {
+    void init(std::string vertex_fname, std::string fragment_fname) {
         vertex_shader_filename = vertex_fname;
         fragment_shader_filename = fragment_fname;
         recompile();
@@ -131,11 +131,6 @@ class ShaderProgram {
             return false;
         }
 
-        // TODO: get rid of this since we use layout() now
-        for (const auto &pair : attrib_locations) {
-            glBindAttribLocation(gl_program_new, pair.second, pair.first.c_str());
-        }
-
         // cleanup old gl_program?
         gl_program = gl_program_new;
         return true;
@@ -143,7 +138,6 @@ class ShaderProgram {
 
     GLuint gl_program;
     std::string vertex_shader_filename, fragment_shader_filename;
-    std::map<std::string, int> attrib_locations;
 };
 
 glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v.w); }
@@ -307,9 +301,7 @@ class Game {
                 glEnableVertexAttribArray(2);
             }
 
-            gshader.init("gvertex.glsl", "gfragment.glsl",
-                         // TODO: check if these are even necessary
-                         {{"vertex_pos", 0}, {"block_id_in", 1}, {"texture_uv_in", 2}});
+            gshader.init("gvertex.glsl", "gfragment.glsl");
         }
 
         {
@@ -337,8 +329,8 @@ class Game {
                 glEnableVertexAttribArray(1);
             }
 
-            lighting_shader.init("svertex.glsl", "lfragment.glsl", {{"in_pos", 0}, {"in_uv", 1}});
-            display_shader.init("svertex.glsl", "dfragment.glsl", {{"in_pos", 0}, {"in_uv", 1}});
+            lighting_shader.init("svertex.glsl", "lfragment.glsl");
+            display_shader.init("svertex.glsl", "dfragment.glsl");
         }
     }
 
