@@ -209,14 +209,14 @@ vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
     if (raycast(pos + normal * STEP, dir) == 0) {
         return 0.5 * sunlight_color * max(dot(normal, dir), 0);
     }
-    return vec3(0.02) * sunlight_color;
+    return vec3(0.03) * sunlight_color;
 }
 
 vec3 blid_to_emissive_color(uint blid) {
     if (blid == 5) {
         return normalize(vec3(0.9, 0.05, 0.04)) * 5;
     }  else if (blid == 3) {
-        return normalize(vec3(0.8, 0.5, 0.1)) * 2;
+        return normalize(vec3(255, 147, 41)) * 5;
     }
     return vec3(0, 0, 0);
 }

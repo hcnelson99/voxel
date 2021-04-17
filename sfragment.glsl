@@ -293,18 +293,26 @@ void main() {
         frag_color = vec4(rgb, 1);
         draw_crosshair(uv);
     }  else if (render_mode == 1) {
-        gbuffer_debug();
-    } else if (render_mode == 2) {
+        vec3 color = texture(g_color_spec, uv).xyz;
         vec3 brightness = texture(lighting_texture, uv).xyz;
-        vec3 rgb = gamma_correct(brightness);
+
+        vec3 rgb = color * gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
         draw_crosshair(uv);
-    } else if (render_mode == 3) {
+    } else if (render_mode == 2) {
         vec3 brightness = texture(taa_lighting, uv).xyz;
         vec3 rgb = gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
         draw_crosshair(uv);
+    } else if (render_mode == 3) {
+        vec3 brightness = texture(lighting_texture, uv).xyz;
+        vec3 rgb = gamma_correct(brightness);
+
+        frag_color = vec4(rgb, 1);
+        draw_crosshair(uv);
+    }  else if (render_mode == 4) {
+        gbuffer_debug();
     }
 }

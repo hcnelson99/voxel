@@ -444,7 +444,7 @@ class Game {
                     case SDLK_t:
                         fprintf(stderr, "toggling render mode\n");
                         render_mode += 1;
-                        render_mode %= 4;
+                        render_mode %= 5;
                         break;
                     case SDLK_1:
                         player_block_selection = Block::Stone;

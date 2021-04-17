@@ -86,23 +86,23 @@ void main() {
     } else {
         float alpha = 0.1;
 
-        vec3 lighting_ycocg = RGB_to_YCoCg(lighting);
-        vec3 taa_prev_ycocg = RGB_to_YCoCg(taa_prev);
+        // vec3 lighting_ycocg = RGB_to_YCoCg(lighting);
+        // vec3 taa_prev_ycocg = RGB_to_YCoCg(taa_prev);
+        //
+        //
+        // vec3 s1 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(-dx, 0)).rgb);
+        // vec3 s2 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(dx, 0)).rgb);
+        // vec3 s3 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(0, dy)).rgb);
+        // vec3 s4 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(0, -dy)).rgb);
+        //
+        // vec3 half_size = vec3(0.2);
+        // vec3 bbox_min = min(lighting_ycocg, min(min(s1, s2), min(s3, s4))) - half_size;
+        // vec3 bbox_max = max(lighting_ycocg, max(max(s1, s2), max(s3, s4))) + half_size;
+        //
+        // vec3 clamped_taa_prev_ycocg = min(max(bbox_min, taa_prev_ycocg), bbox_max);
+        // vec3 clamped_taa_prev = YCoCg_to_RGB(clamped_taa_prev_ycocg);
 
-
-        vec3 s1 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(-dx, 0)).rgb);
-        vec3 s2 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(dx, 0)).rgb);
-        vec3 s3 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(0, dy)).rgb);
-        vec3 s4 = RGB_to_YCoCg(texture(lighting_texture, uv + vec2(0, -dy)).rgb);
-
-        vec3 half_size = vec3(0.2);
-        vec3 bbox_min = min(lighting_ycocg, min(min(s1, s2), min(s3, s4))) - half_size;
-        vec3 bbox_max = max(lighting_ycocg, max(max(s1, s2), max(s3, s4))) + half_size;
-
-        vec3 clamped_taa_prev_ycocg = min(max(bbox_min, taa_prev_ycocg), bbox_max);
-        vec3 clamped_taa_prev = YCoCg_to_RGB(clamped_taa_prev_ycocg);
-
-        frag_color = vec4(clamped_taa_prev * (1.f - alpha) + lighting * alpha, 1);
+        frag_color = vec4(taa_prev * (1.f - alpha) + lighting * alpha, 1);
 
     }
 
