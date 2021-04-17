@@ -1,8 +1,7 @@
 #version 430
 
-layout (location = 0) uniform mat4 icamera;
-layout (location = 1) uniform uint render_mode;
-layout (location = 2) uniform uint frame_number;
+layout (location = 0) uniform uint render_mode;
+layout (location = 1) uniform uint frame_number;
 
 layout (binding = 0) uniform sampler2D g_position;
 layout (binding = 1) uniform sampler2D g_normal;
@@ -13,30 +12,10 @@ layout (binding = 5) uniform sampler2D blue_noise;
 
 in vec2 uv;
 
-out vec4 frag_color;
+layout (location = 0) out vec4 frag_color;
 
 uint lookup(ivec3 v) {
         return texelFetch(world_buffer, v, 0).r >> 3;
-}
-
-vec4 blid_to_color(uint blid) {
-    if (blid == 0) {
-        return vec4(0, 0, 0, 1);
-    }  else if (blid == 1) {
-        return vec4(0.4902, 0.4902, 0.4902, 1);
-    }  else if (blid == 2) {
-        return vec4(0.52157, 0.37647, 0.25882, 1);
-    }  else if (blid == 3) {
-        return vec4(0.49412, 0.41961, 0.2549, 1);
-    } else {
-        return vec4(1, 1, 0, 1);
-    }
-}
-
-vec4 debug_world_buffer(vec2 uv) {
-    vec3 pos = texture(g_position, uv).xyz;
-    uint blid = lookup(ivec3(floor(pos)));
-    return blid_to_color(blid);
 }
 
 vec3 divide_w(vec4 v) {
@@ -207,63 +186,6 @@ uint raycast_pos(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     return 0;
 }
 
-vec4 raytrace(vec2 uv) {
-    vec3 pos = divide_w(icamera * vec4(0, 0, -1, 1));
-    vec3 front = divide_w(icamera * vec4(uv * 2 - 1, 1, 1));
-    vec3 dir = normalize(front - pos);
-
-    uint blid = raycast(pos, dir);
-    return blid_to_color(blid);
-}
-
-void gbuffer_debug() {
-    vec2 uv_local = uv;
-    if (uv.x < 0.5 && uv.y < 0.5) {
-        uv_local *= 2;
-        frag_color = texture(g_position, uv_local) / WORLD_SIZE;
-    } else if (uv.x < 0.5 && uv.y >= 0.5) {
-        uv_local.x *= 2;
-        uv_local.y = uv_local.y * 2 - 1;
-        vec3 norm = texture(g_normal, uv_local).xyz;
-        frag_color = vec4(norm, 1);
-    } else if (uv.x >= 0.5 && uv.y < 0.5) {
-        uv_local.y *= 2;
-        uv_local.x = uv_local.x * 2 - 1;
-        frag_color = vec4(texture(g_color_spec, uv_local).xyz, 1);
-    } else if (uv.x >= 0.5 && uv.y >= 0.5) {
-        uv_local = uv_local * 2 - 1;
-        // frag_color = debug_world_buffer(uv_local);
-        frag_color = raytrace(uv_local);
-    }
-}
-
-float width = 1920;
-float height = 1080;
-float aspect_ratio = width / height;
-
-float crosshair_size = 0.04;
-vec2 crosshair_box = vec2(crosshair_size / aspect_ratio, crosshair_size);
-
-
-void draw_crosshair(vec2 uv) {
-    vec2 center = vec2(0.5, 0.5);
-    vec2 uv_min = center - crosshair_box / 2;
-    vec2 uv_max = center + crosshair_box / 2;
-
-    if (uv.x < uv_min.x || uv.y < uv_min.y || uv.x > uv_max.x || uv.y > uv_max.y) {
-        return;
-    }
-
-    vec2 crosshair_uv = (uv - uv_min) / (uv_max - uv_min);
-
-    vec2 tile_size = vec2(1, 1) / 16;
-    vec2 tile_offset = vec2(0, 14) / 16;
-
-    vec2 tex_coord = tile_offset + tile_size * crosshair_uv;
-
-    vec4 tex_color = texture(terrain_texture, tex_coord);
-    frag_color = vec4(mix(frag_color.rgb, tex_color.rgb, tex_color.a * 0.7), tex_color.a * 0.7);
-}
 
 int blue_noise_size = textureSize(blue_noise, 0).x;
 
@@ -287,7 +209,7 @@ vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
     if (raycast(pos + normal * STEP, dir) == 0) {
         return 0.5 * sunlight_color * max(dot(normal, dir), 0);
     }
-    return vec3(0.01) * sunlight_color;
+    return vec3(0.001) * sunlight_color;
 }
 
 vec3 blid_to_emissive_color(uint blid) {
@@ -347,17 +269,6 @@ vec3 lighting(vec2 uv) {
 }
 
 void main() { 
-    if (render_mode == 0) {
-        vec3 color = texture(g_color_spec, uv).xyz;
-        vec3 brightness = lighting(uv);
-
-        vec3 gamma_corrected_brightness = pow(brightness, vec3(1.f / 2.2));
-
-        frag_color = vec4(color * min(gamma_corrected_brightness, vec3(1, 1, 1)), 1);
-    } else {
-        gbuffer_debug();
-    }
-
-    draw_crosshair(uv);
-
+    vec3 brightness = lighting(uv);
+    frag_color = vec4(brightness, 1);
 }
