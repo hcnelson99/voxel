@@ -9,6 +9,7 @@ layout (binding = 2) uniform sampler2D g_color_spec;
 layout (binding = 3) uniform usampler3D world_buffer;
 layout (binding = 4) uniform sampler2D terrain_texture;
 layout (binding = 5) uniform sampler2D lighting_texture;
+layout (binding = 6) uniform sampler2D taa_lighting;
 
 in vec2 uv;
 
@@ -275,7 +276,7 @@ vec3 blur(vec2 uv) {
     vec3 res = vec3(0);
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
-            res += texture(lighting_texture, uv + vec2(dx * i, dy * j)).rgb;
+            res += texture(taa_lighting, uv + vec2(dx * i, dy * j)).rgb;
         }
     }
     res /= 9;
@@ -285,19 +286,25 @@ vec3 blur(vec2 uv) {
 void main() { 
     if (render_mode == 0) {
         vec3 color = texture(g_color_spec, uv).xyz;
-        vec3 brightness = blur(uv);
+        vec3 brightness = texture(taa_lighting, uv).xyz;
 
         vec3 rgb = color * gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
         draw_crosshair(uv);
-    } else if (render_mode == 1) {
+    }  else if (render_mode == 1) {
+        gbuffer_debug();
+    } else if (render_mode == 2) {
         vec3 brightness = texture(lighting_texture, uv).xyz;
         vec3 rgb = gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
         draw_crosshair(uv);
-    } else if (render_mode == 2) {
-        gbuffer_debug();
+    } else if (render_mode == 3) {
+        vec3 brightness = texture(taa_lighting, uv).xyz;
+        vec3 rgb = gamma_correct(brightness);
+
+        frag_color = vec4(rgb, 1);
+        draw_crosshair(uv);
     }
 }

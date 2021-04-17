@@ -193,7 +193,7 @@ class Game {
 
             glGenTextures(1, &g_position);
             glBindTexture(GL_TEXTURE_2D, g_position);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, g_position, 0);
@@ -225,6 +225,12 @@ class Game {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
+        glGenTextures(1, &g_position_prev);
+        glBindTexture(GL_TEXTURE_2D, g_position_prev);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
         { // Set up frame buffers for lighting pass
             glGenFramebuffers(1, &l_framebuffer);
             glBindFramebuffer(GL_FRAMEBUFFER, l_framebuffer);
@@ -241,6 +247,30 @@ class Game {
 
             assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        }
+
+        { // Set up frame buffers for TAA
+            glGenFramebuffers(1, &taa_framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, taa_framebuffer);
+
+            glGenTextures(1, &taa_output);
+            glBindTexture(GL_TEXTURE_2D, taa_output);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, taa_output, 0);
+
+            GLuint attachments[1] = {GL_COLOR_ATTACHMENT0};
+            glDrawBuffers(1, attachments);
+
+            assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            glGenTextures(1, &taa_prev);
+            glBindTexture(GL_TEXTURE_2D, taa_prev);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
 
         {
@@ -330,7 +360,8 @@ class Game {
             }
 
             lighting_shader.init("svertex.glsl", "lfragment.glsl");
-            display_shader.init("svertex.glsl", "dfragment.glsl");
+            display_shader.init("svertex.glsl", "sfragment.glsl");
+            taa_shader.init("svertex.glsl", "taa.glsl");
         }
     }
 
@@ -339,7 +370,9 @@ class Game {
 
         auto prev_time = std::chrono::steady_clock::now();
 
-        Block player_block_selection = Block::Wood;
+        Block player_block_selection = Block::Stone;
+
+        glm::mat4 camera, prev_camera;
 
         unsigned int frame_number = 0;
         bool running = true;
@@ -394,6 +427,7 @@ class Game {
                         gshader.recompile();
                         lighting_shader.recompile();
                         display_shader.recompile();
+                        taa_shader.recompile();
                         fprintf(stderr, "Done\n");
                         break;
                     case SDLK_q:
@@ -410,7 +444,7 @@ class Game {
                     case SDLK_t:
                         fprintf(stderr, "toggling render mode\n");
                         render_mode += 1;
-                        render_mode %= 3;
+                        render_mode %= 4;
                         break;
                     case SDLK_1:
                         player_block_selection = Block::Stone;
@@ -443,7 +477,9 @@ class Game {
             glm::mat4 projection = glm::perspective(glm::radians(75.0f), (float)width / height, .1f, 100.0f);
             glm::mat4 view = glm::lookAt(player_pos, player_pos + glm::vec3(player_look * glm::vec4(0, 0, 1, 1)),
                                          glm::vec3(0, 1, 0));
-            glm::mat4 camera = projection * view;
+
+            prev_camera = camera;
+            camera = projection * view;
 
             glm::mat4 iview = glm::inverse(view);
             glm::mat4 icamera = glm::inverse(camera);
@@ -494,6 +530,9 @@ class Game {
 
             world.sync_buffers();
 
+            glCopyImageSubData(g_position, GL_TEXTURE_2D, 0, 0, 0, 0, g_position_prev, GL_TEXTURE_2D, 0, 0, 0, 0, width,
+                               height, 1);
+
             {
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_LESS);
@@ -542,6 +581,38 @@ class Game {
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
 
+            glCopyImageSubData(taa_output, GL_TEXTURE_2D, 0, 0, 0, 0, taa_prev, GL_TEXTURE_2D, 0, 0, 0, 0, width,
+                               height, 1);
+
+            {
+                glBindFramebuffer(GL_FRAMEBUFFER, taa_framebuffer);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                glBindVertexArray(screenspace_vao);
+
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, g_position);
+                glActiveTexture(GL_TEXTURE1);
+                glBindTexture(GL_TEXTURE_2D, g_normal);
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, g_color_spec);
+                glActiveTexture(GL_TEXTURE3);
+                glBindTexture(GL_TEXTURE_2D, l_buffer);
+                glActiveTexture(GL_TEXTURE4);
+                glBindTexture(GL_TEXTURE_2D, taa_prev);
+                glActiveTexture(GL_TEXTURE5);
+                glBindTexture(GL_TEXTURE_2D, g_position_prev);
+
+                glUseProgram(taa_shader.gl_program);
+
+                glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&icamera);
+                glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat *)&prev_camera);
+                glUniform1ui(2, render_mode);
+
+                // 6 is the number of vertices
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+            }
+
             {
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
                 glClear(GL_COLOR_BUFFER_BIT);
@@ -560,6 +631,8 @@ class Game {
                 glBindTexture(GL_TEXTURE_2D, terrain_texture);
                 glActiveTexture(GL_TEXTURE5);
                 glBindTexture(GL_TEXTURE_2D, l_buffer);
+                glActiveTexture(GL_TEXTURE6);
+                glBindTexture(GL_TEXTURE_2D, taa_output);
 
                 glUseProgram(display_shader.gl_program);
 
@@ -593,7 +666,7 @@ class Game {
     glm::vec3 player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, -5);
     double rotate_x = 0, rotate_y = 0;
 
-    ShaderProgram gshader, lighting_shader, display_shader;
+    ShaderProgram gshader, lighting_shader, display_shader, taa_shader;
     GLuint terrain_texture, world_texture, blue_noise_texture;
 
     GLuint g_position, g_normal, g_color_spec;
@@ -601,6 +674,8 @@ class Game {
     GLuint g_framebuffer;
 
     GLuint l_framebuffer, l_vao, l_buffer;
+
+    GLuint taa_framebuffer, taa_output, taa_prev, g_position_prev;
 
     unsigned int render_mode = 0;
 };
