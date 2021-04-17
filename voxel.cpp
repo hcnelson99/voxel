@@ -392,6 +392,9 @@ class Game {
                         fprintf(stderr, "randomizing world\n");
                         world.wireframe();
                         break;
+                    case SDLK_f:
+                        player_mouse_modify = World::PlayerMouseModify::RotateBlock;
+                        break;
                     case SDLK_t:
                         fprintf(stderr, "toggling render mode\n");
                         render_mode += 1;
