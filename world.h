@@ -56,6 +56,8 @@ struct Orientation {
     Orientation opposite() const { return _opposite_map[_orientation]; }
     Vec3 direction() const { return _direction_map[_orientation]; }
 
+    std::string to_string() const;
+
   private:
     static const Axis _axis_map[6];
     static const Orientation _opposite_map[6];
@@ -110,6 +112,8 @@ class Block {
 
     bool operator==(const Block &other) { return (_block & TypeMask) == (other._block & TypeMask); }
     bool operator!=(const Block &other) { return !(*this == other); }
+
+    std::string to_string() const;
 
     bool is_redstone() const {
         return (_block & TypeMask) == BlockType::ActiveRedstone || (_block & TypeMask) == BlockType::InactiveRedstone;
@@ -235,7 +239,7 @@ class World : public WorldGeometry {
         redstone_dirty = true;
     }
 
-    enum class PlayerMouseModify { PlaceBlock, BreakBlock, RotateBlock };
+    enum class PlayerMouseModify { PlaceBlock, BreakBlock, RotateBlock, Identify };
 
     void player_click(Ray ray, Block block, PlayerMouseModify player_action);
 

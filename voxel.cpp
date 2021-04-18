@@ -477,6 +477,9 @@ class Game {
                     case SDLK_6:
                         player_block_selection = Block::Dirt;
                         break;
+                    case SDLK_TAB:
+                        player_mouse_modify = World::PlayerMouseModify::Identify;
+                        break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
                         SDL_SetRelativeMouseMode(mouse_grabbed ? SDL_TRUE : SDL_FALSE);

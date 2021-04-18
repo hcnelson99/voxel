@@ -30,6 +30,30 @@ const Vec3 Orientation::_direction_map[6] = {Vec3(-1, 0, 0), Vec3(1, 0, 0),  Vec
 const Orientation Orientation::orientations[] = {Orientation::NegX, Orientation::PosX, Orientation::NegY,
                                                  Orientation::PosY, Orientation::NegZ, Orientation::PosZ};
 
+std::ostream &operator<<(std::ostream &strm, const Orientation &o) { return strm << o.to_string(); }
+
+std::ostream &operator<<(std::ostream &strm, const Block &b) { return strm << b.to_string(); }
+
+std::string Orientation::to_string() const {
+    switch (_orientation) {
+    case 0:
+        return "NegX";
+    case 1:
+        return "PosX";
+    case 2:
+        return "NegY";
+    case 3:
+        return "PosY";
+    case 4:
+        return "NegZ";
+    case 5:
+        return "PosZ";
+    default:
+        assert(false);
+        return "";
+    }
+}
+
 Orientation Orientation::from_direction(glm::vec3 dir) {
     // Should be in the same order as orientations
     const glm::vec3 directions[6] = {glm::vec3(-1, 0, 0), glm::vec3(1, 0, 0),  glm::vec3(0, -1, 0),
@@ -74,6 +98,47 @@ uint8_t Orientation::plane_orientation(const Orientation &o) const {
     } else {
         assert(false);
     }
+}
+
+std::string Block::to_string() const {
+    std::string type_name;
+    switch (_block & TypeMask) {
+    case BlockType::Air:
+        type_name = "Air";
+        break;
+    case BlockType::Stone:
+        type_name = "Stone";
+        break;
+    case BlockType::Dirt:
+        type_name = "Dirt";
+        break;
+    case BlockType::Wood:
+        type_name = "Wood";
+        break;
+    case BlockType::ActiveRedstone:
+        type_name = "ActiveRedstone";
+        break;
+    case BlockType::InactiveRedstone:
+        type_name = "InactiveRedstone";
+        break;
+    case BlockType::ActiveDelayGate:
+        type_name = "ActiveDelayGate";
+        break;
+    case BlockType::DelayGate:
+        type_name = "DelayGate";
+        break;
+    case BlockType::ActiveNotGate:
+        type_name = "ActiveNotGate";
+        break;
+    case BlockType::NotGate:
+        type_name = "NotGate";
+        break;
+    default:
+        assert(false);
+        return "";
+    }
+
+    return type_name + "(" + get_orientation().to_string() + ")";
 }
 
 uint8_t Block::texture_id(const Orientation orientation) const {
@@ -472,6 +537,9 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
                 // }
                 // float t = std::min(t_max_x, std::min(t_max_y, t_max_z));
                 // std::cout << glm::to_string(ray.pos + ray.dir * t) << std::endl;
+            } else if (player_action == PlayerMouseModify::Identify) {
+                Block block = get_block(x, y, z);
+                std::cout << "(" << x << ", " << y << ", " << z << "): " << block << std::endl;
             }
             return;
         }
