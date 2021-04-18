@@ -1,0 +1,118 @@
+#include "../world.h"
+#include <iostream>
+
+World world;
+
+void setup(int z) {
+    world.set_block(0, 0, z, Block::NotGate);
+    world.set_block(1, 0, z, Block::InactiveRedstone);
+    world.set_block(2, 0, z, Block::NotGate);
+    world.set_block(3, 0, z, Block::InactiveRedstone);
+    world.set_block(1, 1, z, Block::InactiveRedstone);
+    world.set_block(3, 1, z, Block(Block::NotGate, Orientation::NegY));
+    world.set_block(1, 2, z, Block::InactiveRedstone);
+    world.set_block(2, 2, z, Block(Block::NotGate, Orientation::PosX));
+    world.set_block(3, 2, z, Block::InactiveRedstone);
+}
+
+void on_overrides_off() {
+    setup(0);
+
+    world.tick();
+
+    // should alternate
+    const auto check1 = []() {
+        assert(world.get_block(1, 0, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 1, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 2, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 2, 0).is(Block::InactiveRedstone));
+    };
+    check1();
+
+    // state should be steady
+    world.tick();
+
+    check1();
+
+    world.delete_block(0, 0, 0);
+    world.tick();
+
+    const auto check2 = []() {
+        assert(world.get_block(1, 0, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 1, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(1, 2, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(3, 2, 0).is(Block::ActiveRedstone));
+    };
+    check2();
+
+    world.tick();
+    check2();
+}
+
+void on_propagate_overrides_off() {
+    setup(0);
+    setup(2);
+
+    world.set_block(4, 0, 0, Block::NotGate);
+    world.set_block(4, 0, 2, Block::NotGate);
+    world.set_block(5, 0, 0, Block::InactiveRedstone);
+    world.set_block(5, 0, 1, Block::InactiveRedstone);
+    world.set_block(5, 0, 2, Block::InactiveRedstone);
+
+    world.tick();
+
+    const auto check1 = []() {
+        assert(world.get_block(1, 0, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 1, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 2, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 2, 0).is(Block::InactiveRedstone));
+
+        assert(world.get_block(1, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 1, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 2, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 2, 2).is(Block::InactiveRedstone));
+
+        assert(world.get_block(5, 0, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(5, 0, 1).is(Block::InactiveRedstone));
+        assert(world.get_block(5, 0, 2).is(Block::InactiveRedstone));
+    };
+
+    check1();
+    world.tick();
+    check1();
+
+    world.delete_block(0, 0, 0);
+    world.tick();
+
+    const auto check2 = []() {
+        assert(world.get_block(1, 0, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 1, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(1, 2, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(3, 2, 0).is(Block::ActiveRedstone));
+
+        assert(world.get_block(1, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 1, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 2, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 2, 2).is(Block::InactiveRedstone));
+
+        assert(world.get_block(5, 0, 0).is(Block::InactiveRedstone));
+        assert(world.get_block(5, 0, 1).is(Block::InactiveRedstone));
+        assert(world.get_block(5, 0, 2).is(Block::InactiveRedstone));
+    };
+    check2();
+    world.tick();
+    check2();
+}
+
+int main() {
+    on_overrides_off();
+    world.reset();
+    on_propagate_overrides_off();
+    return 0;
+}
