@@ -228,7 +228,7 @@ class RedstoneCircuit {
 
 class World : public WorldGeometry {
   public:
-    World() : redstone(this) {}
+    World() : redstone(this) { std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1); }
 
     void initialize() {
         WorldGeometry::initialize();
