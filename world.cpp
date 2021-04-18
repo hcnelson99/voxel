@@ -24,6 +24,27 @@ const Orientation Orientation::_opposite_map[6] = {Orientation::PosX, Orientatio
                                                    Orientation::NegY, Orientation::PosZ, Orientation::NegZ};
 const Vec3 Orientation::_direction_map[6] = {Vec3(-1, 0, 0), Vec3(1, 0, 0),  Vec3(0, -1, 0),
                                              Vec3(0, 1, 0),  Vec3(0, 0, -1), Vec3(0, 0, 1)};
+const Orientation Orientation::orientations[] = {Orientation::NegX, Orientation::PosX, Orientation::NegY,
+                                                 Orientation::PosY, Orientation::NegZ, Orientation::PosZ};
+
+Orientation Orientation::from_direction(glm::vec3 dir) {
+    // Should be in the same order as orientations
+    const glm::vec3 directions[6] = {glm::vec3(-1, 0, 0), glm::vec3(1, 0, 0),  glm::vec3(0, -1, 0),
+                                     glm::vec3(0, 1, 0),  glm::vec3(0, 0, -1), glm::vec3(0, 0, 1)};
+
+    dir = glm::normalize(dir);
+    float best_dot = 1;
+    int best_index = -1;
+    for (int i = 0; i < 6; i++) {
+        const glm::vec3 orientation_dir = directions[i];
+        float d = glm::dot(orientation_dir, dir);
+        if (d < best_dot) {
+            best_dot = d;
+            best_index = i;
+        }
+    }
+    return Orientation::orientations[best_index];
+}
 
 uint8_t Orientation::plane_orientation(const Orientation &o) const {
     // TODO: change to bitmask to reduce branching

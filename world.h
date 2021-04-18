@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GL/glew.h>
+#include <cstring>
 #include <glm/glm.hpp>
 #include <string>
 #include <vector>
@@ -41,10 +42,13 @@ struct Orientation {
     static const Orientation NegY;
     static const Orientation PosZ;
     static const Orientation NegZ;
+    static const Orientation orientations[6];
 
     operator uint8_t() const { return _orientation; }
     Axis axis() const { return _axis; }
     static Orientation from(uint8_t o) { return Orientation(o); }
+
+    static Orientation from_direction(glm::vec3 dir);
 
     uint8_t plane_orientation(const Orientation &o) const;
 

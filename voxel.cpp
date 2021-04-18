@@ -453,22 +453,22 @@ class Game {
                         render_mode %= 5;
                         break;
                     case SDLK_1:
-                        player_block_selection = Block::Stone;
-                        break;
-                    case SDLK_2:
-                        player_block_selection = Block::Dirt;
-                        break;
-                    case SDLK_3:
-                        player_block_selection = Block::Wood;
-                        break;
-                    case SDLK_4:
                         player_block_selection = Block::InactiveRedstone;
                         break;
-                    case SDLK_5:
+                    case SDLK_2:
+                        player_block_selection = Block::NotGate;
+                        break;
+                    case SDLK_3:
                         player_block_selection = Block::DelayGate;
                         break;
+                    case SDLK_4:
+                        player_block_selection = Block::Stone;
+                        break;
+                    case SDLK_5:
+                        player_block_selection = Block::Wood;
+                        break;
                     case SDLK_6:
-                        player_block_selection = Block::NotGate;
+                        player_block_selection = Block::Dirt;
                         break;
                     case SDLK_ESCAPE:
                         mouse_grabbed = !mouse_grabbed;
@@ -527,7 +527,13 @@ class Game {
                 glm::vec3 pos = divide_w(iview * glm::vec4(0, 0, 0, 1));
                 glm::vec3 front = divide_w(iview * glm::vec4(0, 0, -1, 1));
 
-                Ray ray(pos, front - pos);
+                glm::vec3 dir = front - pos;
+                Ray ray(pos, dir);
+
+                if (player_block_selection.is(Block::NotGate) || player_block_selection.is(Block::DelayGate)) {
+                    Orientation orientation = Orientation::from_direction(dir);
+                    player_block_selection.set_orientation(orientation);
+                }
 
                 world.player_click(ray, player_block_selection, player_mouse_modify.value());
             }
