@@ -201,22 +201,26 @@ vec4 generate_noise(vec2 uv, uint frame_number, uint i) {
     return mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * 4 + i) % 2243), 1.0);
 }
 
+float sunlight_brightness = 0.5;
+float unlit_brightness = 0.03;
+float block_brightness = 5;
+
 vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
     vec3 light = vec3(25, 100, 50) + (generate_noise(uv, frame_number, i).xyz * 2 - 1) * vec3(4, 4, 4);
     vec3 dir = normalize(light - pos);
 
     vec3 sunlight_color = vec3(255, 241, 224) / 255.f;
     if (raycast(pos + normal * STEP, dir) == 0) {
-        return 0.5 * sunlight_color * max(dot(normal, dir), 0);
+        return sunlight_brightness * sunlight_color * max(dot(normal, dir), 0);
     }
-    return vec3(0.03) * sunlight_color;
+    return vec3(unlit_brightness) * sunlight_color;
 }
 
 vec3 blid_to_emissive_color(uint blid) {
-    if (blid == 5) {
-        return normalize(vec3(0.9, 0.05, 0.04)) * 5;
+    if (blid == 4) {
+        return normalize(vec3(0.9, 0.05, 0.04)) * block_brightness;
     }  else if (blid == 3) {
-        return normalize(vec3(255, 147, 41)) * 5;
+        return normalize(vec3(255, 147, 41)) * block_brightness;
     }
     return vec3(0, 0, 0);
 }
