@@ -365,6 +365,8 @@ class Game {
         }
     }
 
+    size_t last_tick_second = 0;
+
     void loop() {
         glClearColor(0, 0, 0, 1);
 
@@ -376,6 +378,9 @@ class Game {
 
         unsigned int frame_number = 0;
         bool running = true;
+
+        auto begin_time = std::chrono::steady_clock::now();
+
         while (running) {
             Repl::lock();
 
@@ -526,7 +531,13 @@ class Game {
                 world.player_click(ray, player_block_selection, player_mouse_modify.value());
             }
 
-            world.tick();
+            {
+                double second = std::chrono::duration<double>(time - begin_time).count();
+                if ((size_t)second != last_tick_second) {
+                    last_tick_second = second;
+                    world.tick();
+                }
+            }
 
             world.sync_buffers();
 

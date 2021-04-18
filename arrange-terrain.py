@@ -85,7 +85,9 @@ pack(4) # wood
 pack(9 * 16 + 4) # active redstone
 pack(9 * 16 + 5) # inactive redstone
 
+pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 0) # active diode gate
 pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 0) # diode gate
+pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 1) # active not gate
 pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 1) # not gate
 
 for i in range(N):

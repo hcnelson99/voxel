@@ -15,6 +15,21 @@
 #define BLOCKS (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE)
 #define VERTICES (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE * VERTICES_PER_BLOCK)
 
+#define IN_BOUND(x) (0 <= (x) && (x) < WORLD_SIZE)
+
+struct Vec3 {
+    int x;
+    int y;
+    int z;
+    Vec3() : x(0), y(0), z(0) {}
+    Vec3(int x, int y, int z) : x(x), y(y), z(z) {}
+
+    Vec3 operator+(const Vec3 v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
+
+    bool in_world() const { return IN_BOUND(x) && IN_BOUND(y) && IN_BOUND(z); }
+    void invalidate() { x = WORLD_SIZE + 1; }
+};
+
 inline int zyx_major(int x, int y, int z) { return ((z)*WORLD_SIZE * WORLD_SIZE + (y)*WORLD_SIZE + (x)); }
 
 enum class Axis : uint8_t { X = 0, Y = 1, Z = 2 };
@@ -33,21 +48,19 @@ struct Orientation {
 
     uint8_t plane_orientation(const Orientation &o) const;
 
+    Orientation opposite() const { return _opposite_map[_orientation]; }
+    Vec3 direction() const { return _direction_map[_orientation]; }
+
   private:
+    static const Axis _axis_map[6];
+    static const Orientation _opposite_map[6];
+    static const Vec3 _direction_map[6];
+
     uint8_t _orientation;
     Axis _axis;
     Orientation(int o) {
-        _orientation = o;
-        if (o == 0 || o == 1) {
-            _axis = Axis::X;
-        } else if (o == 2 || o == 3) {
-            _axis = Axis::Y;
-        } else if (o == 4 || o == 5) {
-            _axis = Axis::Z;
-        } else {
-            _orientation = 0;
-            _axis = Axis::X;
-        }
+        _orientation = o % 6;
+        _axis = _axis_map[_orientation];
     }
 };
 
@@ -68,8 +81,10 @@ class Block {
         Wood = 3 << OrientationWidth,
         ActiveRedstone = 4 << OrientationWidth,
         InactiveRedstone = 5 << OrientationWidth,
-        DelayGate = 6 << OrientationWidth,
-        NotGate = 7 << OrientationWidth,
+        ActiveDelayGate = 6 << OrientationWidth,
+        DelayGate = 7 << OrientationWidth,
+        ActiveNotGate = 8 << OrientationWidth,
+        NotGate = 9 << OrientationWidth,
     };
 
     Block() = default;
@@ -85,22 +100,35 @@ class Block {
 
     void rotate() { _block = (_block & TypeMask) | Orientation::from((get_orientation() + 1)); }
 
+    void set_type(BlockType type) { _block = type | (_block & OrientationMask); }
     void set_orientation(Orientation bor) { _block = (_block & TypeMask) | bor; }
 
     bool operator==(const Block &other) { return (_block & TypeMask) == (other._block & TypeMask); }
     bool operator!=(const Block &other) { return !(*this == other); }
-};
 
-struct Vec3 {
-    int x;
-    int y;
-    int z;
-    Vec3() : x(0), y(0), z(0) {}
-    Vec3(int x, int y, int z) : x(x), y(y), z(z) {}
+    bool is_redstone() const {
+        return (_block & TypeMask) == BlockType::ActiveRedstone || (_block & TypeMask) == BlockType::InactiveRedstone;
+    }
+
+    bool is_not_gate() const {
+        return (_block & TypeMask) == BlockType::NotGate || (_block & TypeMask) == BlockType::ActiveNotGate;
+    }
+
+    bool is_delay_gate() const {
+        return (_block & TypeMask) == BlockType::DelayGate || (_block & TypeMask) == BlockType::ActiveDelayGate;
+    }
+
+    bool is_active() const {
+        uint8_t type = _block & TypeMask;
+        return type == BlockType::ActiveRedstone || type == BlockType::ActiveNotGate ||
+               type == BlockType::ActiveDelayGate;
+    }
 };
 
 // Stores data for vertices that is passed into shader
 class WorldGeometry {
+    friend class RedstoneCircuit;
+
   public:
     struct OpenGLBuffers {
         GLuint block_ids;
@@ -147,7 +175,16 @@ class WorldGeometry {
     };
 
     Block get_block(int x, int y, int z);
+    Block get_block(const Vec3 &v) { return get_block(v.x, v.y, v.z); };
+    Block get_block_safe(int x, int y, int z) { return get_block_safe(Vec3(x, y, z)); }
+    Block get_block_safe(const Vec3 &v) {
+        if (v.in_world()) {
+            return get_block(v);
+        }
+        return Block::Air;
+    }
     void set_block(int x, int y, int z, Block block);
+    void set_block(Vec3 v, Block block) { set_block(v.x, v.y, v.z, block); }
     void delete_block(int x, int y, int z);
     void rotate_block(int x, int y, int z);
     void randomize();
@@ -158,10 +195,27 @@ class WorldGeometry {
 
 class RedstoneCircuit {
   public:
-    RedstoneCircuit(WorldGeometry *geometry) {}
+    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) {}
 
-    void tick() {}
-    void rebuild() {}
+    void rebuild();
+    void tick();
+
+  private:
+    WorldGeometry *world_geometry;
+
+    uint8_t signal_map[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
+
+    std::vector<Vec3> delay_gates;
+    std::vector<Vec3> not_gates;
+
+    struct IOStatus {
+        Block block;
+        bool output_match;
+        Block input;
+        bool input_match;
+        bool active;
+    };
+    IOStatus io_status(const Vec3 &v);
 };
 
 class World : public WorldGeometry {

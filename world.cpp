@@ -19,6 +19,11 @@ const Orientation Orientation::NegY(2);
 const Orientation Orientation::PosY(3);
 const Orientation Orientation::NegZ(4);
 const Orientation Orientation::PosZ(5);
+const Axis Orientation::_axis_map[6] = {Axis::X, Axis::X, Axis::Y, Axis::Y, Axis::Z, Axis::Z};
+const Orientation Orientation::_opposite_map[6] = {Orientation::PosX, Orientation::NegX, Orientation::PosY,
+                                                   Orientation::NegY, Orientation::PosZ, Orientation::NegZ};
+const Vec3 Orientation::_direction_map[6] = {Vec3(-1, 0, 0), Vec3(1, 0, 0),  Vec3(0, -1, 0),
+                                             Vec3(0, 1, 0),  Vec3(0, 0, -1), Vec3(0, 0, 1)};
 
 uint8_t Orientation::plane_orientation(const Orientation &o) const {
     // TODO: change to bitmask to reduce branching
