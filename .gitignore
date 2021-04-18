@@ -2,3 +2,4 @@ voxel
 editor
 *.o
 test.world
+build*
