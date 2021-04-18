@@ -276,6 +276,8 @@ class World : public WorldGeometry {
     void _derive_geometry_from_block_map() {
         num_vertices = 0;
         std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
+        std::fill((Vec3 *)block_coordinate_order, (Vec3 *)block_coordinate_order + BLOCKS, Vec3());
+        memset((void *)&world_buffer_data[0], 0, BLOCKS * sizeof(uint8_t));
 
         for (int x = 0; x < WORLD_SIZE; ++x) {
             for (int y = 0; y < WORLD_SIZE; ++y) {
