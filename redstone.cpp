@@ -1,22 +1,25 @@
 #include "world.h"
+#include <string.h>
 #include <vector>
+
+constexpr uint8_t DELAY_TICKS = 10;
+
+void RedstoneCircuit::init() { memset(&delay_counts[0][0][0], 0, sizeof(delay_counts)); }
 
 void RedstoneCircuit::rebuild() {
     not_gates.clear();
     delay_gates.clear();
 
-    for (int x = 0; x < WORLD_SIZE; ++x) {
-        for (int y = 0; y < WORLD_SIZE; ++y) {
-            for (int z = 0; z < WORLD_SIZE; ++z) {
-                signal_map[x][y][z] = 0;
-            }
-        }
-    }
+    memset(&signal_map[0][0][0], 0, sizeof(signal_map));
 
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
                 Block block = world_geometry->get_block(x, y, z);
+
+                if (!block.is_delay_gate()) {
+                    delay_counts[x][y][z] = 0xff;
+                }
 
                 if (block.is_not_gate()) {
                     const Vec3 &v = Vec3(x, y, z);
@@ -68,6 +71,11 @@ void RedstoneCircuit::tick() {
             const Orientation &orientation = status.block.get_orientation();
             frontier.emplace_back(delay_gate + orientation.direction(), orientation, status.active);
         }
+
+        uint8_t &delay = delay_counts[delay_gate.x][delay_gate.y][delay_gate.z];
+        if (delay != 0xff) {
+            delay--;
+        }
     }
 
     for (const Vec3 &not_gate : not_gates) {
@@ -81,11 +89,6 @@ void RedstoneCircuit::tick() {
             frontier.emplace_back(not_gate + orientation.direction(), orientation, !status.active);
         }
     }
-
-    // for (Signal s : frontier) {
-    //    printf("(%d %d %d %d) ", s.position.x, s.position.y, s.position.z, (uint8_t)s.direction);
-    //}
-    // printf("\n");
 
     while (frontier.size() > 0) {
         for (const Signal &signal : frontier) {
@@ -134,7 +137,17 @@ void RedstoneCircuit::tick() {
                 } else if (block.is_delay_gate() && block.get_orientation() == signal.direction) {
                     // don't add back to frontier since the signal is delayed
                     Block::BlockType block_type = signal.active ? Block::ActiveDelayGate : Block::DelayGate;
-                    world_geometry->set_block(signal.position, Block(block_type, block.get_orientation()));
+
+                    if (!block.is(block_type)) {
+                        const Vec3 &p = signal.position;
+                        uint8_t &delay = delay_counts[p.x][p.y][p.z];
+                        delay = std::min(delay, DELAY_TICKS);
+
+                        if (delay == 0) {
+                            world_geometry->set_block(signal.position, Block(block_type, block.get_orientation()));
+                            delay = 0xff;
+                        }
+                    }
                 }
             }
         }

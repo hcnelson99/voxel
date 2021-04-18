@@ -23,6 +23,8 @@
 #include "repl.h"
 #include "world.h"
 
+constexpr size_t MS_BETWEEN_TICK = 100;
+
 World world;
 
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
@@ -365,8 +367,6 @@ class Game {
         }
     }
 
-    size_t last_tick_second = 0;
-
     void loop() {
         glClearColor(0, 0, 0, 1);
 
@@ -380,6 +380,7 @@ class Game {
         bool running = true;
 
         auto begin_time = std::chrono::steady_clock::now();
+        size_t last_tick_time = 0;
 
         while (running) {
             Repl::lock();
@@ -532,9 +533,9 @@ class Game {
             }
 
             {
-                double second = std::chrono::duration<double>(time - begin_time).count();
-                if ((size_t)second != last_tick_second) {
-                    last_tick_second = second;
+                size_t ms_elapsed = std::chrono::duration<double, std::milli>(time - begin_time).count();
+                if (ms_elapsed >= last_tick_time + MS_BETWEEN_TICK) {
+                    last_tick_time = ms_elapsed;
                     world.tick();
                 }
             }

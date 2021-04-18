@@ -195,7 +195,7 @@ class WorldGeometry {
 
 class RedstoneCircuit {
   public:
-    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) {}
+    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) { init(); }
 
     void rebuild();
     void tick();
@@ -203,7 +203,10 @@ class RedstoneCircuit {
   private:
     WorldGeometry *world_geometry;
 
+    void init();
+
     uint8_t signal_map[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
+    uint8_t delay_counts[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
 
     std::vector<Vec3> delay_gates;
     std::vector<Vec3> not_gates;
