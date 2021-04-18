@@ -16,8 +16,12 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+// TODO: move this to another file at some point?
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
+
+#include "tracy/Tracy.hpp"
+#include "tracy/TracyOpenGL.hpp"
 
 #include "ray.h"
 #include "repl.h"
@@ -187,6 +191,8 @@ class Game {
             SDL_SetRelativeMouseMode(SDL_TRUE);
             // do not adaptive sync
             SDL_GL_SetSwapInterval(0);
+
+            TracyGpuContext;
         }
 
         { // Set up frame buffers for gbuffer pass
@@ -553,6 +559,7 @@ class Game {
                                height, 1);
 
             {
+                TracyGpuZone("gshader");
                 glEnable(GL_DEPTH_TEST);
                 glDepthFunc(GL_LESS);
 
@@ -573,6 +580,7 @@ class Game {
             }
 
             {
+                TracyGpuZone("lshader");
                 glBindFramebuffer(GL_FRAMEBUFFER, l_framebuffer);
                 glClear(GL_COLOR_BUFFER_BIT);
 
@@ -604,6 +612,7 @@ class Game {
                                height, 1);
 
             {
+                TracyGpuZone("taa");
                 glBindFramebuffer(GL_FRAMEBUFFER, taa_framebuffer);
                 glClear(GL_COLOR_BUFFER_BIT);
 
@@ -633,6 +642,7 @@ class Game {
             }
 
             {
+                TracyGpuZone("display_shader");
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
                 glClear(GL_COLOR_BUFFER_BIT);
 
@@ -663,6 +673,8 @@ class Game {
             }
 
             SDL_GL_SwapWindow(window);
+            TracyGpuCollect;
+            FrameMark;
 
             world.log_frame();
 

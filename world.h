@@ -8,6 +8,7 @@
 
 #include "log.h"
 #include "ray.h"
+#include "tracy/Tracy.hpp"
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
 #define WORLD_SIZE (16)
@@ -239,6 +240,7 @@ class World : public WorldGeometry {
     void player_click(Ray ray, Block block, PlayerMouseModify player_action);
 
     void tick() {
+        ZoneScoped;
         if (redstone_dirty) {
             redstone_dirty = false;
             redstone.rebuild();

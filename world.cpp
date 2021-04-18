@@ -13,6 +13,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "tracy/Tracy.hpp"
+
 const Orientation Orientation::NegX(0);
 const Orientation Orientation::PosX(1);
 const Orientation Orientation::NegY(2);
@@ -110,6 +112,8 @@ void WorldGeometry::initialize() {
 }
 
 void WorldGeometry::sync_buffers() {
+    ZoneScoped;
+
     const int start = 0;
     const int end = num_vertices;
 
