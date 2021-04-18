@@ -410,8 +410,10 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
     if (!get_block(x, y, z).is(Block::Air)) {
         if (player_action == PlayerMouseModify::BreakBlock) {
             set_block(x, y, z, Block::Air);
+            return;
         } else if (player_action == PlayerMouseModify::RotateBlock) {
             rotate_block(x, y, z);
+            return;
         }
     }
 
