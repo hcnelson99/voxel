@@ -418,8 +418,9 @@ class Game {
                         if (!mouse_grabbed) {
                             mouse_grabbed = true;
                             SDL_SetRelativeMouseMode(SDL_TRUE);
+                        } else {
+                            player_mouse_modify = World::PlayerMouseModify::BreakBlock;
                         }
-                        player_mouse_modify = World::PlayerMouseModify::BreakBlock;
                     } else if (event.button.button == SDL_BUTTON_RIGHT) {
                         player_mouse_modify = World::PlayerMouseModify::PlaceBlock;
                     } else if (event.button.button == SDL_BUTTON_MIDDLE) {
