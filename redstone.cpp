@@ -1,8 +1,7 @@
+#include "redstone_config.h"
 #include "world.h"
 #include <string.h>
 #include <vector>
-
-constexpr uint8_t DELAY_TICKS = 10;
 
 void RedstoneCircuit::init() { memset(&delay_counts[0][0][0], 0, sizeof(delay_counts)); }
 
@@ -143,7 +142,7 @@ void RedstoneCircuit::tick() {
                         uint8_t &delay = delay_counts[p.x][p.y][p.z];
                         delay = std::min(delay, DELAY_TICKS);
 
-                        if (delay == 0) {
+                        if (delay <= 1) {
                             world_geometry->set_block(signal.position, Block(block_type, block.get_orientation()));
                             delay = 0xff;
                         }
