@@ -555,8 +555,11 @@ class Game {
 
             world.sync_buffers();
 
-            glCopyImageSubData(g_position, GL_TEXTURE_2D, 0, 0, 0, 0, g_position_prev, GL_TEXTURE_2D, 0, 0, 0, 0, width,
-                               height, 1);
+            {
+                TracyGpuZone("copy position");
+                glCopyImageSubData(g_position, GL_TEXTURE_2D, 0, 0, 0, 0, g_position_prev, GL_TEXTURE_2D, 0, 0, 0, 0,
+                                   width, height, 1);
+            }
 
             {
                 TracyGpuZone("gshader");
@@ -608,8 +611,11 @@ class Game {
                 glDrawArrays(GL_TRIANGLES, 0, 6);
             }
 
-            glCopyImageSubData(taa_output, GL_TEXTURE_2D, 0, 0, 0, 0, taa_prev, GL_TEXTURE_2D, 0, 0, 0, 0, width,
-                               height, 1);
+            {
+                TracyGpuZone("copy taa output");
+                glCopyImageSubData(taa_output, GL_TEXTURE_2D, 0, 0, 0, 0, taa_prev, GL_TEXTURE_2D, 0, 0, 0, 0, width,
+                                   height, 1);
+            }
 
             {
                 TracyGpuZone("taa");

@@ -14,6 +14,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "tracy/Tracy.hpp"
+#include "tracy/TracyOpenGL.hpp"
 
 const Orientation Orientation::NegX(0);
 const Orientation Orientation::PosX(1);
@@ -126,6 +127,7 @@ void WorldGeometry::sync_buffers() {
     copy(buffers.vertex_texture_uv, sizeof(uint8_t), vertex_texture_uv_data);
 
     {
+        TracyGpuZone("copy world texture");
         glBindTexture(GL_TEXTURE_3D, buffers.world_texture);
         glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
                         world_buffer_data);
