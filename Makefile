@@ -9,7 +9,7 @@ tests: tests/basic_redstone_propagation tests/basic_not_gate tests/basic_delay_g
 tests/%: tests/%.cpp $(SOURCES)
 	@echo "Running test: $@"
 	@g++ -o $@ $(SOURCES) $< $(CXXFLAGS)
-	@bash -c "$@ || true"
+	@bash -c "timeout 5 $@ || printf \"\nTest failed: $@\n\n\""
 	@rm $@
 
 editor: editor.cpp $(SOURCES)
