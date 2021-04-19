@@ -3,6 +3,46 @@
 
 World world;
 
+void on_overrides_off1() {
+    world.set_block(0, 0, 0, Block(Block::NotGate, Orientation::PosY));
+    world.set_block(0, 1, 0, Block::InactiveRedstone);
+    world.set_block(0, 2, 0, Block::InactiveRedstone);
+    world.set_block(0, 3, 0, Block::InactiveRedstone);
+    world.set_block(0, 4, 0, Block::InactiveRedstone);
+    world.set_block(0, 5, 0, Block::InactiveRedstone);
+
+    world.set_block(1, 3, 0, Block(Block::NotGate, Orientation::NegX));
+    world.set_block(2, 3, 0, Block(Block::NotGate, Orientation::NegX));
+
+    world.tick();
+
+    const auto check1 = []() {
+        assert(world.get_block(0, 1, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(0, 2, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(0, 3, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(0, 4, 0).is(Block::ActiveRedstone));
+        assert(world.get_block(0, 5, 0).is(Block::ActiveRedstone));
+    };
+
+    check1();
+    world.tick();
+    check1();
+
+    world.delete_block(2, 3, 0);
+    world.tick();
+
+    check1();
+    world.tick();
+    check1();
+
+    world.delete_block(1, 3, 0);
+    world.tick();
+
+    check1();
+    world.tick();
+    check1();
+}
+
 void setup(int z) {
     world.set_block(0, 0, z, Block::NotGate);
     world.set_block(1, 0, z, Block::InactiveRedstone);
@@ -15,12 +55,11 @@ void setup(int z) {
     world.set_block(3, 2, z, Block::InactiveRedstone);
 }
 
-void on_overrides_off() {
+void on_overrides_off2() {
     setup(0);
 
     world.tick();
 
-    // should alternate
     const auto check1 = []() {
         assert(world.get_block(1, 0, 0).is(Block::ActiveRedstone));
         assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
@@ -111,7 +150,9 @@ void on_propagate_overrides_off() {
 }
 
 int main() {
-    on_overrides_off();
+    on_overrides_off1();
+    world.reset();
+    on_overrides_off2();
     world.reset();
     on_propagate_overrides_off();
     return 0;

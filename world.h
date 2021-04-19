@@ -26,7 +26,7 @@ struct Vec3 {
     Vec3() : x(0), y(0), z(0) {}
     Vec3(int x, int y, int z) : x(x), y(y), z(z) {}
 
-    Vec3 operator+(const Vec3 v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
+    Vec3 operator+(const Vec3 &v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
 
     bool in_world() const { return IN_BOUND(x) && IN_BOUND(y) && IN_BOUND(z); }
     void invalidate() { x = WORLD_SIZE + 1; }
@@ -228,6 +228,18 @@ class RedstoneCircuit {
         bool active;
     };
     IOStatus io_status(const Vec3 &v);
+
+    struct Signal {
+        bool active;
+        Vec3 position;
+        Orientation direction;
+        Signal(const Vec3 &position, Orientation direction, bool active)
+            : position(position), direction(direction), active(active) {}
+    };
+
+    std::vector<Signal> frontier;
+    std::vector<Signal> new_frontier;
+    void send_signal(Signal root_signal);
 };
 
 class World : public WorldGeometry {

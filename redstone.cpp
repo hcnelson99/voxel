@@ -1,5 +1,6 @@
 #include "redstone_config.h"
 #include "world.h"
+#include <stack>
 #include <string.h>
 #include <vector>
 
@@ -34,14 +35,6 @@ void RedstoneCircuit::rebuild() {
     }
 }
 
-struct Signal {
-    bool active;
-    Vec3 position;
-    Orientation direction;
-    Signal(const Vec3 &position, Orientation direction, bool active)
-        : position(position), direction(direction), active(active) {}
-};
-
 RedstoneCircuit::IOStatus RedstoneCircuit::io_status(const Vec3 &v) {
     const Block block = world_geometry->get_block(v);
     const Orientation orientation = block.get_orientation();
@@ -57,23 +50,24 @@ RedstoneCircuit::IOStatus RedstoneCircuit::io_status(const Vec3 &v) {
 }
 
 void RedstoneCircuit::tick() {
-    std::vector<Signal> frontier;
-    std::vector<Signal> new_frontier;
+    std::stack<Signal> top_level;
+
+    for (const Vec3 &delay_gate : delay_gates) {
+        uint8_t &delay = delay_counts[delay_gate.x][delay_gate.y][delay_gate.z];
+        if (delay != 0xff) {
+            delay--;
+        }
+    }
 
     for (const Vec3 &delay_gate : delay_gates) {
         const IOStatus status = io_status(delay_gate);
         if (!status.input_match && (status.input.is_redstone() || status.input.is(Block::Air))) {
             const Orientation &orientation = status.block.get_orientation();
-            frontier.emplace_back(delay_gate, orientation, !status.active);
+            send_signal(Signal(delay_gate, orientation, !status.active));
         }
         if (!status.output_match) {
             const Orientation &orientation = status.block.get_orientation();
-            frontier.emplace_back(delay_gate + orientation.direction(), orientation, status.active);
-        }
-
-        uint8_t &delay = delay_counts[delay_gate.x][delay_gate.y][delay_gate.z];
-        if (delay != 0xff) {
-            delay--;
+            send_signal(Signal(delay_gate + orientation.direction(), orientation, status.active));
         }
     }
 
@@ -81,22 +75,37 @@ void RedstoneCircuit::tick() {
         const IOStatus status = io_status(not_gate);
         if (!status.input_match && (status.input.is_redstone() || status.input.is(Block::Air))) {
             const Orientation &orientation = status.block.get_orientation();
-            frontier.emplace_back(not_gate, orientation, !status.active);
+            send_signal(Signal(not_gate, orientation, !status.active));
         }
         if (status.output_match) {
             const Orientation &orientation = status.block.get_orientation();
-            frontier.emplace_back(not_gate + orientation.direction(), orientation, !status.active);
+            send_signal(Signal(not_gate + orientation.direction(), orientation, !status.active));
         }
     }
+}
+
+void RedstoneCircuit::send_signal(Signal root_signal) {
+    frontier.clear();
+    new_frontier.clear();
+
+    frontier.push_back(root_signal);
 
     while (frontier.size() > 0) {
         for (const Signal &signal : frontier) {
             if (signal.position.in_world()) {
                 Block block = world_geometry->get_block(signal.position);
 
+                const Vec3 &p = signal.position;
+
                 if (block.is_redstone()) {
-                    const Vec3 &p = signal.position;
                     uint8_t &existing_signal = signal_map[p.x][p.y][p.z];
+
+                    if (signal.active) {
+                        existing_signal |= (1 << signal.direction);
+                    } else {
+                        existing_signal &= ~(1 << signal.direction);
+                    }
+
                     if (existing_signal & 0b111111 & (~(1 << signal.direction))) {
                         // another active signal is powering this redstone
                         if (!signal.active) {
@@ -104,10 +113,6 @@ void RedstoneCircuit::tick() {
                             new_frontier.emplace_back(p + o.direction(), o, true);
                         }
                         continue;
-                    } else if (signal.active) {
-                        existing_signal |= (1 << signal.direction);
-                    } else {
-                        existing_signal &= ~(1 << signal.direction);
                     }
 
                     Block::BlockType block_type = signal.active ? Block::ActiveRedstone : Block::InactiveRedstone;
@@ -137,15 +142,19 @@ void RedstoneCircuit::tick() {
                     // don't add back to frontier since the signal is delayed
                     Block::BlockType block_type = signal.active ? Block::ActiveDelayGate : Block::DelayGate;
 
+                    uint8_t &delay = delay_counts[p.x][p.y][p.z];
                     if (!block.is(block_type)) {
-                        const Vec3 &p = signal.position;
-                        uint8_t &delay = delay_counts[p.x][p.y][p.z];
                         delay = std::min(delay, DELAY_TICKS);
 
-                        if (delay <= 1) {
+                        if (delay == 0) {
                             world_geometry->set_block(signal.position, Block(block_type, block.get_orientation()));
                             delay = 0xff;
+                            const Orientation orientation = block.get_orientation();
+                            new_frontier.emplace_back(signal.position + orientation.direction(), orientation,
+                                                      signal.active);
                         }
+                    } else {
+                        delay = 0xff;
                     }
                 }
             }
