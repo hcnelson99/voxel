@@ -85,6 +85,7 @@ copy((2, 5), (13, 13))
 for i in range(6, 10):
     for j in range(16):
         pixels[13 * 16 + i][13 * 16 + j] = (0, 0, 0)
+rotate(13, 13)
 
 # display
 for i in range(16):
