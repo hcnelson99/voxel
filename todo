@@ -1,1 +1,9 @@
-- apply inverse square law based on length of diffuse light bounce
+- apply inverse square law based on length of diffuse light bounce?
+
+- diode (0-tick one way)
+- switch block
+- display output block (white/black)
+
+- change world size to 256x256
+- create big circuit
+- toggle raytracing on/off
