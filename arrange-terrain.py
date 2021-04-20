@@ -129,6 +129,15 @@ for i in range(16):
         x = pixels[5 * 16 + i][13 * 16 + j]
         pixels[7 * 16 + i][13 * 16 + j] = (x[2], x[1], x[0], x[3])
 
+# greenstone
+for i in range(16):
+    for j in range(16):
+        x = pixels[4 * 16 + i][13 * 16 + j]
+        pixels[14 * 16 + i][13 * 16 + j] = (x[2], x[0], x[1], x[3])
+
+        x = pixels[5 * 16 + i][13 * 16 + j]
+        pixels[13 * 16 + i][13 * 16 + j] = (x[2], x[0], x[1], x[3])
+
 
 pack(1) # stone
 pack(2) # dirt
@@ -152,6 +161,9 @@ pack(9 * 16 + 10) # switch
 
 pack(9 * 16 + 8) # active bluestone
 pack(9 * 16 + 7) # inactive bluestone
+
+pack(9 * 16 + 14) # active greenstone
+pack(9 * 16 + 13) # inactive greenstone
 
 for i in range(N):
     for j in range(N):
