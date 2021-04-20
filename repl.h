@@ -8,7 +8,7 @@
 #include "log.h"
 #include "world.h"
 
-extern World world;
+extern World *world;
 
 struct Repl {
     /*
@@ -50,10 +50,10 @@ struct Repl {
         if (sscanf(command.c_str(), "%c %49s", &c, buffer) == 2) {
             switch (c) {
             case 'o':
-                world.load(buffer);
+                world->load(buffer);
                 break;
             case 's':
-                world.save(buffer);
+                world->save(buffer);
                 break;
             }
         } else if (sscanf(command.c_str(), "%c", &c) == 1) {
@@ -67,7 +67,7 @@ struct Repl {
                 printf("  s [filename] - save world to a file\n");
                 break;
             case 'r':
-                world.reset();
+                world->reset();
                 break;
             case 'l':
                 Log::toggle_logging();
