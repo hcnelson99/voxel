@@ -501,8 +501,6 @@ class Game {
             glm::mat4 icamera = glm::inverse(camera);
 
             const Uint8 *keystate = SDL_GetKeyboardState(NULL);
-            float speed = 8;
-            float move = speed * dt;
             glm::vec3 velocity(0, 0, 0);
 
             if (keystate[SDL_SCANCODE_W]) {
@@ -517,6 +515,11 @@ class Game {
             if (keystate[SDL_SCANCODE_D]) {
                 velocity += glm::vec3(player_look * glm::vec4(-1, 0, 0, 1));
             }
+            float speed = 8;
+            if (keystate[SDL_SCANCODE_LCTRL] || keystate[SDL_SCANCODE_CAPSLOCK]) {
+                speed *= 3;
+            }
+            float move = speed * dt;
 
             velocity = velocity - project(velocity, glm::vec3(0, 1, 0));
             if (glm::length(velocity) != 0) {
