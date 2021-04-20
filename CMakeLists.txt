@@ -2,10 +2,12 @@ cmake_minimum_required(VERSION 3.10)
 
 project(voxel)
 
-add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
+add_compile_definitions(GLM_ENABLE_EXPERIMENTAL TRACY_ENABLE)
 
 add_executable(voxel voxel.cpp world.cpp redstone.cpp tracy/TracyClient.cpp)
 target_compile_features(voxel PRIVATE cxx_std_17)
+
+target_link_libraries(voxel ${CMAKE_DL_LIBS})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
