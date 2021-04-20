@@ -66,6 +66,39 @@ uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Express
     }
 }
 
+template <uint32_t Default, bool Negate>
+uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &block) {
+    const Vec3 input_v = v + block.get_orientation().opposite().direction();
+    const Block input = world_geometry->get_block_safe(input_v);
+    Expression expr;
+
+    if (!input.output_in_direction(block.get_orientation())) {
+        return set_expression(v, Default, expr);
+    } else {
+        const uint32_t i = build_expression(input_v, input);
+
+        constexpr uint32_t true_input = Negate ? ALWAYS_FALSE : ALWAYS_TRUE;
+        constexpr uint32_t false_input = Negate ? ALWAYS_TRUE : ALWAYS_FALSE;
+
+        switch (i) {
+        case ALWAYS_TRUE:
+            return set_expression(v, true_input, expr);
+        case ALWAYS_FALSE:
+            return set_expression(v, false_input, expr);
+        case 0:
+            assert(false);
+        default:
+            if (Negate) {
+                expr.init(Expression::Type::Negation);
+                expr.negation = i;
+                return set_expression(v, 0, expr);
+            } else {
+                return set_expression(v, i, expr);
+            }
+        }
+    }
+}
+
 uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     if (rebuild_visited[v.x][v.y][v.z]) {
         if (block_to_expression[v.x][v.y][v.z] == 0) {
@@ -156,28 +189,9 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
         }
         return expr_i;
     } else if (block.is_not_gate()) {
-        const Vec3 input_v = v + block.get_orientation().opposite().direction();
-        const Block input = world_geometry->get_block_safe(input_v);
-        Expression expr;
-
-        if (!input.output_in_direction(block.get_orientation())) {
-            return set_expression(v, ALWAYS_TRUE, expr);
-        } else {
-            const uint32_t i = build_expression(input_v, input);
-
-            switch (i) {
-            case ALWAYS_TRUE:
-                return set_expression(v, ALWAYS_FALSE, expr);
-            case ALWAYS_FALSE:
-                return set_expression(v, ALWAYS_TRUE, expr);
-            case 0:
-                assert(false);
-            default:
-                expr.init(Expression::Type::Negation);
-                expr.negation = i;
-                return set_expression(v, 0, expr);
-            }
-        }
+        build_directed_expression<ALWAYS_TRUE, true>(v, block);
+    } else if (block.is_diode_gate()) {
+        build_directed_expression<ALWAYS_FALSE, false>(v, block);
     } else if (block.is_delay_gate()) {
         Expression expr;
         expr.init(Expression::Type::Variable);

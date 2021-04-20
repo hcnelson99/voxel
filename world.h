@@ -93,6 +93,8 @@ class Block {
         DelayGate = 7 << OrientationWidth,
         ActiveNotGate = 8 << OrientationWidth,
         NotGate = 9 << OrientationWidth,
+        ActiveDiodeGate = 10 << OrientationWidth,
+        DiodeGate = 11 << OrientationWidth,
     };
 
     Block() = default;
@@ -117,25 +119,23 @@ class Block {
     std::string to_string() const;
 
     bool output_in_direction(const Orientation &o) const {
-        return is_redstone() || ((is_delay_gate() || is_not_gate()) && get_orientation() == o);
+        return is_redstone() || (is_directed() && get_orientation() == o);
     }
 
-    bool is_redstone() const {
-        return (_block & TypeMask) == BlockType::ActiveRedstone || (_block & TypeMask) == BlockType::InactiveRedstone;
-    }
+#define IS(name, active, inactive)                                                                                     \
+    bool name() const { return (_block & TypeMask) == BlockType::active || (_block & TypeMask) == BlockType::inactive; }
 
-    bool is_not_gate() const {
-        return (_block & TypeMask) == BlockType::NotGate || (_block & TypeMask) == BlockType::ActiveNotGate;
-    }
+    IS(is_redstone, ActiveRedstone, InactiveRedstone);
+    IS(is_not_gate, ActiveNotGate, NotGate);
+    IS(is_delay_gate, ActiveDelayGate, DelayGate);
+    IS(is_diode_gate, ActiveDiodeGate, DiodeGate);
 
-    bool is_delay_gate() const {
-        return (_block & TypeMask) == BlockType::DelayGate || (_block & TypeMask) == BlockType::ActiveDelayGate;
-    }
+    bool is_directed() const { return is_not_gate() || is_delay_gate() || is_diode_gate(); }
 
     bool is_active() const {
         uint8_t type = _block & TypeMask;
         return type == BlockType::ActiveRedstone || type == BlockType::ActiveNotGate ||
-               type == BlockType::ActiveDelayGate;
+               type == BlockType::ActiveDelayGate || type == BlockType::ActiveDiodeGate;
     }
 };
 
@@ -269,6 +269,9 @@ class RedstoneCircuit {
 
     uint32_t set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr);
     uint32_t build_expression(const Vec3 &v, const Block &block);
+
+    template <uint32_t Default, bool Negate> uint32_t build_directed_expression(const Vec3 &v, const Block &block);
+
     bool evaluate(uint32_t expr_i);
 };
 

@@ -133,6 +133,12 @@ std::string Block::to_string() const {
     case BlockType::NotGate:
         type_name = "NotGate";
         break;
+    case BlockType::ActiveDiodeGate:
+        type_name = "ActiveDiodeGate";
+        break;
+    case BlockType::DiodeGate:
+        type_name = "DiodeGate";
+        break;
     default:
         assert(false);
         return "";
@@ -265,6 +271,8 @@ void WorldGeometry::set_active(int x, int y, int z, bool active) {
         block.set_type(active ? Block::ActiveRedstone : Block::InactiveRedstone);
     } else if (block.is_not_gate()) {
         block.set_type(active ? Block::ActiveNotGate : Block::NotGate);
+    } else if (block.is_diode_gate()) {
+        block.set_type(active ? Block::ActiveDiodeGate : Block::DiodeGate);
     } else if (block.is_delay_gate()) {
         block.set_type(active ? Block::ActiveDelayGate : Block::DelayGate);
     }
