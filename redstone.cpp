@@ -329,4 +329,5 @@ std::string RedstoneCircuit::Expression::to_string() {
     case Type::Alias:
         return "Alias(" + std::to_string(alias) + ")";
     }
+    assert(false);
 }
