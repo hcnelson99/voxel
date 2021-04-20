@@ -266,7 +266,7 @@ void draw_crosshair(vec2 uv) {
     frag_color = vec4(mix(frag_color.rgb, tex_color.rgb, tex_color.a * 0.7), tex_color.a * 0.7);
 }
 
-float block_selection_size = 0.03;
+float block_selection_size = 0.05;
 void draw_block_selection(vec2 uv) {
     vec2 uv_min = vec2(0);
     vec2 uv_max = vec2(block_selection_size / aspect_ratio, block_selection_size);

@@ -378,7 +378,7 @@ class Game {
 
         auto prev_time = std::chrono::steady_clock::now();
 
-        Block player_block_selection = Block::Stone;
+        Block player_block_selection = Block::InactiveRedstone;
 
         glm::mat4 camera, prev_camera;
 
