@@ -272,4 +272,5 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
         evaluation_memo[expr_i] = evaluate(expr.negation);
         return evaluation_memo[expr_i];
     }
+    assert(false);
 }
