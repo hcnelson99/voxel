@@ -222,9 +222,9 @@ class RedstoneCircuit {
         enum Type { Invalid, Variable, Negation, Disjunction, Alias };
         union {
             Vec3 variable;
-            uint16_t negation;
-            std::vector<uint16_t> *disjuncts;
-            uint16_t alias;
+            uint32_t negation;
+            std::vector<uint32_t> *disjuncts;
+            uint32_t alias;
         };
 
         Expression() : type(Type::Invalid) {}
@@ -239,7 +239,7 @@ class RedstoneCircuit {
             assert(type == Type::Invalid);
             type = _type;
             if (type == Type::Disjunction) {
-                disjuncts = new std::vector<uint16_t>;
+                disjuncts = new std::vector<uint32_t>;
             }
         }
 
@@ -264,11 +264,11 @@ class RedstoneCircuit {
     std::vector<uint8_t> evaluation_memo;
     Delay delays[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
     std::vector<Vec3> delay_gates;
-    uint16_t block_to_expression[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
+    uint32_t block_to_expression[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
 
-    uint16_t set_expression(const Vec3 &v, uint16_t expr_i, Expression &expr);
-    uint16_t build_expression(const Vec3 &v, const Block &block);
-    bool evaluate(uint16_t expr_i);
+    uint32_t set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr);
+    uint32_t build_expression(const Vec3 &v, const Block &block);
+    bool evaluate(uint32_t expr_i);
 };
 
 class World : public WorldGeometry {

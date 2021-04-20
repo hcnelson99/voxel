@@ -5,8 +5,8 @@
 #include <string.h>
 #include <vector>
 
-constexpr uint16_t ALWAYS_TRUE = 1;
-constexpr uint16_t ALWAYS_FALSE = 2;
+constexpr uint32_t ALWAYS_TRUE = 1;
+constexpr uint32_t ALWAYS_FALSE = 2;
 
 constexpr uint8_t EVALUATION_UNDEFINED = 2;
 constexpr uint8_t EVALUATION_IN_PROGRESS = 3;
@@ -40,14 +40,14 @@ void RedstoneCircuit::rebuild() {
     }
 }
 
-uint16_t RedstoneCircuit::set_expression(const Vec3 &v, uint16_t expr_i, Expression &expr) {
+uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr) {
     if (expr_i == 0) {
         if (block_to_expression[v.x][v.y][v.z] != 0) {
             int k = block_to_expression[v.x][v.y][v.z];
             expressions[k] = expr;
             return k;
         } else {
-            uint16_t k = expressions.size();
+            uint32_t k = expressions.size();
             expressions.resize(k + 1);
             expressions[k] = expr;
             block_to_expression[v.x][v.y][v.z] = k;
@@ -66,10 +66,10 @@ uint16_t RedstoneCircuit::set_expression(const Vec3 &v, uint16_t expr_i, Express
     }
 }
 
-uint16_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
+uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     if (rebuild_visited[v.x][v.y][v.z]) {
         if (block_to_expression[v.x][v.y][v.z] == 0) {
-            uint16_t i = expressions.size();
+            uint32_t i = expressions.size();
             expressions.resize(i + 1);
             block_to_expression[v.x][v.y][v.z] = i;
             return i;
@@ -126,7 +126,7 @@ uint16_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
 
         for (size_t k = 0; k < terminals.size(); k++) {
             const Vec3 &vec = terminals[k];
-            uint16_t i = build_expression(vec, world_geometry->get_block(vec));
+            uint32_t i = build_expression(vec, world_geometry->get_block(vec));
             if (i != ALWAYS_FALSE) {
                 always_false = false;
             }
@@ -137,7 +137,7 @@ uint16_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
             (*expr.disjuncts)[k] = i;
         }
 
-        uint16_t expr_i;
+        uint32_t expr_i;
         if (always_false) {
             expr_i = ALWAYS_FALSE;
         } else if (always_true) {
@@ -163,7 +163,7 @@ uint16_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
         if (!input.output_in_direction(block.get_orientation())) {
             return set_expression(v, ALWAYS_TRUE, expr);
         } else {
-            const uint16_t i = build_expression(input_v, input);
+            const uint32_t i = build_expression(input_v, input);
 
             switch (i) {
             case ALWAYS_TRUE:
@@ -234,7 +234,7 @@ void RedstoneCircuit::tick() {
     }
 }
 
-bool RedstoneCircuit::evaluate(uint16_t expr_i) {
+bool RedstoneCircuit::evaluate(uint32_t expr_i) {
     if (expr_i == ALWAYS_TRUE) {
         return true;
     } else if (expr_i == ALWAYS_FALSE) {
@@ -260,7 +260,7 @@ bool RedstoneCircuit::evaluate(uint16_t expr_i) {
         evaluation_memo[expr_i] = !evaluate(expr.negation);
         return evaluation_memo[expr_i];
     case Expression::Type::Disjunction:
-        for (const uint16_t &i : *(expr.disjuncts)) {
+        for (const uint32_t &i : *(expr.disjuncts)) {
             if (evaluate(i)) {
                 evaluation_memo[expr_i] = true;
                 return true;
