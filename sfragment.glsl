@@ -2,6 +2,7 @@
 
 layout (location = 0) uniform mat4 icamera;
 layout (location = 1) uniform uint render_mode;
+layout (location = 2) uniform uint player_block_selection;
 
 layout (binding = 0) uniform sampler2D g_position;
 layout (binding = 1) uniform sampler2D g_normal;
@@ -265,6 +266,34 @@ void draw_crosshair(vec2 uv) {
     frag_color = vec4(mix(frag_color.rgb, tex_color.rgb, tex_color.a * 0.7), tex_color.a * 0.7);
 }
 
+float block_selection_size = 0.03;
+void draw_block_selection(vec2 uv) {
+    vec2 uv_min = vec2(0);
+    vec2 uv_max = vec2(block_selection_size / aspect_ratio, block_selection_size);
+
+    if (uv.x < uv_min.x || uv.y < uv_min.y || uv.x > uv_max.x || uv.y > uv_max.y) {
+        return;
+    }
+
+    vec2 texture_uv = (uv - uv_min) / (uv_max - uv_min);
+
+    vec2 tile_size = vec2(1, 1) / 16;
+
+    uint tile_id = (player_block_selection >> 3) * 6 + 3;
+    vec2 tile_offset = vec2(tile_id % 16, tile_id / 16) / 16;
+
+    vec2 tex_coord = tile_offset + tile_size * texture_uv;
+
+    vec4 tex_color = texture(terrain_texture, tex_coord);
+    frag_color = vec4(mix(frag_color.rgb, tex_color.rgb, tex_color.a * 0.4), tex_color.a * 0.4);
+
+}
+
+void draw_gui(vec2 uv) {
+    draw_crosshair(uv);
+    draw_block_selection(uv);
+}
+
 vec3 gamma_correct(vec3 color) {
     return pow(color, vec3(1.f / 2.2));
 }
@@ -291,7 +320,7 @@ void main() {
         vec3 rgb = color * gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
-        draw_crosshair(uv);
+        draw_gui(uv);
     }  else if (render_mode == 1) {
         vec3 color = texture(g_color_spec, uv).xyz;
         vec3 brightness = texture(lighting_texture, uv).xyz;
@@ -299,19 +328,19 @@ void main() {
         vec3 rgb = color * gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
-        draw_crosshair(uv);
+        draw_gui(uv);
     } else if (render_mode == 2) {
         vec3 brightness = texture(taa_lighting, uv).xyz;
         vec3 rgb = gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
-        draw_crosshair(uv);
+        draw_gui(uv);
     } else if (render_mode == 3) {
         vec3 brightness = texture(lighting_texture, uv).xyz;
         vec3 rgb = gamma_correct(brightness);
 
         frag_color = vec4(rgb, 1);
-        draw_crosshair(uv);
+        draw_gui(uv);
     }  else if (render_mode == 4) {
         gbuffer_debug();
     }

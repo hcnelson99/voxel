@@ -676,6 +676,7 @@ class Game {
 
                 glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&icamera);
                 glUniform1ui(1, render_mode);
+                glUniform1ui(2, player_block_selection);
 
                 // 6 is the number of vertices
                 glDrawArrays(GL_TRIANGLES, 0, 6);
