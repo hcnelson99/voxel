@@ -180,6 +180,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
 namespace BallPredicates {
 static inline bool is_redstone(const Block &b) { return b.is_redstone(); }
 static inline bool is_bluestone(const Block &b) { return b.is_bluestone(); }
+static inline bool is_greenstone(const Block &b) { return b.is_greenstone(); }
 static inline bool not_conductor(const Block &b) { return !b.is_conductor(); }
 static inline bool is_display(const Block &b) { return false; }
 static inline bool not_display(const Block &b) { return true; }
@@ -205,6 +206,8 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
         return build_ball_expression<is_redstone, not_conductor>(v, block);
     } else if (block.is_bluestone()) {
         return build_ball_expression<is_bluestone, not_conductor>(v, block);
+    } else if (block.is_greenstone()) {
+        return build_ball_expression<is_greenstone, not_conductor>(v, block);
     } else if (block.is_display()) {
         return build_ball_expression<is_display, not_display>(v, block);
     } else if (block.is_not_gate()) {
