@@ -285,6 +285,7 @@ class Game {
             world = new World;
             world->initialize();
             world->sync_buffers();
+            world->flatworld();
         }
 
         { // Load terrain.png
@@ -444,13 +445,13 @@ class Game {
                         taa_shader.recompile();
                         fprintf(stderr, "Done\n");
                         break;
-                    case SDLK_q:
+                    case SDLK_o:
                         fprintf(stderr, "randomizing world\n");
                         world->randomize();
                         break;
-                    case SDLK_e:
-                        fprintf(stderr, "randomizing world\n");
-                        world->wireframe();
+                    case SDLK_p:
+                        fprintf(stderr, "clearing world");
+                        world->flatworld();
                         break;
                     case SDLK_f:
                         player_mouse_modify = World::PlayerMouseModify::RotateBlock;

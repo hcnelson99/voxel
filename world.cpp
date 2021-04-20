@@ -355,7 +355,7 @@ void WorldGeometry::randomize() {
     }
 }
 
-void WorldGeometry::wireframe() {
+void WorldGeometry::flatworld() {
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {

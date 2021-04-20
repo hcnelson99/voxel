@@ -213,7 +213,7 @@ class WorldGeometry {
     void set_active(int x, int y, int z, bool active);
     void rotate_block(int x, int y, int z);
     void randomize();
-    void wireframe();
+    void flatworld();
 
     void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
 };
@@ -334,8 +334,8 @@ class World : public WorldGeometry {
         WorldGeometry::randomize();
         redstone_dirty = true;
     }
-    void wireframe() {
-        WorldGeometry::wireframe();
+    void flatworld() {
+        WorldGeometry::flatworld();
         redstone_dirty = true;
     }
 
