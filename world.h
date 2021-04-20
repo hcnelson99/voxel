@@ -228,6 +228,7 @@ class RedstoneCircuit {
         };
 
         Expression() : type(Type::Invalid) {}
+        Expression(Expression &&expr) { operator=(expr); }
         void operator=(Expression &expr) {
             memcpy(this, &expr, sizeof(Expression));
             expr.type = Type::Invalid;
