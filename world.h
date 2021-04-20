@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <cstring>
 #include <glm/glm.hpp>
+#include <string.h>
 #include <string>
 #include <vector>
 
@@ -115,6 +116,10 @@ class Block {
 
     std::string to_string() const;
 
+    bool output_in_direction(const Orientation &o) const {
+        return is_redstone() || ((is_delay_gate() || is_not_gate()) && get_orientation() == o);
+    }
+
     bool is_redstone() const {
         return (_block & TypeMask) == BlockType::ActiveRedstone || (_block & TypeMask) == BlockType::InactiveRedstone;
     }
@@ -195,6 +200,7 @@ class WorldGeometry {
     void set_block(int x, int y, int z, Block block);
     void set_block(Vec3 v, Block block) { set_block(v.x, v.y, v.z, block); }
     void delete_block(int x, int y, int z);
+    void set_active(int x, int y, int z, bool active);
     void rotate_block(int x, int y, int z);
     void randomize();
     void wireframe();
@@ -204,7 +210,7 @@ class WorldGeometry {
 
 class RedstoneCircuit {
   public:
-    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) { init(); }
+    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) {}
 
     void rebuild();
     void tick();
@@ -212,34 +218,57 @@ class RedstoneCircuit {
   private:
     WorldGeometry *world_geometry;
 
-    void init();
+    struct Expression {
+        enum Type { Invalid, Variable, Negation, Disjunction, Alias };
+        union {
+            Vec3 variable;
+            uint16_t negation;
+            std::vector<uint16_t> *disjuncts;
+            uint16_t alias;
+        };
 
-    uint8_t signal_map[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
-    uint8_t delay_counts[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
+        Expression() : type(Type::Invalid) {}
+        void operator=(Expression &expr) {
+            memcpy(this, &expr, sizeof(Expression));
+            expr.type = Type::Invalid;
+        }
 
+        Type get_type() const { return type; }
+
+        void init(Type _type) {
+            assert(type == Type::Invalid);
+            type = _type;
+            if (type == Type::Disjunction) {
+                disjuncts = new std::vector<uint16_t>;
+            }
+        }
+
+        ~Expression() {
+            if (type == Type::Disjunction) {
+                delete disjuncts;
+            }
+        }
+
+      private:
+        Type type;
+    };
+
+    struct Delay {
+        uint8_t ticks = 0xff;
+        bool activating = false;
+        void reset() { ticks = 0xff; }
+    };
+
+    bool rebuild_visited[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
+    std::vector<Expression> expressions;
+    std::vector<uint8_t> evaluation_memo;
+    Delay delays[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
     std::vector<Vec3> delay_gates;
-    std::vector<Vec3> not_gates;
+    uint16_t block_to_expression[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
 
-    struct IOStatus {
-        Block block;
-        bool output_match;
-        Block input;
-        bool input_match;
-        bool active;
-    };
-    IOStatus io_status(const Vec3 &v);
-
-    struct Signal {
-        bool active;
-        Vec3 position;
-        Orientation direction;
-        Signal(const Vec3 &position, Orientation direction, bool active)
-            : position(position), direction(direction), active(active) {}
-    };
-
-    std::vector<Signal> frontier;
-    std::vector<Signal> new_frontier;
-    void send_signal(Signal root_signal);
+    uint16_t set_expression(const Vec3 &v, uint16_t expr_i, Expression &expr);
+    uint16_t build_expression(const Vec3 &v, const Block &block);
+    bool evaluate(uint16_t expr_i);
 };
 
 class World : public WorldGeometry {

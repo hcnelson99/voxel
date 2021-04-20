@@ -1,166 +1,275 @@
 #include "redstone_config.h"
 #include "world.h"
+#include <iostream>
 #include <stack>
 #include <string.h>
 #include <vector>
 
-void RedstoneCircuit::init() { memset(&delay_counts[0][0][0], 0, sizeof(delay_counts)); }
+constexpr uint16_t ALWAYS_TRUE = 1;
+constexpr uint16_t ALWAYS_FALSE = 2;
+
+constexpr uint8_t EVALUATION_UNDEFINED = 2;
+constexpr uint8_t EVALUATION_IN_PROGRESS = 3;
 
 void RedstoneCircuit::rebuild() {
-    not_gates.clear();
     delay_gates.clear();
 
-    memset(&signal_map[0][0][0], 0, sizeof(signal_map));
+    expressions.clear();
+    // index 0: unused since indices are unsigned so 0 is default (therefore invalid)
+    // index 1: always true
+    // index 2: always false
+    expressions.resize(3);
+
+    memset(&block_to_expression[0][0][0], 0, sizeof(block_to_expression));
+    memset(&rebuild_visited[0][0][0], 0, sizeof(rebuild_visited));
 
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                Block block = world_geometry->get_block(x, y, z);
+                const Vec3 v(x, y, z);
+                Block block = world_geometry->get_block_safe(v);
+                build_expression(v, block);
 
-                if (!block.is_delay_gate()) {
-                    delay_counts[x][y][z] = 0xff;
-                }
-
-                if (block.is_not_gate()) {
-                    const Vec3 &v = Vec3(x, y, z);
-                    not_gates.emplace_back(v);
-                } else if (block.is_delay_gate()) {
-                    const Vec3 &v = Vec3(x, y, z);
-                    delay_gates.emplace_back(v);
-                } else if (block.is_redstone()) {
-                    world_geometry->set_block(x, y, z, Block::InactiveRedstone);
+                if (block.is_delay_gate()) {
+                    delay_gates.emplace_back(x, y, z);
+                } else {
+                    delays[x][y][z].reset();
                 }
             }
         }
     }
 }
 
-RedstoneCircuit::IOStatus RedstoneCircuit::io_status(const Vec3 &v) {
-    const Block block = world_geometry->get_block(v);
-    const Orientation orientation = block.get_orientation();
-    const Block output = world_geometry->get_block_safe(v + orientation.direction());
-    const Block input = world_geometry->get_block_safe(v + orientation.opposite().direction());
-    const bool active = block.is_active();
+uint16_t RedstoneCircuit::set_expression(const Vec3 &v, uint16_t expr_i, Expression &expr) {
+    if (expr_i == 0) {
+        if (block_to_expression[v.x][v.y][v.z] != 0) {
+            int k = block_to_expression[v.x][v.y][v.z];
+            expressions[k] = expr;
+            return k;
+        } else {
+            uint16_t k = expressions.size();
+            expressions.resize(k + 1);
+            expressions[k] = expr;
+            block_to_expression[v.x][v.y][v.z] = k;
+            return k;
+        }
+    } else {
+        if (block_to_expression[v.x][v.y][v.z] != 0) {
+            int k = block_to_expression[v.x][v.y][v.z];
+            expressions[k].init(Expression::Type::Alias);
+            expressions[k].alias = expr_i;
+            return k;
+        } else {
+            block_to_expression[v.x][v.y][v.z] = expr_i;
+            return expr_i;
+        }
+    }
+}
 
-    return {.block = block,
-            .output_match = output.is_active() == active,
-            .input = input,
-            .input_match = input.is_active() == active,
-            .active = active};
+uint16_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
+    if (rebuild_visited[v.x][v.y][v.z]) {
+        if (block_to_expression[v.x][v.y][v.z] == 0) {
+            uint16_t i = expressions.size();
+            expressions.resize(i + 1);
+            block_to_expression[v.x][v.y][v.z] = i;
+            return i;
+        } else {
+            return block_to_expression[v.x][v.y][v.z];
+        }
+    }
+
+    rebuild_visited[v.x][v.y][v.z] = true;
+
+    if (block.is_redstone()) {
+        std::vector<Vec3> terminals;
+        std::vector<Vec3> ball(1, v);
+        std::vector<Vec3> frontier(1, v);
+        std::vector<Vec3> new_frontier;
+
+        const auto add = [&](const Vec3 &vec, const Orientation &o) {
+            const Vec3 nv = vec + o.direction();
+
+            if (!nv.in_world()) {
+                return;
+            }
+
+            const Block neighbor = world_geometry->get_block(nv);
+            if (neighbor.is_redstone() && !rebuild_visited[nv.x][nv.y][nv.z]) {
+                rebuild_visited[nv.x][nv.y][nv.z] = true;
+                ball.push_back(nv);
+                new_frontier.push_back(nv);
+            } else if (!neighbor.is_redstone() && neighbor.output_in_direction(o.opposite())) {
+                terminals.push_back(nv);
+            }
+        };
+
+        while (frontier.size() > 0) {
+            for (const Vec3 &vec : frontier) {
+                add(vec, Orientation::PosX);
+                add(vec, Orientation::NegX);
+                add(vec, Orientation::PosY);
+                add(vec, Orientation::NegY);
+                add(vec, Orientation::PosZ);
+                add(vec, Orientation::NegZ);
+            }
+
+            std::swap(frontier, new_frontier);
+            new_frontier.clear();
+        }
+
+        Expression expr;
+        expr.init(Expression::Type::Disjunction);
+        expr.disjuncts->resize(terminals.size());
+
+        bool always_true = false;
+        bool always_false = true;
+
+        for (size_t k = 0; k < terminals.size(); k++) {
+            const Vec3 &vec = terminals[k];
+            uint16_t i = build_expression(vec, world_geometry->get_block(vec));
+            if (i != ALWAYS_FALSE) {
+                always_false = false;
+            }
+            if (i == ALWAYS_TRUE) {
+                always_true = true;
+                break;
+            }
+            (*expr.disjuncts)[k] = i;
+        }
+
+        uint16_t expr_i;
+        if (always_false) {
+            expr_i = ALWAYS_FALSE;
+        } else if (always_true) {
+            expr_i = ALWAYS_TRUE;
+        } else if (terminals.size() == 1) {
+            expr_i = expr.disjuncts->at(0);
+        } else {
+            expr_i = expressions.size();
+            expressions.resize(expr_i + 1);
+            expressions[expr_i] = expr;
+        }
+
+        for (const Vec3 &vec : ball) {
+            Expression temp_expr;
+            set_expression(vec, expr_i, temp_expr);
+        }
+        return expr_i;
+    } else if (block.is_not_gate()) {
+        const Vec3 input_v = v + block.get_orientation().opposite().direction();
+        const Block input = world_geometry->get_block_safe(input_v);
+        Expression expr;
+
+        if (!input.output_in_direction(block.get_orientation())) {
+            return set_expression(v, ALWAYS_TRUE, expr);
+        } else {
+            const uint16_t i = build_expression(input_v, input);
+
+            switch (i) {
+            case ALWAYS_TRUE:
+                return set_expression(v, ALWAYS_FALSE, expr);
+            case ALWAYS_FALSE:
+                return set_expression(v, ALWAYS_TRUE, expr);
+            case 0:
+                assert(false);
+            default:
+                expr.init(Expression::Type::Negation);
+                expr.negation = i;
+                return set_expression(v, 0, expr);
+            }
+        }
+    } else if (block.is_delay_gate()) {
+        Expression expr;
+        expr.init(Expression::Type::Variable);
+        expr.variable = v;
+        return set_expression(v, 0, expr);
+    } else {
+        return 0;
+    }
 }
 
 void RedstoneCircuit::tick() {
-    std::stack<Signal> top_level;
+    evaluation_memo.clear();
+    evaluation_memo.resize(expressions.size());
+    std::fill(evaluation_memo.begin(), evaluation_memo.end(), EVALUATION_UNDEFINED);
 
-    for (const Vec3 &delay_gate : delay_gates) {
-        uint8_t &delay = delay_counts[delay_gate.x][delay_gate.y][delay_gate.z];
-        if (delay != 0xff) {
-            delay--;
+    for (const Vec3 &v : delay_gates) {
+        Delay &delay = delays[v.x][v.y][v.z];
+        uint8_t &ticks = delay.ticks;
+        if (ticks != 0xff) {
+            ticks--;
+
+            if (ticks == 0) {
+                world_geometry->set_active(v.x, v.y, v.z, delay.activating);
+                ticks = 0xff;
+            }
         }
     }
 
-    for (const Vec3 &delay_gate : delay_gates) {
-        const IOStatus status = io_status(delay_gate);
-        if (!status.input_match && (status.input.is_redstone() || status.input.is(Block::Air))) {
-            const Orientation &orientation = status.block.get_orientation();
-            send_signal(Signal(delay_gate, orientation, !status.active));
-        }
-        if (!status.output_match) {
-            const Orientation &orientation = status.block.get_orientation();
-            send_signal(Signal(delay_gate + orientation.direction(), orientation, status.active));
+    for (int x = 0; x < WORLD_SIZE; ++x) {
+        for (int y = 0; y < WORLD_SIZE; ++y) {
+            for (int z = 0; z < WORLD_SIZE; ++z) {
+                if (block_to_expression[x][y][z] != 0) {
+                    bool active = evaluate(block_to_expression[x][y][z]);
+                    world_geometry->set_active(x, y, z, active);
+                }
+            }
         }
     }
 
-    for (const Vec3 &not_gate : not_gates) {
-        const IOStatus status = io_status(not_gate);
-        if (!status.input_match && (status.input.is_redstone() || status.input.is(Block::Air))) {
-            const Orientation &orientation = status.block.get_orientation();
-            send_signal(Signal(not_gate, orientation, !status.active));
-        }
-        if (status.output_match) {
-            const Orientation &orientation = status.block.get_orientation();
-            send_signal(Signal(not_gate + orientation.direction(), orientation, !status.active));
+    for (const Vec3 &v : delay_gates) {
+        Delay &delay = delays[v.x][v.y][v.z];
+        const Block &block = world_geometry->get_block(v);
+
+        const Vec3 input_v = v + block.get_orientation().opposite().direction();
+        const Block &input = world_geometry->get_block_safe(input_v);
+        if (input.is_active() != block.is_active()) {
+            if (delay.ticks == 0xff || input.is_active() != delay.activating) {
+                delay.activating = input.is_active();
+                delay.ticks = DELAY_TICKS;
+            }
+        } else {
+            delay.ticks = 0xff;
         }
     }
 }
 
-void RedstoneCircuit::send_signal(Signal root_signal) {
-    frontier.clear();
-    new_frontier.clear();
+bool RedstoneCircuit::evaluate(uint16_t expr_i) {
+    if (expr_i == ALWAYS_TRUE) {
+        return true;
+    } else if (expr_i == ALWAYS_FALSE) {
+        return false;
+    } else if (evaluation_memo[expr_i] < EVALUATION_UNDEFINED) {
+        return evaluation_memo[expr_i];
+    } else if (evaluation_memo[expr_i] == EVALUATION_IN_PROGRESS) {
+        // in a loop
+        evaluation_memo[expr_i] = false;
+        return false;
+    }
+    evaluation_memo[expr_i] = EVALUATION_IN_PROGRESS;
 
-    frontier.push_back(root_signal);
-
-    while (frontier.size() > 0) {
-        for (const Signal &signal : frontier) {
-            if (signal.position.in_world()) {
-                Block block = world_geometry->get_block(signal.position);
-
-                const Vec3 &p = signal.position;
-
-                if (block.is_redstone()) {
-                    uint8_t &existing_signal = signal_map[p.x][p.y][p.z];
-
-                    if (signal.active) {
-                        existing_signal |= (1 << signal.direction);
-                    } else {
-                        existing_signal &= ~(1 << signal.direction);
-                    }
-
-                    if (existing_signal & 0b111111 & (~(1 << signal.direction))) {
-                        // another active signal is powering this redstone
-                        if (!signal.active) {
-                            Orientation o = signal.direction.opposite();
-                            new_frontier.emplace_back(p + o.direction(), o, true);
-                        }
-                        continue;
-                    }
-
-                    Block::BlockType block_type = signal.active ? Block::ActiveRedstone : Block::InactiveRedstone;
-
-                    if (block.is(block_type)) {
-                        continue;
-                    }
-
-                    world_geometry->set_block(p, Block(block_type, block.get_orientation()));
-
-                    // these must be in the same order as orientation
-                    new_frontier.emplace_back(Vec3(p.x - 1, p.y, p.z), Orientation::NegX, signal.active);
-                    new_frontier.emplace_back(Vec3(p.x + 1, p.y, p.z), Orientation::PosX, signal.active);
-                    new_frontier.emplace_back(Vec3(p.x, p.y - 1, p.z), Orientation::NegY, signal.active);
-                    new_frontier.emplace_back(Vec3(p.x, p.y + 1, p.z), Orientation::PosY, signal.active);
-                    new_frontier.emplace_back(Vec3(p.x, p.y, p.z - 1), Orientation::NegZ, signal.active);
-                    new_frontier.emplace_back(Vec3(p.x, p.y, p.z + 1), Orientation::PosZ, signal.active);
-
-                    // TODO: try minimize branching
-                    new_frontier[new_frontier.size() - 6 + signal.direction.opposite()].position.invalidate();
-                } else if (block.is_not_gate() && block.get_orientation() == signal.direction) {
-                    const Orientation orientation = block.get_orientation();
-                    new_frontier.emplace_back(signal.position + orientation.direction(), orientation, !signal.active);
-                    Block::BlockType block_type = signal.active ? Block::ActiveNotGate : Block::NotGate;
-                    world_geometry->set_block(signal.position, Block(block_type, block.get_orientation()));
-                } else if (block.is_delay_gate() && block.get_orientation() == signal.direction) {
-                    // don't add back to frontier since the signal is delayed
-                    Block::BlockType block_type = signal.active ? Block::ActiveDelayGate : Block::DelayGate;
-
-                    uint8_t &delay = delay_counts[p.x][p.y][p.z];
-                    if (!block.is(block_type)) {
-                        delay = std::min(delay, DELAY_TICKS);
-
-                        if (delay == 0) {
-                            world_geometry->set_block(signal.position, Block(block_type, block.get_orientation()));
-                            delay = 0xff;
-                            const Orientation orientation = block.get_orientation();
-                            new_frontier.emplace_back(signal.position + orientation.direction(), orientation,
-                                                      signal.active);
-                        }
-                    } else {
-                        delay = 0xff;
-                    }
-                }
+    const Expression &expr = expressions[expr_i];
+    switch (expr.get_type()) {
+    case Expression::Type::Invalid:
+        evaluation_memo[expr_i] = false;
+        return false;
+    case Expression::Type::Variable:
+        evaluation_memo[expr_i] = world_geometry->get_block(expr.variable).is_active();
+        return evaluation_memo[expr_i];
+    case Expression::Type::Negation:
+        evaluation_memo[expr_i] = !evaluate(expr.negation);
+        return evaluation_memo[expr_i];
+    case Expression::Type::Disjunction:
+        for (const uint16_t &i : *(expr.disjuncts)) {
+            if (evaluate(i)) {
+                evaluation_memo[expr_i] = true;
+                return true;
             }
         }
-
-        std::swap(frontier, new_frontier);
-        new_frontier.clear();
+        evaluation_memo[expr_i] = false;
+        return false;
+    case Expression::Type::Alias:
+        evaluation_memo[expr_i] = evaluate(expr.negation);
+        return evaluation_memo[expr_i];
     }
 }

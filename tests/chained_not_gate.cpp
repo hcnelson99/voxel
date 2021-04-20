@@ -15,21 +15,21 @@ void test1() {
     world.tick();
 
     // should alternate
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
-    assert(world.get_block(1, 0, 0).is(Block::ActiveNotGate));
-    assert(world.get_block(2, 0, 0).is(Block::NotGate));
-    assert(world.get_block(3, 0, 0).is(Block::ActiveNotGate));
-    assert(world.get_block(4, 0, 0).is(Block::NotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(1, 0, 0).is(Block::NotGate));
+    assert(world.get_block(2, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(3, 0, 0).is(Block::NotGate));
+    assert(world.get_block(4, 0, 0).is(Block::ActiveNotGate));
     assert(world.get_block(5, 0, 0).is(Block::ActiveRedstone));
 
     // state should be steady
     world.tick();
 
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
-    assert(world.get_block(1, 0, 0).is(Block::ActiveNotGate));
-    assert(world.get_block(2, 0, 0).is(Block::NotGate));
-    assert(world.get_block(3, 0, 0).is(Block::ActiveNotGate));
-    assert(world.get_block(4, 0, 0).is(Block::NotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(1, 0, 0).is(Block::NotGate));
+    assert(world.get_block(2, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(3, 0, 0).is(Block::NotGate));
+    assert(world.get_block(4, 0, 0).is(Block::ActiveNotGate));
     assert(world.get_block(5, 0, 0).is(Block::ActiveRedstone));
 }
 
@@ -44,19 +44,19 @@ void test2() {
     world.tick();
 
     // should alternate
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
-    assert(world.get_block(1, 0, 0).is(Block::ActiveNotGate));
-    assert(world.get_block(2, 0, 0).is(Block::NotGate));
-    assert(world.get_block(3, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(1, 0, 0).is(Block::NotGate));
+    assert(world.get_block(2, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(3, 0, 0).is(Block::NotGate));
     assert(world.get_block(4, 0, 0).is(Block::InactiveRedstone));
 
     // state should be steady
     world.tick();
 
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
-    assert(world.get_block(1, 0, 0).is(Block::ActiveNotGate));
-    assert(world.get_block(2, 0, 0).is(Block::NotGate));
-    assert(world.get_block(3, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(1, 0, 0).is(Block::NotGate));
+    assert(world.get_block(2, 0, 0).is(Block::ActiveNotGate));
+    assert(world.get_block(3, 0, 0).is(Block::NotGate));
     assert(world.get_block(4, 0, 0).is(Block::InactiveRedstone));
 }
 

@@ -11,7 +11,7 @@ void test_straight_line() {
 
     world.tick();
 
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
     assert(world.get_block(1, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(2, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
@@ -19,7 +19,7 @@ void test_straight_line() {
     // state should be steady
     world.tick();
 
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
     assert(world.get_block(1, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(2, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
@@ -35,7 +35,7 @@ void test_or_gate() {
 
     world.tick();
 
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
     assert(world.get_block(1, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(2, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));
@@ -45,7 +45,7 @@ void test_or_gate() {
     // state should be steady
     world.tick();
 
-    assert(world.get_block(0, 0, 0).is(Block::NotGate));
+    assert(world.get_block(0, 0, 0).is(Block::ActiveNotGate));
     assert(world.get_block(1, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(2, 0, 0).is(Block::ActiveRedstone));
     assert(world.get_block(3, 0, 0).is(Block::ActiveRedstone));

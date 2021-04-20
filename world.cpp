@@ -259,6 +259,18 @@ void WorldGeometry::delete_block(int x, int y, int z) {
     }
 }
 
+void WorldGeometry::set_active(int x, int y, int z, bool active) {
+    Block block = get_block(x, y, z);
+    if (block.is_redstone()) {
+        block.set_type(active ? Block::ActiveRedstone : Block::InactiveRedstone);
+    } else if (block.is_not_gate()) {
+        block.set_type(active ? Block::ActiveNotGate : Block::NotGate);
+    } else if (block.is_delay_gate()) {
+        block.set_type(active ? Block::ActiveDelayGate : Block::DelayGate);
+    }
+    set_block(x, y, z, block);
+}
+
 void WorldGeometry::rotate_block(int x, int y, int z) {
     Block block = get_block(x, y, z);
     block.rotate();
