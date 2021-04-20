@@ -55,6 +55,9 @@ struct Repl {
             case 's':
                 world->save(buffer);
                 break;
+            case 'c':
+                world->copy(command);
+                break;
             }
         } else if (sscanf(command.c_str(), "%c", &c) == 1) {
             switch (c) {

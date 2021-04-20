@@ -315,6 +315,7 @@ class World : public WorldGeometry {
     void reset();
     bool load(const char *filepath);
     bool save(const char *filepath);
+    void copy(std::string cmd);
     void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
 
     Block get_block(int x, int y, int z) { return WorldGeometry::get_block(x, y, z); }

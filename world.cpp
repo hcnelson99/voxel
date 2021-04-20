@@ -444,6 +444,23 @@ float clamp(float x, float min, float max) {
     return x;
 };
 
+void World::copy(std::string cmd) {
+    int sx, sy, sz, ex, ey, ez, dx, dy, dz;
+    char unused;
+    sscanf(cmd.c_str(), "%c %d %d %d %d %d %d %d %d %d\n", &unused, &sx, &sy, &sz, &ex, &ey, &ez, &dx, &dy, &dz);
+
+    for (int x = sx; x <= ex; x++) {
+        for (int y = sy; y <= ey; y++) {
+            for (int z = sz; z <= ez; z++) {
+                int i = x - sx;
+                int j = y - sy;
+                int k = z - sz;
+                set_block(dx + i, dy + j, dz + k, get_block(x, y, z));
+            }
+        }
+    }
+}
+
 void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) {
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
