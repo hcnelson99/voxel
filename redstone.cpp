@@ -283,9 +283,6 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
 
     const Expression &expr = expressions[expr_i];
     switch (expr.get_type()) {
-    case Expression::Type::Invalid:
-        evaluation_memo[expr_i] = false;
-        return false;
     case Expression::Type::Variable:
         evaluation_memo[expr_i] = world_geometry->get_block(expr.variable).is_active();
         return evaluation_memo[expr_i];
