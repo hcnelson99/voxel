@@ -79,16 +79,64 @@ def pack(x, y=None, z=None):
         rotate((slot + 5) % 16, (slot + 5) // 16)
     slot += 6
 
+copy((2, 5), (13, 13))
+
+# diode
+for i in range(6, 10):
+    for j in range(16):
+        pixels[13 * 16 + i][13 * 16 + j] = (0, 0, 0)
+
+# display
+for i in range(16):
+    for j in range(16):
+        pixels[12 * 16 + i][13 * 16 + j] = (0, 0, 0)
+        pixels[11 * 16 + i][13 * 16 + j] = (255, 255, 255)
+
+# switch
+for i in range(16):
+    for j in range(16):
+        pixels[10 * 16 + i][13 * 16 + j] = (255, 0, 0)
+        pixels[9 * 16 + i][13 * 16 + j] = (255, 0, 0)
+for i in range(8):
+    for j in range(8):
+        pixels[10 * 16 + i + 4][13 * 16 + j + 4] = (255, 255, 255)
+        pixels[9 * 16 + i + 4][13 * 16 + j + 4] = (255, 255, 255)
+for i in range(4):
+    for j in range(4):
+        pixels[9 * 16 + i + 6][13 * 16 + j + 6] = (255, 0, 0)
+
+# bluestone
+for i in range(16):
+    for j in range(16):
+        x = pixels[4 * 16 + i][13 * 16 + j]
+        pixels[8 * 16 + i][13 * 16 + j] = (x[2], x[1], x[0])
+
+        x = pixels[5 * 16 + i][13 * 16 + j]
+        pixels[7 * 16 + i][13 * 16 + j] = (x[2], x[1], x[0])
+
+
 pack(1) # stone
 pack(2) # dirt
 pack(4) # wood
 pack(9 * 16 + 4) # active redstone
 pack(9 * 16 + 5) # inactive redstone
 
-pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 0) # active diode gate
-pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 0) # diode gate
+pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 0) # active delay gate
+pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 0) # delay gate
 pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 1) # active not gate
 pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 1) # not gate
+
+pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 13) # active diode
+pack(9 * 16 + 3, 9 * 16 + 2, 9 * 16 + 13) # diode
+
+pack(9 * 16 + 11) # active display
+pack(9 * 16 + 12) # display
+
+pack(9 * 16 + 9) # active switch
+pack(9 * 16 + 10) # switch
+
+pack(9 * 16 + 8) # active bluestone
+pack(9 * 16 + 7) # inactive bluestone
 
 for i in range(N):
     for j in range(N):
