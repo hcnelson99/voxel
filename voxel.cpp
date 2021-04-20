@@ -462,6 +462,9 @@ class Game {
                     case SDLK_1:
                         player_block_selection = Block::InactiveRedstone;
                         break;
+                    case SDLK_2:
+                        player_block_selection = Block::InactiveBluestone;
+                        break;
                     case SDLK_3:
                         player_block_selection = Block::Switch;
                         break;

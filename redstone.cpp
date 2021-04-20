@@ -99,7 +99,7 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
     }
 }
 
-template <bool BallPredicate(const Block &b)>
+template <bool BallPredicate(const Block &b), bool TerminalPredicate(const Block &b)>
 uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &block) {
     std::vector<Vec3> terminals;
     std::vector<Vec3> ball(1, v);
@@ -114,12 +114,11 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         }
 
         const Block neighbor = world_geometry->get_block(nv);
-        const bool predicate = BallPredicate(neighbor);
-        if (predicate && !rebuild_visited[nv.x][nv.y][nv.z]) {
+        if (BallPredicate(neighbor) && !rebuild_visited[nv.x][nv.y][nv.z]) {
             rebuild_visited[nv.x][nv.y][nv.z] = true;
             ball.push_back(nv);
             new_frontier.push_back(nv);
-        } else if (!predicate && neighbor.output_in_direction(o.opposite())) {
+        } else if (TerminalPredicate(neighbor) && neighbor.output_in_direction(o.opposite())) {
             terminals.push_back(nv);
         }
     };
@@ -178,12 +177,17 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
     return expr_i;
 }
 
-struct BallPredicates {
-    static bool redstone(const Block &b) { return b.is_redstone(); }
-    static bool display(const Block &b) { return false; }
-};
+namespace BallPredicates {
+static inline bool is_redstone(const Block &b) { return b.is_redstone(); }
+static inline bool is_bluestone(const Block &b) { return b.is_bluestone(); }
+static inline bool not_conductor(const Block &b) { return !b.is_conductor(); }
+static inline bool is_display(const Block &b) { return false; }
+static inline bool not_display(const Block &b) { return true; }
+} // namespace BallPredicates
 
 uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
+    using namespace BallPredicates;
+
     if (rebuild_visited[v.x][v.y][v.z]) {
         if (block_to_expression[v.x][v.y][v.z] == 0) {
             uint32_t i = expressions.size();
@@ -198,9 +202,11 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     rebuild_visited[v.x][v.y][v.z] = true;
 
     if (block.is_redstone()) {
-        return build_ball_expression<BallPredicates::redstone>(v, block);
+        return build_ball_expression<is_redstone, not_conductor>(v, block);
+    } else if (block.is_bluestone()) {
+        return build_ball_expression<is_bluestone, not_conductor>(v, block);
     } else if (block.is_display()) {
-        return build_ball_expression<BallPredicates::display>(v, block);
+        return build_ball_expression<is_display, not_display>(v, block);
     } else if (block.is_not_gate()) {
         return build_directed_expression<ALWAYS_TRUE, true>(v, block);
     } else if (block.is_diode_gate()) {

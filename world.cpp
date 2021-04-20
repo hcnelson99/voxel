@@ -125,6 +125,8 @@ std::string Block::to_string() const {
         CASE(Display);
         CASE(ActiveSwitch);
         CASE(Switch);
+        CASE(ActiveBluestone);
+        CASE(InactiveBluestone);
     default:
         assert(false);
         return "";
@@ -255,6 +257,8 @@ void WorldGeometry::set_active(int x, int y, int z, bool active) {
     Block block = get_block(x, y, z);
     if (block.is_redstone()) {
         block.set_type(active ? Block::ActiveRedstone : Block::InactiveRedstone);
+    } else if (block.is_bluestone()) {
+        block.set_type(active ? Block::ActiveBluestone : Block::InactiveBluestone);
     } else if (block.is_not_gate()) {
         block.set_type(active ? Block::ActiveNotGate : Block::NotGate);
     } else if (block.is_diode_gate()) {
