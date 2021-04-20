@@ -304,3 +304,29 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
     }
     assert(false);
 }
+
+std::string RedstoneCircuit::Expression::to_string() {
+    switch (type) {
+    case Type::Invalid:
+        return "Invalid";
+    case Type::Variable:
+        return "Variable(" + variable.to_string() + ")";
+    case Type::Negation:
+        return "Negation(" + std::to_string(negation) + ")";
+    case Type::Disjunction: {
+        std::stringstream ss;
+        ss << "Disjunction(";
+        for (size_t i = 0; i < disjuncts->size(); i++) {
+            if (i == 0) {
+                ss << disjuncts->at(i);
+            } else {
+                ss << " v " << disjuncts->at(i);
+            }
+        }
+        ss << ")";
+        return ss.str();
+    }
+    case Type::Alias:
+        return "Alias(" + std::to_string(alias) + ")";
+    }
+}
