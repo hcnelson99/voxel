@@ -189,9 +189,9 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
         }
         return expr_i;
     } else if (block.is_not_gate()) {
-        build_directed_expression<ALWAYS_TRUE, true>(v, block);
+        return build_directed_expression<ALWAYS_TRUE, true>(v, block);
     } else if (block.is_diode_gate()) {
-        build_directed_expression<ALWAYS_FALSE, false>(v, block);
+        return build_directed_expression<ALWAYS_FALSE, false>(v, block);
     } else if (block.is_delay_gate() || block.is_switch()) {
         Expression expr;
         expr.init(Expression::Type::Variable);

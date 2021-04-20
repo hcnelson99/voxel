@@ -102,43 +102,29 @@ uint8_t Orientation::plane_orientation(const Orientation &o) const {
 
 std::string Block::to_string() const {
     std::string type_name;
+#define Q(x) #x
+#define CASE(name)                                                                                                     \
+    case BlockType::name: {                                                                                            \
+        type_name = Q(name);                                                                                           \
+        break;                                                                                                         \
+    }
     switch (_block & TypeMask) {
-    case BlockType::Air:
-        type_name = "Air";
-        break;
-    case BlockType::Stone:
-        type_name = "Stone";
-        break;
-    case BlockType::Dirt:
-        type_name = "Dirt";
-        break;
-    case BlockType::Wood:
-        type_name = "Wood";
-        break;
-    case BlockType::ActiveRedstone:
-        type_name = "ActiveRedstone";
-        break;
-    case BlockType::InactiveRedstone:
-        type_name = "InactiveRedstone";
-        break;
-    case BlockType::ActiveDelayGate:
-        type_name = "ActiveDelayGate";
-        break;
-    case BlockType::DelayGate:
-        type_name = "DelayGate";
-        break;
-    case BlockType::ActiveNotGate:
-        type_name = "ActiveNotGate";
-        break;
-    case BlockType::NotGate:
-        type_name = "NotGate";
-        break;
-    case BlockType::ActiveDiodeGate:
-        type_name = "ActiveDiodeGate";
-        break;
-    case BlockType::DiodeGate:
-        type_name = "DiodeGate";
-        break;
+        CASE(Air);
+        CASE(Stone);
+        CASE(Dirt)
+        CASE(Wood);
+        CASE(ActiveRedstone);
+        CASE(InactiveRedstone);
+        CASE(ActiveDelayGate);
+        CASE(DelayGate);
+        CASE(ActiveNotGate);
+        CASE(NotGate);
+        CASE(ActiveDiodeGate);
+        CASE(DiodeGate);
+        CASE(ActiveDisplay);
+        CASE(Display);
+        CASE(ActiveSwitch);
+        CASE(Switch);
     default:
         assert(false);
         return "";
