@@ -717,7 +717,7 @@ class Game {
     int width = 1920, height = 1080;
     bool mouse_grabbed = true;
 
-    glm::vec3 player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, -5);
+    glm::vec3 player_pos = glm::vec3(5, 5, 5);
     double rotate_x = 0, rotate_y = 0;
 
     ShaderProgram gshader, lighting_shader, display_shader, taa_shader;

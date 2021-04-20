@@ -14,7 +14,7 @@
 #include "tracy/Tracy.hpp"
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
-#define WORLD_SIZE (16)
+#define WORLD_SIZE (64)
 
 #define VERTICES_PER_BLOCK (6 * 3 * 2) // 6 faces, 2 triangles per face
 #define BLOCKS (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE)
