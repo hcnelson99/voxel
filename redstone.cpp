@@ -1,4 +1,4 @@
-#include "redstone_config.h"
+#include "config.h"
 #include "world.h"
 #include <iostream>
 #include <stack>
@@ -20,8 +20,8 @@ void RedstoneCircuit::rebuild() {
     // index 2: always false
     expressions.resize(3);
 
-    memset(&block_to_expression[0][0][0], 0, sizeof(block_to_expression));
-    memset(&rebuild_visited[0][0][0], 0, sizeof(rebuild_visited));
+    block_to_expression.clear(0);
+    rebuild_visited.clear(0);
 
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
@@ -33,7 +33,7 @@ void RedstoneCircuit::rebuild() {
                 if (block.is_delay_gate()) {
                     delay_gates.emplace_back(x, y, z);
                 } else {
-                    delays[x][y][z].reset();
+                    delays(v).reset();
                 }
             }
         }
@@ -42,25 +42,25 @@ void RedstoneCircuit::rebuild() {
 
 uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr) {
     if (expr_i == 0) {
-        if (block_to_expression[v.x][v.y][v.z] != 0) {
-            int k = block_to_expression[v.x][v.y][v.z];
+        if (block_to_expression(v) != 0) {
+            int k = block_to_expression(v);
             expressions[k] = expr;
             return k;
         } else {
             uint32_t k = expressions.size();
             expressions.resize(k + 1);
             expressions[k] = expr;
-            block_to_expression[v.x][v.y][v.z] = k;
+            block_to_expression(v) = k;
             return k;
         }
     } else {
-        if (block_to_expression[v.x][v.y][v.z] != 0) {
-            int k = block_to_expression[v.x][v.y][v.z];
+        if (block_to_expression(v) != 0) {
+            int k = block_to_expression(v);
             expressions[k].init(Expression::Type::Alias);
             expressions[k].alias = expr_i;
             return k;
         } else {
-            block_to_expression[v.x][v.y][v.z] = expr_i;
+            block_to_expression(v) = expr_i;
             return expr_i;
         }
     }
@@ -114,8 +114,8 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         }
 
         const Block neighbor = world_geometry->get_block(nv);
-        if (BallPredicate(neighbor) && !rebuild_visited[nv.x][nv.y][nv.z]) {
-            rebuild_visited[nv.x][nv.y][nv.z] = true;
+        if (BallPredicate(neighbor) && !rebuild_visited(nv)) {
+            rebuild_visited(nv) = true;
             ball.push_back(nv);
             new_frontier.push_back(nv);
         } else if (TerminalPredicate(neighbor) && neighbor.output_in_direction(o.opposite())) {
@@ -188,18 +188,18 @@ static inline bool not_display(const Block &b) { return true; }
 uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     using namespace BallPredicates;
 
-    if (rebuild_visited[v.x][v.y][v.z]) {
-        if (block_to_expression[v.x][v.y][v.z] == 0) {
+    if (rebuild_visited(v)) {
+        if (block_to_expression(v) == 0) {
             uint32_t i = expressions.size();
             expressions.resize(i + 1);
-            block_to_expression[v.x][v.y][v.z] = i;
+            block_to_expression(v) = i;
             return i;
         } else {
-            return block_to_expression[v.x][v.y][v.z];
+            return block_to_expression(v);
         }
     }
 
-    rebuild_visited[v.x][v.y][v.z] = true;
+    rebuild_visited(v) = true;
 
     if (block.is_redstone()) {
         return build_ball_expression<is_redstone, not_conductor>(v, block);
@@ -227,7 +227,7 @@ void RedstoneCircuit::tick() {
     std::fill(evaluation_memo.begin(), evaluation_memo.end(), EVALUATION_UNDEFINED);
 
     for (const Vec3 &v : delay_gates) {
-        Delay &delay = delays[v.x][v.y][v.z];
+        Delay &delay = delays(v);
         uint8_t &ticks = delay.ticks;
         if (ticks != 0xff) {
             ticks--;
@@ -242,8 +242,8 @@ void RedstoneCircuit::tick() {
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                if (block_to_expression[x][y][z] != 0) {
-                    bool active = evaluate(block_to_expression[x][y][z]);
+                if (block_to_expression(x, y, z) != 0) {
+                    bool active = evaluate(block_to_expression(x, y, z));
                     world_geometry->set_active(x, y, z, active);
                 }
             }
@@ -251,7 +251,7 @@ void RedstoneCircuit::tick() {
     }
 
     for (const Vec3 &v : delay_gates) {
-        Delay &delay = delays[v.x][v.y][v.z];
+        Delay &delay = delays(v);
         const Block &block = world_geometry->get_block(v);
 
         const Vec3 input_v = v + block.get_orientation().opposite().direction();

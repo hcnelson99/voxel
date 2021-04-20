@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../redstone_config.h"
+#include "../config.h"
 
 extern World world;
 
