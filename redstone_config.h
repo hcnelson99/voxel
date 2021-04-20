@@ -2,4 +2,4 @@
 
 #include <stdint.h>
 
-constexpr uint8_t DELAY_TICKS = 10;
+constexpr uint8_t DELAY_TICKS = 1;
