@@ -148,6 +148,8 @@ uint8_t Block::texture_id(const Orientation orientation) const {
 }
 
 void WorldGeometry::initialize() {
+    memset((void *)&world_buffer_data[0], 0, BLOCKS * sizeof(uint8_t));
+
     glGenBuffers(1, &buffers.block_ids);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.block_ids);
     glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, block_face_data, GL_DYNAMIC_DRAW);
@@ -191,7 +193,7 @@ void WorldGeometry::sync_buffers() {
     }
 }
 
-Block WorldGeometry::get_block(int x, int y, int z) { return block_map[x][y][z]; }
+Block WorldGeometry::get_block(int x, int y, int z) { return block_map(x, y, z); }
 
 void WorldGeometry::set_block(int x, int y, int z, Block block) {
     if (block.is(Block::BlockType::Air)) {
@@ -199,13 +201,13 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
         return;
     }
 
-    int block_id = block_coordinates_to_id[x][y][z];
+    int block_id = block_coordinates_to_id(x, y, z);
     int vertex;
     bool new_block = false;
     if (block_id == -1) {
         new_block = true;
         vertex = num_vertices;
-        block_coordinates_to_id[x][y][z] = num_vertices / VERTICES_PER_BLOCK;
+        block_coordinates_to_id(x, y, z) = num_vertices / VERTICES_PER_BLOCK;
         block_coordinate_order[vertex / VERTICES_PER_BLOCK] = Vec3(x, y, z);
     } else {
         vertex = block_id * VERTICES_PER_BLOCK;
@@ -223,20 +225,20 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
         num_vertices = vertex;
     }
 
-    block_map[x][y][z] = block;
+    block_map(x, y, z) = block;
     world_buffer_data[zyx_major(x, y, z)] = block;
 }
 
 void WorldGeometry::delete_block(int x, int y, int z) {
-    int block_id = block_coordinates_to_id[x][y][z];
+    int block_id = block_coordinates_to_id(x, y, z);
     if (block_id != -1) {
         int vertex = block_id * VERTICES_PER_BLOCK;
         num_vertices -= VERTICES_PER_BLOCK;
 
-        block_map[x][y][z] = Block::Air;
+        block_map(x, y, z) = Block::Air;
         world_buffer_data[zyx_major(x, y, z)] = Block::Air;
 
-        block_coordinates_to_id[x][y][z] = -1;
+        block_coordinates_to_id(x, y, z) = -1;
 
         if (vertex != num_vertices) {
             const auto swap = [&](auto *ptr, size_t size) {
@@ -247,7 +249,7 @@ void WorldGeometry::delete_block(int x, int y, int z) {
             swap(vertex_texture_uv_data, sizeof(uint8_t));
 
             const Vec3 &c = block_coordinate_order[num_vertices / VERTICES_PER_BLOCK];
-            block_coordinates_to_id[c.x][c.y][c.z] = block_id;
+            block_coordinates_to_id(c) = block_id;
             block_coordinate_order[block_id] = Vec3(c.x, c.y, c.z);
         }
     }
@@ -368,7 +370,7 @@ void WorldGeometry::wireframe() {
 }
 
 void World::reset() {
-    std::fill((int *)block_map, (int *)block_map + BLOCKS, 0);
+    block_map.clear(Block::Air);
     _derive_geometry_from_block_map();
 }
 
@@ -382,7 +384,7 @@ bool World::load(const char *filepath) {
 
     const size_t size = BLOCKS * sizeof(Block);
 
-    if (read(fd, block_map, size) == -1) {
+    if (read(fd, block_map.get_buffer(), size) == -1) {
         close(fd);
         perror("Error loading world file");
         return false;
@@ -409,7 +411,7 @@ bool World::save(const char *filepath) {
 
     const size_t size = BLOCKS * sizeof(Block);
 
-    if (write(fd, block_map, size) == -1) {
+    if (write(fd, block_map.get_buffer(), size) == -1) {
         close(fd);
         perror("Error saving to file");
         return false;

@@ -9,36 +9,15 @@
 #include <string>
 #include <vector>
 
+#include "config.h"
 #include "log.h"
 #include "ray.h"
 #include "tracy/Tracy.hpp"
-
-// world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
-#define WORLD_SIZE (64)
+#include "util.h"
 
 #define VERTICES_PER_BLOCK (6 * 3 * 2) // 6 faces, 2 triangles per face
 #define BLOCKS (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE)
 #define VERTICES (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE * VERTICES_PER_BLOCK)
-
-#define IN_BOUND(x) (0 <= (x) && (x) < WORLD_SIZE)
-
-struct Vec3 {
-    int x;
-    int y;
-    int z;
-    Vec3() : x(0), y(0), z(0) {}
-    Vec3(int x, int y, int z) : x(x), y(y), z(z) {}
-
-    Vec3 operator+(const Vec3 &v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
-
-    bool in_world() const { return IN_BOUND(x) && IN_BOUND(y) && IN_BOUND(z); }
-    void invalidate() { x = WORLD_SIZE + 1; }
-    std::string to_string() {
-        std::stringstream ss;
-        ss << "<" << x << ", " << y << ", " << z << ">";
-        return ss.str();
-    }
-};
 
 inline int zyx_major(int x, int y, int z) { return ((z)*WORLD_SIZE * WORLD_SIZE + (y)*WORLD_SIZE + (x)); }
 
@@ -164,6 +143,20 @@ class WorldGeometry {
     friend class RedstoneCircuit;
 
   public:
+    WorldGeometry() {
+        world_buffer_data = new uint8_t[BLOCKS];
+        block_face_data = new uint8_t[VERTICES];
+        vertex_data = new glm::vec3[VERTICES];
+        vertex_texture_uv_data = new uint8_t[VERTICES];
+    }
+
+    ~WorldGeometry() {
+        delete[] world_buffer_data;
+        delete[] block_face_data;
+        delete[] vertex_data;
+        delete[] vertex_texture_uv_data;
+    }
+
     struct OpenGLBuffers {
         GLuint block_ids;
         GLuint vertices;
@@ -185,28 +178,25 @@ class WorldGeometry {
 
     // buffers that are directly used by OpenGL
     struct {
-        uint8_t world_buffer_data[BLOCKS] = {};
+        uint8_t *world_buffer_data;
 
         // the block type for each vertex
-        uint8_t block_face_data[VERTICES];
+        uint8_t *block_face_data;
 
         // the position of each vertex
-        glm::vec3 vertex_data[VERTICES];
+        glm::vec3 *vertex_data;
 
         // the texture position of each vertex
-        uint8_t vertex_texture_uv_data[VERTICES];
+        uint8_t *vertex_texture_uv_data;
     };
 
-    // extra fields used to maintain geometry but not used by OpenGL
-    struct {
-        unsigned int num_vertices = 0;
+    unsigned int num_vertices = 0;
 
-        Block block_map[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
+    Tensor<Block, WORLD_SIZE> block_map;
 
-        // maps logical block coordinate to index into list of vertices
-        int block_coordinates_to_id[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
-        Vec3 block_coordinate_order[BLOCKS];
-    };
+    // maps logical block coordinate to index into list of vertices
+    Tensor<int, WORLD_SIZE> block_coordinates_to_id;
+    Vec3 block_coordinate_order[BLOCKS];
 
     Block get_block(int x, int y, int z);
     Block get_block(const Vec3 &v) { return get_block(v.x, v.y, v.z); };
@@ -282,12 +272,12 @@ class RedstoneCircuit {
         void reset() { ticks = 0xff; }
     };
 
-    bool rebuild_visited[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
+    Tensor<bool, WORLD_SIZE> rebuild_visited;
     std::vector<Expression> expressions;
     std::vector<uint8_t> evaluation_memo;
-    Delay delays[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE] = {};
+    Tensor<Delay, WORLD_SIZE> delays;
     std::vector<Vec3> delay_gates;
-    uint32_t block_to_expression[WORLD_SIZE][WORLD_SIZE][WORLD_SIZE];
+    Tensor<uint32_t, WORLD_SIZE> block_to_expression;
 
     uint32_t set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr);
     uint32_t build_expression(const Vec3 &v, const Block &block);
@@ -302,7 +292,7 @@ class RedstoneCircuit {
 
 class World : public WorldGeometry {
   public:
-    World() : redstone(this) { std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1); }
+    World() : redstone(this) { block_coordinates_to_id.clear(-1); }
 
     void initialize() {
         WorldGeometry::initialize();
@@ -355,14 +345,14 @@ class World : public WorldGeometry {
 
     void _derive_geometry_from_block_map() {
         num_vertices = 0;
-        std::fill((int *)block_coordinates_to_id, (int *)block_coordinates_to_id + BLOCKS, -1);
+        block_coordinates_to_id.clear(-1);
         std::fill((Vec3 *)block_coordinate_order, (Vec3 *)block_coordinate_order + BLOCKS, Vec3());
         memset((void *)&world_buffer_data[0], 0, BLOCKS * sizeof(uint8_t));
 
         for (int x = 0; x < WORLD_SIZE; ++x) {
             for (int y = 0; y < WORLD_SIZE; ++y) {
                 for (int z = 0; z < WORLD_SIZE; ++z) {
-                    set_block(x, y, z, block_map[x][y][z]);
+                    set_block(x, y, z, block_map(x, y, z));
                 }
             }
         }
