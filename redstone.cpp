@@ -302,7 +302,7 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
         evaluation_memo[expr_i] = false;
         return false;
     case Expression::Type::Alias:
-        evaluation_memo[expr_i] = evaluate(expr.negation);
+        evaluation_memo[expr_i] = evaluate(expr.alias);
         return evaluation_memo[expr_i];
     }
     assert(false);
