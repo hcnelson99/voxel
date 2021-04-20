@@ -95,6 +95,8 @@ class Block {
         NotGate = 9 << OrientationWidth,
         ActiveDiodeGate = 10 << OrientationWidth,
         DiodeGate = 11 << OrientationWidth,
+        ActiveSwitch = 14 << OrientationWidth,
+        Switch = 15 << OrientationWidth,
     };
 
     Block() = default;
@@ -119,7 +121,7 @@ class Block {
     std::string to_string() const;
 
     bool output_in_direction(const Orientation &o) const {
-        return is_redstone() || (is_directed() && get_orientation() == o);
+        return is_redstone() || is_switch() || (is_directed() && get_orientation() == o);
     }
 
 #define IS(name, active, inactive)                                                                                     \
@@ -129,13 +131,15 @@ class Block {
     IS(is_not_gate, ActiveNotGate, NotGate);
     IS(is_delay_gate, ActiveDelayGate, DelayGate);
     IS(is_diode_gate, ActiveDiodeGate, DiodeGate);
+    IS(is_switch, ActiveSwitch, Switch);
 
     bool is_directed() const { return is_not_gate() || is_delay_gate() || is_diode_gate(); }
 
     bool is_active() const {
         uint8_t type = _block & TypeMask;
         return type == BlockType::ActiveRedstone || type == BlockType::ActiveNotGate ||
-               type == BlockType::ActiveDelayGate || type == BlockType::ActiveDiodeGate;
+               type == BlockType::ActiveDelayGate || type == BlockType::ActiveDiodeGate ||
+               type == BlockType::ActiveSwitch;
     }
 };
 

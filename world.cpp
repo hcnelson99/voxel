@@ -275,6 +275,8 @@ void WorldGeometry::set_active(int x, int y, int z, bool active) {
         block.set_type(active ? Block::ActiveDiodeGate : Block::DiodeGate);
     } else if (block.is_delay_gate()) {
         block.set_type(active ? Block::ActiveDelayGate : Block::DelayGate);
+    } else if (block.is_switch()) {
+        block.set_type(active ? Block::ActiveSwitch : Block::Switch);
     }
     set_block(x, y, z, block);
 }
@@ -536,13 +538,18 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
             }
         }
 
-        if (!get_block(x, y, z).is(Block::Air)) {
+        const Block &selected_block = get_block(x, y, z);
+        if (!selected_block.is(Block::Air)) {
             if (player_action == PlayerMouseModify::PlaceBlock) {
                 set_block(prev_x, prev_y, prev_z, block);
             } else if (player_action == PlayerMouseModify::BreakBlock) {
                 set_block(x, y, z, Block::Air);
             } else if (player_action == PlayerMouseModify::RotateBlock) {
-                rotate_block(x, y, z);
+                if (selected_block.is_switch()) {
+                    set_active(x, y, z, !selected_block.is_active());
+                } else {
+                    rotate_block(x, y, z);
+                }
 
                 // How to compute intersection location:
 
