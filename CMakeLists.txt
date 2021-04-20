@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(voxel)
 
-add_compile_definitions(GLM_ENABLE_EXPERIMENTAL TRACY_ENABLE)
+add_definitions(-DGLM_ENABLE_EXPERIMENTAL -DTRACY_ENABLE)
 
 add_executable(voxel voxel.cpp world.cpp redstone.cpp tracy/TracyClient.cpp)
 target_compile_features(voxel PRIVATE cxx_std_17)
