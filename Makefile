@@ -15,3 +15,8 @@ tests/%: tests/%.cpp $(SOURCES)
 editor: editor.cpp $(SOURCES)
 	g++ -o editor editor.cpp $(SOURCES) $(CXXFLAGS)
 
+benchmark: benchmark.cpp $(SOURCES)
+	g++ -o benchmark benchmark.cpp $(SOURCES) $(CXXFLAGS) $(CFLAGS)
+
+benchmark_worlds/%:
+	@scripts/make_benchmark.sh "$@.world"
