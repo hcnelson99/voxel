@@ -261,6 +261,8 @@ void WorldGeometry::set_active(int x, int y, int z, bool active) {
         block.set_type(active ? Block::ActiveDiodeGate : Block::DiodeGate);
     } else if (block.is_delay_gate()) {
         block.set_type(active ? Block::ActiveDelayGate : Block::DelayGate);
+    } else if (block.is_display()) {
+        block.set_type(active ? Block::ActiveDisplay : Block::Display);
     } else if (block.is_switch()) {
         block.set_type(active ? Block::ActiveSwitch : Block::Switch);
     }

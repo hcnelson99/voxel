@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 #include <cstring>
+#include <functional>
 #include <glm/glm.hpp>
 #include <string.h>
 #include <string>
@@ -95,6 +96,8 @@ class Block {
         NotGate = 9 << OrientationWidth,
         ActiveDiodeGate = 10 << OrientationWidth,
         DiodeGate = 11 << OrientationWidth,
+        ActiveDisplay = 12 << OrientationWidth,
+        Display = 13 << OrientationWidth,
         ActiveSwitch = 14 << OrientationWidth,
         Switch = 15 << OrientationWidth,
     };
@@ -131,6 +134,7 @@ class Block {
     IS(is_not_gate, ActiveNotGate, NotGate);
     IS(is_delay_gate, ActiveDelayGate, DelayGate);
     IS(is_diode_gate, ActiveDiodeGate, DiodeGate);
+    IS(is_display, ActiveDisplay, Display);
     IS(is_switch, ActiveSwitch, Switch);
 
     bool is_directed() const { return is_not_gate() || is_delay_gate() || is_diode_gate(); }
@@ -139,7 +143,7 @@ class Block {
         uint8_t type = _block & TypeMask;
         return type == BlockType::ActiveRedstone || type == BlockType::ActiveNotGate ||
                type == BlockType::ActiveDelayGate || type == BlockType::ActiveDiodeGate ||
-               type == BlockType::ActiveSwitch;
+               type == BlockType::ActiveSwitch || type == BlockType::ActiveDisplay;
     }
 };
 
@@ -275,6 +279,7 @@ class RedstoneCircuit {
     uint32_t build_expression(const Vec3 &v, const Block &block);
 
     template <uint32_t Default, bool Negate> uint32_t build_directed_expression(const Vec3 &v, const Block &block);
+    template <bool BallPredicate(const Block &b)> uint32_t build_ball_expression(const Vec3 &v, const Block &block);
 
     bool evaluate(uint32_t expr_i);
 };

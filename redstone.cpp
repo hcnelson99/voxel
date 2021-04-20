@@ -99,6 +99,90 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
     }
 }
 
+template <bool BallPredicate(const Block &b)>
+uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &block) {
+    std::vector<Vec3> terminals;
+    std::vector<Vec3> ball(1, v);
+    std::vector<Vec3> frontier(1, v);
+    std::vector<Vec3> new_frontier;
+
+    const auto add = [&](const Vec3 &vec, const Orientation &o) {
+        const Vec3 nv = vec + o.direction();
+
+        if (!nv.in_world()) {
+            return;
+        }
+
+        const Block neighbor = world_geometry->get_block(nv);
+        const bool predicate = BallPredicate(neighbor);
+        if (predicate && !rebuild_visited[nv.x][nv.y][nv.z]) {
+            rebuild_visited[nv.x][nv.y][nv.z] = true;
+            ball.push_back(nv);
+            new_frontier.push_back(nv);
+        } else if (!predicate && neighbor.output_in_direction(o.opposite())) {
+            terminals.push_back(nv);
+        }
+    };
+
+    while (frontier.size() > 0) {
+        for (const Vec3 &vec : frontier) {
+            add(vec, Orientation::PosX);
+            add(vec, Orientation::NegX);
+            add(vec, Orientation::PosY);
+            add(vec, Orientation::NegY);
+            add(vec, Orientation::PosZ);
+            add(vec, Orientation::NegZ);
+        }
+
+        std::swap(frontier, new_frontier);
+        new_frontier.clear();
+    }
+
+    Expression expr;
+    expr.init(Expression::Type::Disjunction);
+    expr.disjuncts->resize(terminals.size());
+
+    bool always_true = false;
+    bool always_false = true;
+
+    for (size_t k = 0; k < terminals.size(); k++) {
+        const Vec3 &vec = terminals[k];
+        uint32_t i = build_expression(vec, world_geometry->get_block(vec));
+        if (i != ALWAYS_FALSE) {
+            always_false = false;
+        }
+        if (i == ALWAYS_TRUE) {
+            always_true = true;
+            break;
+        }
+        (*expr.disjuncts)[k] = i;
+    }
+
+    uint32_t expr_i;
+    if (always_false) {
+        expr_i = ALWAYS_FALSE;
+    } else if (always_true) {
+        expr_i = ALWAYS_TRUE;
+    } else if (terminals.size() == 1) {
+        expr_i = expr.disjuncts->at(0);
+    } else {
+        expr_i = expressions.size();
+        expressions.resize(expr_i + 1);
+        expressions[expr_i] = expr;
+    }
+
+    for (const Vec3 &vec : ball) {
+        Expression temp_expr;
+        set_expression(vec, expr_i, temp_expr);
+    }
+    return expr_i;
+}
+
+struct BallPredicates {
+    static bool redstone(const Block &b) { return b.is_redstone(); }
+    static bool display(const Block &b) { return false; }
+};
+
 uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     if (rebuild_visited[v.x][v.y][v.z]) {
         if (block_to_expression[v.x][v.y][v.z] == 0) {
@@ -114,80 +198,9 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     rebuild_visited[v.x][v.y][v.z] = true;
 
     if (block.is_redstone()) {
-        std::vector<Vec3> terminals;
-        std::vector<Vec3> ball(1, v);
-        std::vector<Vec3> frontier(1, v);
-        std::vector<Vec3> new_frontier;
-
-        const auto add = [&](const Vec3 &vec, const Orientation &o) {
-            const Vec3 nv = vec + o.direction();
-
-            if (!nv.in_world()) {
-                return;
-            }
-
-            const Block neighbor = world_geometry->get_block(nv);
-            if (neighbor.is_redstone() && !rebuild_visited[nv.x][nv.y][nv.z]) {
-                rebuild_visited[nv.x][nv.y][nv.z] = true;
-                ball.push_back(nv);
-                new_frontier.push_back(nv);
-            } else if (!neighbor.is_redstone() && neighbor.output_in_direction(o.opposite())) {
-                terminals.push_back(nv);
-            }
-        };
-
-        while (frontier.size() > 0) {
-            for (const Vec3 &vec : frontier) {
-                add(vec, Orientation::PosX);
-                add(vec, Orientation::NegX);
-                add(vec, Orientation::PosY);
-                add(vec, Orientation::NegY);
-                add(vec, Orientation::PosZ);
-                add(vec, Orientation::NegZ);
-            }
-
-            std::swap(frontier, new_frontier);
-            new_frontier.clear();
-        }
-
-        Expression expr;
-        expr.init(Expression::Type::Disjunction);
-        expr.disjuncts->resize(terminals.size());
-
-        bool always_true = false;
-        bool always_false = true;
-
-        for (size_t k = 0; k < terminals.size(); k++) {
-            const Vec3 &vec = terminals[k];
-            uint32_t i = build_expression(vec, world_geometry->get_block(vec));
-            if (i != ALWAYS_FALSE) {
-                always_false = false;
-            }
-            if (i == ALWAYS_TRUE) {
-                always_true = true;
-                break;
-            }
-            (*expr.disjuncts)[k] = i;
-        }
-
-        uint32_t expr_i;
-        if (always_false) {
-            expr_i = ALWAYS_FALSE;
-        } else if (always_true) {
-            expr_i = ALWAYS_TRUE;
-        } else if (terminals.size() == 1) {
-            expr_i = expr.disjuncts->at(0);
-        } else {
-            expr_i = expressions.size();
-            expressions.resize(expr_i + 1);
-            expressions[expr_i] = expr;
-        }
-
-        for (const Vec3 &vec : ball) {
-            Expression temp_expr;
-            set_expression(vec, expr_i, temp_expr);
-        }
-        return expr_i;
+        return build_ball_expression<BallPredicates::redstone>(v, block);
+    } else if (block.is_display()) {
+        return build_ball_expression<BallPredicates::display>(v, block);
     } else if (block.is_not_gate()) {
         return build_directed_expression<ALWAYS_TRUE, true>(v, block);
     } else if (block.is_diode_gate()) {

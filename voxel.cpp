@@ -475,7 +475,7 @@ class Game {
                         player_block_selection = Block::DiodeGate;
                         break;
                     case SDLK_7:
-                        player_block_selection = Block::Stone;
+                        player_block_selection = Block::Display;
                         break;
                     case SDLK_8:
                         player_block_selection = Block::Wood;
