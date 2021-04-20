@@ -491,7 +491,13 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
             set_block(x, y, z, Block::Air);
             return;
         } else if (player_action == PlayerMouseModify::RotateBlock) {
-            rotate_block(x, y, z);
+            const Block &selected_block = get_block(x, y, z);
+            if (selected_block.is_switch()) {
+                set_active(x, y, z, !selected_block.is_active());
+            } else {
+                rotate_block(x, y, z);
+            }
+
             return;
         }
     }

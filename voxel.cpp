@@ -466,25 +466,25 @@ class Game {
                         player_block_selection = Block::InactiveBluestone;
                         break;
                     case SDLK_3:
-                        player_block_selection = Block::Switch;
-                        break;
-                    case SDLK_4:
                         player_block_selection = Block::NotGate;
                         break;
-                    case SDLK_5:
+                    case SDLK_4:
                         player_block_selection = Block::DelayGate;
                         break;
-                    case SDLK_6:
+                    case SDLK_5:
                         player_block_selection = Block::DiodeGate;
+                        break;
+                    case SDLK_6:
+                        player_block_selection = Block::Switch;
                         break;
                     case SDLK_7:
                         player_block_selection = Block::Display;
                         break;
                     case SDLK_8:
-                        player_block_selection = Block::Wood;
+                        player_block_selection = Block::Stone;
                         break;
                     case SDLK_9:
-                        player_block_selection = Block::Dirt;
+                        player_block_selection = Block::Wood;
                         break;
                     case SDLK_TAB:
                         player_mouse_modify = World::PlayerMouseModify::Identify;
