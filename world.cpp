@@ -86,13 +86,13 @@ uint8_t Orientation::plane_orientation(const Orientation &o) const {
     } else if (_orientation == PosZ._orientation && o.axis() == Axis::X) {
         return 2;
     } else if (_orientation == PosZ._orientation && o == PosY) {
-        return 1;
+        return 3;
     } else if (_orientation == PosZ._orientation && o == NegY) {
         return 3;
     } else if (_orientation == NegZ._orientation && o.axis() == Axis::X) {
         return 0;
     } else if (_orientation == NegZ._orientation && o == PosY) {
-        return 3;
+        return 1;
     } else if (_orientation == NegZ._orientation && o == NegY) {
         return 1;
     } else {
