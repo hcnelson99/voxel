@@ -221,6 +221,8 @@ vec3 blid_to_emissive_color(uint blid) {
         return normalize(vec3(0.9, 0.05, 0.04)) * block_brightness;
     }  else if (blid == 3) {
         return normalize(vec3(255, 147, 41)) * block_brightness;
+    } else if (blid == 16) {
+        return normalize(vec3(0.04, 0.05, 0.9)) * block_brightness;
     }
     return vec3(0, 0, 0);
 }
