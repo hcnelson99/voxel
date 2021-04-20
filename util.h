@@ -25,17 +25,18 @@ struct Vec3 {
 
 template <typename ValueType, unsigned int N> class Tensor {
   public:
-    Tensor() {}
+    Tensor() { buffer = new ValueType[N * N * N]; }
+    ~Tensor() { delete[] buffer; }
 
-    inline ValueType &operator()(int x, int y, int z) { return buffer[x][y][z]; }
-    inline ValueType &operator()(const Vec3 &v) { return buffer[v.x][v.y][v.z]; }
+    inline ValueType &operator()(int x, int y, int z) { return at(x, y, z); }
+    inline ValueType &operator()(const Vec3 &v) { return at(v.x, v.y, v.z); }
 
-    void clear(ValueType v) {
-        std::fill((ValueType *)buffer, (ValueType *)buffer + sizeof(buffer) / sizeof(ValueType), v);
-    }
+    inline ValueType &at(int x, int y, int z) { return buffer[x * N * N + y * N + z]; }
 
-    inline ValueType *get_buffer() { return (ValueType *)buffer; }
+    void clear(ValueType v) { std::fill((ValueType *)buffer, (ValueType *)buffer + N * N * N, v); }
+
+    inline ValueType *get_buffer() { return buffer; }
 
   private:
-    ValueType buffer[N][N][N];
+    ValueType *buffer;
 };
