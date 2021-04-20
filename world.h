@@ -4,6 +4,7 @@
 #include <cstring>
 #include <functional>
 #include <glm/glm.hpp>
+#include <sstream>
 #include <string.h>
 #include <string>
 #include <vector>
@@ -32,6 +33,11 @@ struct Vec3 {
 
     bool in_world() const { return IN_BOUND(x) && IN_BOUND(y) && IN_BOUND(z); }
     void invalidate() { x = WORLD_SIZE + 1; }
+    std::string to_string() {
+        std::stringstream ss;
+        ss << "<" << x << ", " << y << ", " << z << ">";
+        return ss.str();
+    }
 };
 
 inline int zyx_major(int x, int y, int z) { return ((z)*WORLD_SIZE * WORLD_SIZE + (y)*WORLD_SIZE + (x)); }
@@ -240,6 +246,8 @@ class RedstoneCircuit {
             std::vector<uint32_t> *disjuncts;
             uint32_t alias;
         };
+
+        std::string to_string();
 
         Expression() : type(Type::Invalid) {}
         Expression(Expression &&expr) { operator=(expr); }

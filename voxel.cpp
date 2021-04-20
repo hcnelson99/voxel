@@ -29,7 +29,7 @@
 
 constexpr size_t MS_BETWEEN_TICK = 100;
 
-World world;
+World *world;
 
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                       const void *_arg) {
@@ -282,8 +282,9 @@ class Game {
         }
 
         {
-            world.initialize();
-            world.sync_buffers();
+            world = new World;
+            world->initialize();
+            world->sync_buffers();
         }
 
         { // Load terrain.png
@@ -320,7 +321,7 @@ class Game {
         }
 
         {
-            const WorldGeometry::OpenGLBuffers &world_buffers = world.get_buffers();
+            const WorldGeometry::OpenGLBuffers &world_buffers = world->get_buffers();
 
             {
                 glGenVertexArrays(1, &gshader_vao);
@@ -445,11 +446,11 @@ class Game {
                         break;
                     case SDLK_q:
                         fprintf(stderr, "randomizing world\n");
-                        world.randomize();
+                        world->randomize();
                         break;
                     case SDLK_e:
                         fprintf(stderr, "randomizing world\n");
-                        world.wireframe();
+                        world->wireframe();
                         break;
                     case SDLK_f:
                         player_mouse_modify = World::PlayerMouseModify::RotateBlock;
@@ -557,18 +558,18 @@ class Game {
                     player_block_selection.set_orientation(orientation);
                 }
 
-                world.player_click(ray, player_block_selection, player_mouse_modify.value());
+                world->player_click(ray, player_block_selection, player_mouse_modify.value());
             }
 
             {
                 size_t ms_elapsed = std::chrono::duration<double, std::milli>(time - begin_time).count();
                 if (ms_elapsed >= last_tick_time + MS_BETWEEN_TICK) {
                     last_tick_time = ms_elapsed;
-                    world.tick();
+                    world->tick();
                 }
             }
 
-            world.sync_buffers();
+            world->sync_buffers();
 
             {
                 TracyGpuZone("copy position");
@@ -592,7 +593,7 @@ class Game {
                 glUseProgram(gshader.gl_program);
 
                 glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
-                glDrawArrays(GL_TRIANGLES, 0, world.get_num_vertices());
+                glDrawArrays(GL_TRIANGLES, 0, world->get_num_vertices());
 
                 glDisable(GL_DEPTH_TEST);
             }
@@ -611,7 +612,7 @@ class Game {
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, g_color_spec);
                 glActiveTexture(GL_TEXTURE3);
-                glBindTexture(GL_TEXTURE_3D, world.get_buffers().world_texture);
+                glBindTexture(GL_TEXTURE_3D, world->get_buffers().world_texture);
                 glActiveTexture(GL_TEXTURE4);
                 glBindTexture(GL_TEXTURE_2D, terrain_texture);
                 glActiveTexture(GL_TEXTURE5);
@@ -676,7 +677,7 @@ class Game {
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, g_color_spec);
                 glActiveTexture(GL_TEXTURE3);
-                glBindTexture(GL_TEXTURE_3D, world.get_buffers().world_texture);
+                glBindTexture(GL_TEXTURE_3D, world->get_buffers().world_texture);
                 glActiveTexture(GL_TEXTURE4);
                 glBindTexture(GL_TEXTURE_2D, terrain_texture);
                 glActiveTexture(GL_TEXTURE5);
@@ -698,7 +699,7 @@ class Game {
             TracyGpuCollect;
             FrameMark;
 
-            world.log_frame();
+            world->log_frame();
 
             Repl::unlock();
             frame_number++;
@@ -755,7 +756,7 @@ int main(int argc, char *argv[]) {
 
     // load file if specified
     if (optind < argc) {
-        world.load(argv[optind]);
+        world->load(argv[optind]);
     }
 
     {

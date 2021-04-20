@@ -283,9 +283,6 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
 
     const Expression &expr = expressions[expr_i];
     switch (expr.get_type()) {
-    case Expression::Type::Invalid:
-        evaluation_memo[expr_i] = false;
-        return false;
     case Expression::Type::Variable:
         evaluation_memo[expr_i] = world_geometry->get_block(expr.variable).is_active();
         return evaluation_memo[expr_i];
@@ -306,4 +303,30 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
         return evaluation_memo[expr_i];
     }
     assert(false);
+}
+
+std::string RedstoneCircuit::Expression::to_string() {
+    switch (type) {
+    case Type::Invalid:
+        return "Invalid";
+    case Type::Variable:
+        return "Variable(" + variable.to_string() + ")";
+    case Type::Negation:
+        return "Negation(" + std::to_string(negation) + ")";
+    case Type::Disjunction: {
+        std::stringstream ss;
+        ss << "Disjunction(";
+        for (size_t i = 0; i < disjuncts->size(); i++) {
+            if (i == 0) {
+                ss << disjuncts->at(i);
+            } else {
+                ss << " v " << disjuncts->at(i);
+            }
+        }
+        ss << ")";
+        return ss.str();
+    }
+    case Type::Alias:
+        return "Alias(" + std::to_string(alias) + ")";
+    }
 }
