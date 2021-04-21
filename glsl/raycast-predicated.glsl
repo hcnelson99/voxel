@@ -13,15 +13,13 @@ bool in_bounds(vec3 pos) {
 }
 
 uint raycast(vec3 fpos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
-    uint res;
-
     if (!in_bounds(fpos)) {
         return 0;
     }
 
     ivec3 pos = ivec3(clamp(fpos, 0, WORLD_SIZE - 1));
 
-    res = lookup(pos);
+    uint res = lookup(pos);
     if (res != 0) {
         return res;
     }
@@ -34,8 +32,7 @@ uint raycast(vec3 fpos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
 
     vec3 t_delta = abs(1.f / dir);
 
-    ivec3 just_out = next * ivec3(WORLD_SIZE) + (1 - next) * -1;
-
+    ivec3 just_out = next * ivec3(WORLD_SIZE + 1) - 1;
 
     while (true) {
         float prev_t = min(t_max.x, min(t_max.y, t_max.z));

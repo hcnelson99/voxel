@@ -13,8 +13,6 @@ bool in_bounds(vec3 pos) {
 }
 
 uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
-    uint res;
-
     if (!in_bounds(pos)) {
         return 0;
     }
@@ -23,6 +21,12 @@ uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     int x = int(clamp(pos.x, 0, WORLD_SIZE - 1));
     int y = int(clamp(pos.y, 0, WORLD_SIZE - 1));
     int z = int(clamp(pos.z, 0, WORLD_SIZE - 1));
+
+    uint res = lookup(ivec3(x, y, z));
+    if (res != 0) {
+        return res;
+    }
+
 
     int step_x = int(sign(dir.x));
     int step_y = int(sign(dir.y));
@@ -43,11 +47,6 @@ uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     int just_out_x = step_x == 1 ? int(WORLD_SIZE) : -1;
     int just_out_y = step_y == 1 ? int(WORLD_SIZE) : -1;
     int just_out_z = step_z == 1 ? int(WORLD_SIZE) : -1;
-
-    res = lookup(ivec3(x, y, z));
-    if (res != 0) {
-        return res;
-    }
 
     // even though raycast-predicated has this as a while (true), don't change
     // it here. crashes video drivers. we should investigate this.
