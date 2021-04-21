@@ -78,6 +78,44 @@ void activated_double_negation_loop2() {
     check(Block::ActiveRedstone);
 }
 
+void double_loop() {
+    world.set_block(0, 0, 1, Block::InactiveRedstone);
+    world.set_block(0, 0, 2, Block::InactiveRedstone);
+    world.set_block(1, 0, 2, Block::InactiveRedstone);
+    world.set_block(2, 0, 2, Block::InactiveRedstone);
+    world.set_block(3, 0, 2, Block::InactiveRedstone);
+    world.set_block(3, 0, 1, Block::InactiveRedstone);
+    world.set_block(4, 0, 2, Block::InactiveRedstone);
+    world.set_block(5, 0, 2, Block::InactiveRedstone);
+    world.set_block(6, 0, 2, Block::InactiveRedstone);
+    world.set_block(6, 0, 1, Block::InactiveRedstone);
+    world.set_block(3, 0, 0, Block::ActiveSwitch);
+    world.set_block(1, 0, 1, Block(Block::NotGate, Orientation::NegX));
+    world.set_block(2, 0, 1, Block(Block::NotGate, Orientation::NegX));
+    world.set_block(4, 0, 1, Block(Block::NotGate, Orientation::PosX));
+    world.set_block(5, 0, 1, Block(Block::NotGate, Orientation::PosX));
+
+    const auto check = []() {
+        assert(world.get_block(0, 0, 1).is(Block::ActiveRedstone));
+        assert(world.get_block(0, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(1, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(2, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 0, 1).is(Block::ActiveRedstone));
+        assert(world.get_block(4, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(5, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(6, 0, 2).is(Block::ActiveRedstone));
+        assert(world.get_block(6, 0, 1).is(Block::ActiveRedstone));
+        assert(world.get_block(3, 0, 0).is(Block::ActiveSwitch));
+    };
+
+    world.save("test.world");
+    world.tick();
+    check();
+    world.tick();
+    check();
+}
+
 int main() {
     basic_double_negation_loop();
     world.reset();
@@ -86,5 +124,7 @@ int main() {
     not_activated_double_negation_loop();
     world.reset();
     activated_double_negation_loop2();
+    world.reset();
+    double_loop();
     return 0;
 }
