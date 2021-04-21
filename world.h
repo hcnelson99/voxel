@@ -234,6 +234,7 @@ class RedstoneCircuit {
 
     struct Expression {
         enum Type { Invalid, Variable, Negation, Disjunction, Alias };
+        uint32_t height;
         union {
             Vec3 variable;
             uint32_t negation;
