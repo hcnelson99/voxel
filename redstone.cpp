@@ -57,6 +57,7 @@ uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Express
         if (block_to_expression(v) != 0) {
             int k = block_to_expression(v);
             expressions[k].init(Expression::Type::Alias);
+            expressions[k].height = UINT_MAX;
             expressions[k].alias = expr_i;
             return k;
         } else {
@@ -90,6 +91,11 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
         default:
             if (Negate) {
                 expr.init(Expression::Type::Negation);
+                if (expressions[i].height == UINT_MAX) {
+                    expr.height = UINT_MAX;
+                } else {
+                    expr.height = expressions[i].height + 1;
+                }
                 expr.negation = i;
                 return set_expression(v, 0, expr);
             } else {
@@ -139,22 +145,27 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
 
     Expression expr;
     expr.init(Expression::Type::Disjunction);
-    expr.disjuncts->resize(terminals.size());
 
     bool always_true = false;
     bool always_false = true;
 
-    for (size_t k = 0; k < terminals.size(); k++) {
-        const Vec3 &vec = terminals[k];
+    uint32_t max_height = 0;
+    for (const Vec3 &vec : terminals) {
         uint32_t i = build_expression(vec, world_geometry->get_block(vec));
-        if (i != ALWAYS_FALSE) {
+        switch (i) {
+        case ALWAYS_FALSE:
+            break;
+        case ALWAYS_TRUE:
             always_false = false;
-        }
-        if (i == ALWAYS_TRUE) {
             always_true = true;
             break;
+        case 0:
+            assert(false);
+        default:
+            always_false = false;
+            max_height = std::max(max_height, expressions[i].height);
+            expr.disjuncts->push_back(i);
         }
-        (*expr.disjuncts)[k] = i;
     }
 
     uint32_t expr_i;
@@ -162,9 +173,15 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         expr_i = ALWAYS_FALSE;
     } else if (always_true) {
         expr_i = ALWAYS_TRUE;
-    } else if (terminals.size() == 1) {
+    } else if (expr.disjuncts->size() == 1) {
         expr_i = expr.disjuncts->at(0);
     } else {
+        if (max_height == UINT_MAX) {
+            expr.height = UINT_MAX;
+        } else {
+            expr.height = max_height + 1;
+        }
+
         expr_i = expressions.size();
         expressions.resize(expr_i + 1);
         expressions[expr_i] = expr;
@@ -193,6 +210,7 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
         if (block_to_expression(v) == 0) {
             uint32_t i = expressions.size();
             expressions.resize(i + 1);
+            expressions[i].height = UINT_MAX;
             block_to_expression(v) = i;
             return i;
         } else {
@@ -217,6 +235,7 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     } else if (block.is_delay_gate() || block.is_switch()) {
         Expression expr;
         expr.init(Expression::Type::Variable);
+        expr.height = 0;
         expr.variable = v;
         return set_expression(v, 0, expr);
     } else {
@@ -308,16 +327,19 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
     assert(false);
 }
 
-std::string RedstoneCircuit::Expression::to_string() {
+std::string RedstoneCircuit::Expression::to_string() const {
+    std::stringstream ss;
+
     switch (type) {
     case Type::Invalid:
         return "Invalid";
     case Type::Variable:
-        return "Variable(" + variable.to_string() + ")";
+        ss << "Variable(" << variable.to_string() << ")";
+        break;
     case Type::Negation:
-        return "Negation(" + std::to_string(negation) + ")";
+        ss << "Negation(" << negation << ")";
+        break;
     case Type::Disjunction: {
-        std::stringstream ss;
         ss << "Disjunction(";
         for (size_t i = 0; i < disjuncts->size(); i++) {
             if (i == 0) {
@@ -327,10 +349,16 @@ std::string RedstoneCircuit::Expression::to_string() {
             }
         }
         ss << ")";
-        return ss.str();
+        break;
     }
     case Type::Alias:
-        return "Alias(" + std::to_string(alias) + ")";
+        ss << "Alias(" << alias << ")";
+        break;
+    default:
+        assert(false);
     }
-    assert(false);
+
+    ss << "<" << height << ">";
+
+    return ss.str();
 }

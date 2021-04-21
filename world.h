@@ -234,6 +234,7 @@ class RedstoneCircuit {
 
     struct Expression {
         enum Type { Invalid, Variable, Negation, Disjunction, Alias };
+        uint32_t height;
         union {
             Vec3 variable;
             uint32_t negation;
@@ -241,7 +242,7 @@ class RedstoneCircuit {
             uint32_t alias;
         };
 
-        std::string to_string();
+        std::string to_string() const;
 
         Expression() : type(Type::Invalid) {}
         Expression(Expression &&expr) { operator=(expr); }
