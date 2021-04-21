@@ -217,6 +217,7 @@ class WorldGeometry {
     void rotate_block(int x, int y, int z);
     void randomize();
     void flatworld();
+    void benchmark_world();
 
     void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
 };
@@ -340,6 +341,10 @@ class World : public WorldGeometry {
     }
     void flatworld() {
         WorldGeometry::flatworld();
+        redstone_dirty = true;
+    }
+    void benchmark_world() {
+        WorldGeometry::benchmark_world();
         redstone_dirty = true;
     }
 

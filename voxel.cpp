@@ -392,6 +392,10 @@ class Game {
         unsigned int frame_number = 0;
         bool running = true;
 
+        std::vector<double> benchmark_times;
+        std::chrono::steady_clock::time_point benchmark_begin;
+        bool benchmarking = false;
+
         auto begin_time = std::chrono::steady_clock::now();
         size_t last_tick_time = 0;
 
@@ -402,6 +406,9 @@ class Game {
 
             auto time = std::chrono::steady_clock::now();
             double dt = std::chrono::duration<double>(time - prev_time).count();
+            if (benchmarking) {
+                benchmark_times.push_back(dt);
+            }
             prev_time = time;
 
             SDL_Event event;
@@ -455,8 +462,16 @@ class Game {
                         world->randomize();
                         break;
                     case SDLK_p:
-                        fprintf(stderr, "clearing world");
+                        fprintf(stderr, "clearing world\n");
                         world->flatworld();
+                        break;
+                    case SDLK_b:
+                        fprintf(stderr, "starting benchmark\n");
+                        world->benchmark_world();
+                        benchmarking = true;
+                        player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, 2);
+                        benchmark_times.clear();
+                        benchmark_begin = std::chrono::steady_clock::now();
                         break;
                     case SDLK_f:
                         player_mouse_modify = World::PlayerMouseModify::RotateBlock;
@@ -522,7 +537,20 @@ class Game {
             const Uint8 *keystate = SDL_GetKeyboardState(NULL);
             glm::vec3 velocity(0, 0, 0);
 
-            if (keystate[SDL_SCANCODE_W]) {
+            if (benchmarking && player_pos.z >= WORLD_SIZE - 2) {
+                auto benchmark_end = std::chrono::steady_clock::now();
+                benchmarking = false;
+                double benchmark_time = std::chrono::duration<double>(benchmark_end - benchmark_begin).count();
+                printf("Benchmark ended\n");
+                size_t frame_count = benchmark_times.size();
+                printf("%lu frames in %f seconds\n", frame_count, benchmark_time);
+                printf("Average fps: %f\n", frame_count / benchmark_time);
+                std::sort(benchmark_times.begin(), benchmark_times.end());
+                printf("50th percentile: %f\n", 1. / benchmark_times[frame_count * 0.5]);
+                printf("99th percentile: %f\n", 1. / benchmark_times[frame_count * 0.99]);
+            }
+
+            if (keystate[SDL_SCANCODE_W] || benchmarking) {
                 velocity += glm::vec3(player_look * glm::vec4(0, 0, 1, 1));
             }
             if (keystate[SDL_SCANCODE_S]) {

@@ -373,6 +373,24 @@ void WorldGeometry::flatworld() {
     }
 }
 
+void WorldGeometry::benchmark_world() {
+    for (int x = 0; x < WORLD_SIZE; ++x) {
+        for (int y = 0; y < WORLD_SIZE; ++y) {
+            for (int z = 0; z < WORLD_SIZE; ++z) {
+                bool x_edge = x == 0 || x == WORLD_SIZE - 1;
+                bool y_edge = y == 0 || y == WORLD_SIZE - 1;
+                bool z_edge = z == 0 || z == WORLD_SIZE - 1;
+                if (x_edge || y_edge || z_edge) {
+                    Block block = x % 5 == 1 || y % 5 == 1 || z % 5 == 1 ? Block::Wood : Block::Stone;
+                    set_block(x, y, z, block);
+                } else {
+                    set_block(x, y, z, Block::Air);
+                }
+            }
+        }
+    }
+}
+
 void World::reset() {
     block_map.clear(Block::Air);
     _derive_geometry_from_block_map();
