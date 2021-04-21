@@ -169,7 +169,12 @@ class Game {
 
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+#ifndef NDEBUG
+            printf("Initializing OpenGL debug context\n");
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#else
+            printf("Initializing OpenGL release context\n");
+#endif
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
             SDL_GLContext gl_context = SDL_GL_CreateContext(window);
