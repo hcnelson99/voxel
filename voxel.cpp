@@ -20,6 +20,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
 
+#define STB_INCLUDE_IMPLEMENTATION
+#define STB_INCLUDE_LINE_GLSL
+#include "stb/stb_include.h"
+
 #include "tracy/Tracy.hpp"
 #include "tracy/TracyOpenGL.hpp"
 
@@ -72,23 +76,6 @@ void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GL
     }
 }
 
-char *load_file(std::string filename) {
-    FILE *f = fopen(filename.c_str(), "r");
-    if (!f) {
-        std::cout << "failed to open file " << filename << std::endl;
-    }
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char *string = (char *)malloc(fsize + 1);
-    fread(string, 1, fsize, f);
-    fclose(f);
-
-    string[fsize] = 0;
-    return string;
-}
-
 class ShaderProgram {
   public:
     void init(std::string vertex_fname, std::string fragment_fname) {
@@ -98,7 +85,15 @@ class ShaderProgram {
     }
 
     bool compile_shader(GLuint shader, std::string filename) {
-        char *code = load_file("glsl/" + filename);
+        std::string path_to_include = "glsl/";
+        std::string path = path_to_include + filename;
+        char inject[1] = "";
+        char error[256];
+        char *code = stb_include_file(&path[0], inject, &path_to_include[0], error);
+        if (!code) {
+            fprintf(stderr, "%s\n", error);
+            return false;
+        }
 
         glShaderSource(shader, 1, &code, NULL);
         free(code);

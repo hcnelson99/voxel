@@ -1,10 +1,23 @@
+/* Average fps: 37.518550 */
+/* 50th percentile: 37.447148 */
+/* 99th percentile: 35.968012 */
+
+uint lookup(ivec3 v) {
+        return texelFetch(world_buffer, v, 0).r >> 3;
+}
+
+uint WORLD_SIZE = textureSize(world_buffer, 0).x;
+
+bool in_bounds(vec3 pos) {
+    return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
+}
+
 uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     uint res;
 
     if (!in_bounds(pos)) {
         return 0;
     }
-    
 
     int x = int(clamp(pos.x, 0, WORLD_SIZE - 1));
     int y = int(clamp(pos.y, 0, WORLD_SIZE - 1));
