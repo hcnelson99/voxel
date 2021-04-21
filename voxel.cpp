@@ -470,6 +470,8 @@ class Game {
                         world->benchmark_world();
                         benchmarking = true;
                         player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, 2);
+                        rotate_x = 0;
+                        rotate_y = 0;
                         benchmark_times.clear();
                         benchmark_begin = std::chrono::steady_clock::now();
                         break;

@@ -28,84 +28,7 @@ bool in_bounds(vec3 pos) {
     return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
 }
 
-uint raycast(vec3 pos, vec3 dir) {
-    uint res;
-
-    if (!in_bounds(pos)) {
-        return 0;
-    }
-    
-
-    int x = int(clamp(pos.x, 0, WORLD_SIZE - 1));
-    int y = int(clamp(pos.y, 0, WORLD_SIZE - 1));
-    int z = int(clamp(pos.z, 0, WORLD_SIZE - 1));
-
-    int step_x = int(sign(dir.x));
-    int step_y = int(sign(dir.y));
-    int step_z = int(sign(dir.z));
-
-    int next_x = step_x == 1 ? 1 : 0;
-    int next_y = step_y == 1 ? 1 : 0;
-    int next_z = step_z == 1 ? 1 : 0;
-
-    float t_max_x = (x + next_x - pos.x) / dir.x;
-    float t_max_y = (y + next_y - pos.y) / dir.y;
-    float t_max_z = (z + next_z - pos.z) / dir.z;
-
-    float t_delta_x = abs(1.f / dir.x);
-    float t_delta_y = abs(1.f / dir.y);
-    float t_delta_z = abs(1.f / dir.z);
-
-    int just_out_x = step_x == 1 ? int(WORLD_SIZE) : -1;
-    int just_out_y = step_y == 1 ? int(WORLD_SIZE) : -1;
-    int just_out_z = step_z == 1 ? int(WORLD_SIZE) : -1;
-
-    res = lookup(ivec3(x, y, z));
-    if (res != 0) {
-        return res;
-    }
-
-    for (int i = 0; i < 1000; ++i) {
-        if (t_max_x < t_max_y) {
-            if (t_max_x < t_max_z) {
-                x += step_x;
-                if (x == just_out_x) {
-                    return 0;
-                }
-                t_max_x += t_delta_x;
-            } else {
-                z += step_z;
-                if (z == just_out_z) {
-                    return 0;
-                }
-                t_max_z += t_delta_z;
-            }
-        } else {
-            if (t_max_y < t_max_z) {
-                y += step_y;
-                if (y == just_out_y) {
-                    return 0;
-                }
-                t_max_y += t_delta_y;
-
-            } else {
-                z += step_z;
-                if (z == just_out_z) {
-                    return 0;
-                }
-                t_max_z += t_delta_z;
-            }
-        }
-        res = lookup(ivec3(x, y, z));
-        if (res != 0) {
-            return res;
-        }
-    }
-    return 1;
-}
-
-
-uint raycast_pos(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
+uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     uint res;
 
     if (!in_bounds(pos)) {
@@ -210,7 +133,8 @@ vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
     vec3 dir = normalize(light - pos);
 
     vec3 sunlight_color = vec3(255, 241, 224) / 255.f;
-    if (raycast(pos + normal * STEP, dir) == 0) {
+    vec3 unused1, unused2;
+    if (raycast(pos + normal * STEP, dir, unused1, unused2) == 0) {
         return sunlight_brightness * sunlight_color * max(dot(normal, dir), 0);
     }
     return vec3(unlit_brightness) * sunlight_color;
@@ -245,7 +169,7 @@ vec3 light(vec3 pos, vec3 normal, uint i) {
             dir = -dir;
         }
         vec3 new_pos, new_normal;
-        uint blid = raycast_pos(pos + normal * STEP, dir, new_pos, new_normal);
+        uint blid = raycast(pos + normal * STEP, dir, new_pos, new_normal);
         vec3 dist = new_pos - pos;
         brightness += blid_to_emissive_color(blid) / max(dot(dist, dist), 1);
 
