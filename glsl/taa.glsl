@@ -44,7 +44,7 @@ bool in_bounds(vec2 prev_uv) {
 }
 
 bool pos_changed(vec2 prev_uv) {
-    return dist_sq(box(g_position, uv).xyz - box(g_position_prev, prev_uv).xyz) >= 0.001;
+    return dist_sq(box(g_position, uv).xyz - box(g_position_prev, prev_uv).xyz) >= 0.1;
 }
 
 // https://software.intel.com/en-us/node/503873

@@ -595,106 +595,108 @@ class Game {
                 world->player_click(ray, player_block_selection, player_mouse_modify.value());
             }
 
-            {
-                size_t ms_elapsed = std::chrono::duration<double, std::milli>(time - begin_time).count();
-                if (ms_elapsed >= last_tick_time + MS_BETWEEN_TICK) {
-                    last_tick_time = ms_elapsed;
-                    world->tick();
+            if (mouse_grabbed && (SDL_GetWindowFlags(window) & SDL_WINDOW_MOUSE_FOCUS)) {
+                {
+                    size_t ms_elapsed = std::chrono::duration<double, std::milli>(time - begin_time).count();
+                    if (ms_elapsed >= last_tick_time + MS_BETWEEN_TICK) {
+                        last_tick_time = ms_elapsed;
+                        world->tick();
+                    }
                 }
-            }
 
-            world->sync_buffers();
+                world->sync_buffers();
 
-            {
-                TracyGpuZone("copy position");
-                glCopyImageSubData(g_position, GL_TEXTURE_2D, 0, 0, 0, 0, g_position_prev, GL_TEXTURE_2D, 0, 0, 0, 0,
-                                   width, height, 1);
-            }
+                {
+                    TracyGpuZone("copy position");
+                    glCopyImageSubData(g_position, GL_TEXTURE_2D, 0, 0, 0, 0, g_position_prev, GL_TEXTURE_2D, 0, 0, 0,
+                                       0, width, height, 1);
+                }
 
-            {
-                TracyGpuZone("gshader");
-                glEnable(GL_DEPTH_TEST);
-                glDepthFunc(GL_LESS);
+                {
+                    TracyGpuZone("gshader");
+                    glEnable(GL_DEPTH_TEST);
+                    glDepthFunc(GL_LESS);
 
-                glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
-                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                glBindVertexArray(gshader_vao);
+                    glBindVertexArray(gshader_vao);
 
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, terrain_texture);
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, terrain_texture);
 
-                glUseProgram(gshader.gl_program);
+                    glUseProgram(gshader.gl_program);
 
-                glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
-                glDrawArrays(GL_TRIANGLES, 0, world->get_num_vertices());
+                    glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
+                    glDrawArrays(GL_TRIANGLES, 0, world->get_num_vertices());
 
-                glDisable(GL_DEPTH_TEST);
-            }
+                    glDisable(GL_DEPTH_TEST);
+                }
 
-            {
-                TracyGpuZone("lshader");
-                glBindFramebuffer(GL_FRAMEBUFFER, l_framebuffer);
-                glClear(GL_COLOR_BUFFER_BIT);
+                {
+                    TracyGpuZone("lshader");
+                    glBindFramebuffer(GL_FRAMEBUFFER, l_framebuffer);
+                    glClear(GL_COLOR_BUFFER_BIT);
 
-                glBindVertexArray(screenspace_vao);
+                    glBindVertexArray(screenspace_vao);
 
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, g_position);
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_2D, g_normal);
-                glActiveTexture(GL_TEXTURE2);
-                glBindTexture(GL_TEXTURE_2D, g_color_spec);
-                glActiveTexture(GL_TEXTURE3);
-                glBindTexture(GL_TEXTURE_3D, world->get_buffers().world_texture);
-                glActiveTexture(GL_TEXTURE4);
-                glBindTexture(GL_TEXTURE_2D, terrain_texture);
-                glActiveTexture(GL_TEXTURE5);
-                glBindTexture(GL_TEXTURE_2D, blue_noise_texture);
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, g_position);
+                    glActiveTexture(GL_TEXTURE1);
+                    glBindTexture(GL_TEXTURE_2D, g_normal);
+                    glActiveTexture(GL_TEXTURE2);
+                    glBindTexture(GL_TEXTURE_2D, g_color_spec);
+                    glActiveTexture(GL_TEXTURE3);
+                    glBindTexture(GL_TEXTURE_3D, world->get_buffers().world_texture);
+                    glActiveTexture(GL_TEXTURE4);
+                    glBindTexture(GL_TEXTURE_2D, terrain_texture);
+                    glActiveTexture(GL_TEXTURE5);
+                    glBindTexture(GL_TEXTURE_2D, blue_noise_texture);
 
-                glUseProgram(lighting_shader.gl_program);
+                    glUseProgram(lighting_shader.gl_program);
 
-                glUniform1ui(0, render_mode);
-                glUniform1ui(1, frame_number);
+                    glUniform1ui(0, render_mode);
+                    glUniform1ui(1, frame_number);
 
-                // 6 is the number of vertices
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-            }
+                    // 6 is the number of vertices
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
+                }
 
-            {
-                TracyGpuZone("copy taa output");
-                glCopyImageSubData(taa_output, GL_TEXTURE_2D, 0, 0, 0, 0, taa_prev, GL_TEXTURE_2D, 0, 0, 0, 0, width,
-                                   height, 1);
-            }
+                {
+                    TracyGpuZone("copy taa output");
+                    glCopyImageSubData(taa_output, GL_TEXTURE_2D, 0, 0, 0, 0, taa_prev, GL_TEXTURE_2D, 0, 0, 0, 0,
+                                       width, height, 1);
+                }
 
-            {
-                TracyGpuZone("taa");
-                glBindFramebuffer(GL_FRAMEBUFFER, taa_framebuffer);
-                glClear(GL_COLOR_BUFFER_BIT);
+                {
+                    TracyGpuZone("taa");
+                    glBindFramebuffer(GL_FRAMEBUFFER, taa_framebuffer);
+                    glClear(GL_COLOR_BUFFER_BIT);
 
-                glBindVertexArray(screenspace_vao);
+                    glBindVertexArray(screenspace_vao);
 
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, g_position);
-                glActiveTexture(GL_TEXTURE1);
-                glBindTexture(GL_TEXTURE_2D, g_normal);
-                glActiveTexture(GL_TEXTURE2);
-                glBindTexture(GL_TEXTURE_2D, g_color_spec);
-                glActiveTexture(GL_TEXTURE3);
-                glBindTexture(GL_TEXTURE_2D, l_buffer);
-                glActiveTexture(GL_TEXTURE4);
-                glBindTexture(GL_TEXTURE_2D, taa_prev);
-                glActiveTexture(GL_TEXTURE5);
-                glBindTexture(GL_TEXTURE_2D, g_position_prev);
+                    glActiveTexture(GL_TEXTURE0);
+                    glBindTexture(GL_TEXTURE_2D, g_position);
+                    glActiveTexture(GL_TEXTURE1);
+                    glBindTexture(GL_TEXTURE_2D, g_normal);
+                    glActiveTexture(GL_TEXTURE2);
+                    glBindTexture(GL_TEXTURE_2D, g_color_spec);
+                    glActiveTexture(GL_TEXTURE3);
+                    glBindTexture(GL_TEXTURE_2D, l_buffer);
+                    glActiveTexture(GL_TEXTURE4);
+                    glBindTexture(GL_TEXTURE_2D, taa_prev);
+                    glActiveTexture(GL_TEXTURE5);
+                    glBindTexture(GL_TEXTURE_2D, g_position_prev);
 
-                glUseProgram(taa_shader.gl_program);
+                    glUseProgram(taa_shader.gl_program);
 
-                glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&icamera);
-                glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat *)&prev_camera);
-                glUniform1ui(2, render_mode);
+                    glUniformMatrix4fv(0, 1, GL_FALSE, (GLfloat *)&icamera);
+                    glUniformMatrix4fv(1, 1, GL_FALSE, (GLfloat *)&prev_camera);
+                    glUniform1ui(2, render_mode);
 
-                // 6 is the number of vertices
-                glDrawArrays(GL_TRIANGLES, 0, 6);
+                    // 6 is the number of vertices
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
+                }
             }
 
             {

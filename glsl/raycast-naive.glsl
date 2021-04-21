@@ -49,6 +49,8 @@ uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
         return res;
     }
 
+    // even though raycast-predicated has this as a while (true), don't change
+    // it here. crashes video drivers. we should investigate this.
     for (int i = 0; i < 1000; ++i) {
         vec3 prev_t_max = vec3(t_max_x, t_max_y, t_max_z);
         vec3 prev_pos = vec3(x, y, z);
