@@ -308,7 +308,7 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
     assert(false);
 }
 
-std::string RedstoneCircuit::Expression::to_string() {
+std::string RedstoneCircuit::Expression::to_string() const {
     switch (type) {
     case Type::Invalid:
         return "Invalid";

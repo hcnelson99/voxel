@@ -16,7 +16,7 @@ struct Vec3 {
 
     bool in_world() const { return IN_BOUND(x) && IN_BOUND(y) && IN_BOUND(z); }
     void invalidate() { x = WORLD_SIZE + 1; }
-    std::string to_string() {
+    std::string to_string() const {
         std::stringstream ss;
         ss << "<" << x << ", " << y << ", " << z << ">";
         return ss.str();

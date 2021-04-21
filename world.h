@@ -241,7 +241,7 @@ class RedstoneCircuit {
             uint32_t alias;
         };
 
-        std::string to_string();
+        std::string to_string() const;
 
         Expression() : type(Type::Invalid) {}
         Expression(Expression &&expr) { operator=(expr); }
