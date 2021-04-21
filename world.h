@@ -238,7 +238,10 @@ class RedstoneCircuit {
         union {
             Vec3 variable;
             uint32_t negation;
-            std::vector<uint32_t> *disjuncts;
+            struct {
+                uint32_t size;
+                uint32_t *expressions;
+            } disjuncts;
             uint32_t alias;
         };
 
@@ -253,17 +256,21 @@ class RedstoneCircuit {
 
         Type get_type() const { return type; }
 
-        void init(Type _type) {
+        void init_linear(Type _type) {
             assert(type == Type::Invalid);
+            assert(_type != Type::Invalid && _type != Type::Disjunction);
             type = _type;
-            if (type == Type::Disjunction) {
-                disjuncts = new std::vector<uint32_t>;
-            }
+        }
+
+        void init_disjunction(uint32_t terms) {
+            type = Type::Disjunction;
+            disjuncts.size = terms;
+            disjuncts.expressions = new uint32_t[terms];
         }
 
         ~Expression() {
             if (type == Type::Disjunction) {
-                delete disjuncts;
+                delete[] disjuncts.expressions;
             }
         }
 

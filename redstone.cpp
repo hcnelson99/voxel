@@ -56,7 +56,7 @@ uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Express
     } else {
         if (block_to_expression(v) != 0) {
             int k = block_to_expression(v);
-            expressions[k].init(Expression::Type::Alias);
+            expressions[k].init_linear(Expression::Type::Alias);
             expressions[k].height = UINT_MAX;
             expressions[k].alias = expr_i;
             return k;
@@ -90,7 +90,7 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
             assert(false);
         default:
             if (Negate) {
-                expr.init(Expression::Type::Negation);
+                expr.init_linear(Expression::Type::Negation);
                 if (expressions[i].height == UINT_MAX) {
                     expr.height = UINT_MAX;
                 } else {
@@ -143,13 +143,11 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         new_frontier.clear();
     }
 
-    Expression expr;
-    expr.init(Expression::Type::Disjunction);
-
     bool always_true = false;
     bool always_false = true;
 
     uint32_t max_height = 0;
+    std::vector<uint32_t> terms;
     for (const Vec3 &vec : terminals) {
         uint32_t i = build_expression(vec, world_geometry->get_block(vec));
         switch (i) {
@@ -164,7 +162,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         default:
             always_false = false;
             max_height = std::max(max_height, expressions[i].height);
-            expr.disjuncts->push_back(i);
+            terms.push_back(i);
         }
     }
 
@@ -173,9 +171,13 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         expr_i = ALWAYS_FALSE;
     } else if (always_true) {
         expr_i = ALWAYS_TRUE;
-    } else if (expr.disjuncts->size() == 1) {
-        expr_i = expr.disjuncts->at(0);
+    } else if (terms.size() == 1) {
+        expr_i = terms[0];
     } else {
+        Expression expr;
+        expr.init_disjunction(terms.size());
+        memcpy(expr.disjuncts.expressions, terms.data(), sizeof(uint32_t) * terms.size());
+
         if (max_height == UINT_MAX) {
             expr.height = UINT_MAX;
         } else {
@@ -191,6 +193,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         Expression temp_expr;
         set_expression(vec, expr_i, temp_expr);
     }
+
     return expr_i;
 }
 
@@ -234,7 +237,7 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
         return build_directed_expression<ALWAYS_FALSE, false>(v, block);
     } else if (block.is_delay_gate() || block.is_switch()) {
         Expression expr;
-        expr.init(Expression::Type::Variable);
+        expr.init_linear(Expression::Type::Variable);
         expr.height = 0;
         expr.variable = v;
         return set_expression(v, 0, expr);
@@ -312,8 +315,8 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
         evaluation_memo[expr_i] = !evaluate(expr.negation);
         return evaluation_memo[expr_i];
     case Expression::Type::Disjunction:
-        for (const uint32_t &i : *(expr.disjuncts)) {
-            if (evaluate(i)) {
+        for (uint32_t i = 0; i < expr.disjuncts.size; i++) {
+            if (evaluate(expr.disjuncts.expressions[i])) {
                 evaluation_memo[expr_i] = true;
                 return true;
             }
@@ -341,11 +344,11 @@ std::string RedstoneCircuit::Expression::to_string() const {
         break;
     case Type::Disjunction: {
         ss << "Disjunction(";
-        for (size_t i = 0; i < disjuncts->size(); i++) {
+        for (size_t i = 0; i < disjuncts.size; i++) {
             if (i == 0) {
-                ss << disjuncts->at(i);
+                ss << disjuncts.expressions[i];
             } else {
-                ss << " v " << disjuncts->at(i);
+                ss << " v " << disjuncts.expressions[i];
             }
         }
         ss << ")";
