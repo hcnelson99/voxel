@@ -98,7 +98,7 @@ class ShaderProgram {
     }
 
     bool compile_shader(GLuint shader, std::string filename) {
-        char *code = load_file(filename);
+        char *code = load_file("glsl/" + filename);
 
         glShaderSource(shader, 1, &code, NULL);
         free(code);
@@ -295,7 +295,7 @@ class Game {
 
         { // Load terrain.png
             int x, y, n;
-            unsigned char *data = stbi_load("terrain.png", &x, &y, &n, 0);
+            unsigned char *data = stbi_load("textures/terrain.png", &x, &y, &n, 0);
             assert(data != NULL);
             assert(x == 256 && y == 256 && n == 4);
 
@@ -312,7 +312,7 @@ class Game {
 
         { // Load blue_noise.png
             int x, y, n;
-            unsigned char *data = stbi_load("blue_noise.png", &x, &y, &n, 0);
+            unsigned char *data = stbi_load("textures/blue_noise.png", &x, &y, &n, 0);
             assert(data != NULL);
             assert(x == 512 && y == 512 && n == 4);
 
