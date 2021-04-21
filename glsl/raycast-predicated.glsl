@@ -35,9 +35,7 @@ uint raycast(vec3 fpos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     ivec3 just_out = next * ivec3(WORLD_SIZE + 1) - 1;
 
     while (true) {
-        float prev_t = min(t_max.x, min(t_max.y, t_max.z));
         vec3 prev_pos = pos;
-
         float t_min = min(t_max.x, min(t_max.y, t_max.z));
         ivec3 mask = ivec3(equal(t_max, vec3(t_min)));
 
@@ -50,7 +48,7 @@ uint raycast(vec3 fpos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
 
         res = lookup(pos);
         if (res != 0) {
-            dest_pos = fpos + dir * prev_t;
+            dest_pos = fpos + dir * t_min;
             normal = prev_pos - pos;
             return res;
         }
