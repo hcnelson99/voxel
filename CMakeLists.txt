@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(voxel)
 
+find_package(OpenMP REQUIRED)
+
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL -DTRACY_ENABLE)
 
 add_executable(voxel voxel.cpp world.cpp redstone.cpp tracy/TracyClient.cpp)
