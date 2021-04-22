@@ -1,5 +1,6 @@
 #include "config.h"
 #include "world.h"
+#include <algorithm>
 #include <iostream>
 #include <stack>
 #include <string.h>
@@ -176,6 +177,9 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
     } else {
         Expression expr;
         expr.init_disjunction(terms.size());
+
+        std::sort(terms.begin(), terms.end(),
+                  [this](uint32_t a, uint32_t b) { return expressions[a].height < expressions[b].height; });
         memcpy(expr.disjuncts.expressions, terms.data(), sizeof(uint32_t) * terms.size());
 
         if (max_height == UINT_MAX) {
