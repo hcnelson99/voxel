@@ -58,12 +58,18 @@ void RedstoneCircuit::rebuild() {
 
         expression_indices.clear();
         expression_indices.push_back(3);
-        for (size_t i = 4; i < index_to_expression.size(); i++) {
-            if (ordered_expressions[i].height != ordered_expressions[i - 1].height) {
-                expression_indices.push_back(i);
+        {
+            size_t i;
+            for (i = 4; i < index_to_expression.size(); i++) {
+                if (ordered_expressions[i].height == UINT_MAX) {
+                    break;
+                }
+                if (ordered_expressions[i].height != ordered_expressions[i - 1].height) {
+                    expression_indices.push_back(i);
+                }
             }
+            expression_indices.push_back(std::min(i, index_to_expression.size()));
         }
-        expression_indices.push_back(index_to_expression.size());
     }
 }
 
@@ -326,13 +332,20 @@ void RedstoneCircuit::evaluate_parallel() {
     std::fill(evaluation_memo.begin(), evaluation_memo.end(), EVALUATION_UNDEFINED);
 
     // for each level in the expression tree
+    uint32_t total_end = 0;
     for (size_t level = 0; level < expression_indices.size() - 1; level++) {
         uint32_t start = expression_indices[level];
         uint32_t end = expression_indices[level + 1];
+        total_end = end;
 
         for (uint32_t expr_i = start; expr_i < end; expr_i++) {
             evaluate(expr_i);
         }
+    }
+
+    // fallback to serial evaluation for degenerate loop case
+    for (uint32_t expr_i = total_end; expr_i < ordered_expressions.size(); expr_i++) {
+        evaluate(expr_i);
     }
 }
 
