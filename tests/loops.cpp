@@ -109,7 +109,6 @@ void double_loop() {
         assert(world.get_block(3, 0, 0).is(Block::ActiveSwitch));
     };
 
-    world.save("test.world");
     world.tick();
     check();
     world.tick();
