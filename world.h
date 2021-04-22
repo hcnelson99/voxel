@@ -233,7 +233,7 @@ class RedstoneCircuit {
     WorldGeometry *world_geometry;
 
     struct Expression {
-        enum Type { Invalid, Variable, Negation, Disjunction, Alias };
+        enum Type : uint8_t { Invalid = 0, Variable = 1, Negation = 2, Disjunction = 3, Alias = 4 };
         uint32_t height;
         union {
             Vec3 variable;
@@ -249,6 +249,7 @@ class RedstoneCircuit {
 
         Expression() : type(Type::Invalid) {}
         Expression(Expression &&expr) { operator=(expr); }
+        Expression(const Expression &expr) = delete;
         void operator=(Expression &expr) {
             memcpy(this, &expr, sizeof(Expression));
             expr.type = Type::Invalid;
@@ -286,10 +287,16 @@ class RedstoneCircuit {
 
     Tensor<bool, WORLD_SIZE> rebuild_visited;
     std::vector<Expression> expressions;
+    Tensor<uint32_t, WORLD_SIZE> block_to_expression;
+
+    std::vector<Expression> ordered_expressions;
+    std::vector<uint32_t> index_to_expression;
+    std::vector<uint32_t> expression_indices;
+
     std::vector<uint8_t> evaluation_memo;
+
     Tensor<Delay, WORLD_SIZE> delays;
     std::vector<Vec3> delay_gates;
-    Tensor<uint32_t, WORLD_SIZE> block_to_expression;
 
     uint32_t set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr);
     uint32_t build_expression(const Vec3 &v, const Block &block);
@@ -300,6 +307,7 @@ class RedstoneCircuit {
     uint32_t build_ball_expression(const Vec3 &v, const Block &block);
 
     bool evaluate(uint32_t expr_i);
+    void evaluate_parallel();
 };
 
 class World : public WorldGeometry {
