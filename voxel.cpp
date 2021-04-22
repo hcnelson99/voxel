@@ -595,7 +595,7 @@ class Game {
                 world->player_click(ray, player_block_selection, player_mouse_modify.value());
             }
 
-            if (mouse_grabbed && (SDL_GetWindowFlags(window) & SDL_WINDOW_MOUSE_FOCUS)) {
+            if (mouse_grabbed && (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS)) {
                 {
                     size_t ms_elapsed = std::chrono::duration<double, std::milli>(time - begin_time).count();
                     if (ms_elapsed >= last_tick_time + MS_BETWEEN_TICK) {
