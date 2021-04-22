@@ -227,8 +227,7 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
         num_vertices = vertex;
     }
 
-    block_map(x, y, z) = block;
-    world_buffer_data[zyx_major(x, y, z)] = block;
+    _update_block_map(x, y, z, block);
 }
 
 void WorldGeometry::delete_block(int x, int y, int z) {
@@ -237,8 +236,7 @@ void WorldGeometry::delete_block(int x, int y, int z) {
         int vertex = block_id * VERTICES_PER_BLOCK;
         num_vertices -= VERTICES_PER_BLOCK;
 
-        block_map(x, y, z) = Block::Air;
-        world_buffer_data[zyx_major(x, y, z)] = Block::Air;
+        _update_block_map(x, y, z, Block::Air);
 
         block_coordinates_to_id(x, y, z) = -1;
 
@@ -259,6 +257,11 @@ void WorldGeometry::delete_block(int x, int y, int z) {
 
 void WorldGeometry::set_active(int x, int y, int z, bool active) {
     Block block = get_block(x, y, z);
+
+    if (block.is_active() == active) {
+        return;
+    }
+
     if (block.is_redstone()) {
         block.set_type(active ? Block::ActiveRedstone : Block::InactiveRedstone);
     } else if (block.is_bluestone()) {
@@ -275,8 +278,29 @@ void WorldGeometry::set_active(int x, int y, int z, bool active) {
         block.set_type(active ? Block::ActiveDisplay : Block::Display);
     } else if (block.is_switch()) {
         block.set_type(active ? Block::ActiveSwitch : Block::Switch);
+    } else {
+        assert(false);
     }
-    set_block(x, y, z, block);
+
+    const int block_id = block_coordinates_to_id(x, y, z);
+    assert(block_id != -1);
+    const int vertex = block_id * VERTICES_PER_BLOCK;
+
+    const auto set_face_data = [&block, this](int _vertex, const Orientation &face) {
+        const uint8_t face_data = block.texture_id(face);
+        for (unsigned int i = 0; i < 6; i++) {
+            block_face_data[_vertex + i] = face_data;
+        }
+    };
+
+    set_face_data(vertex, Orientation::PosX);
+    set_face_data(vertex + 6, Orientation::PosY);
+    set_face_data(vertex + 12, Orientation::PosZ);
+    set_face_data(vertex + 18, Orientation::NegX);
+    set_face_data(vertex + 24, Orientation::NegY);
+    set_face_data(vertex + 30, Orientation::NegZ);
+
+    _update_block_map(x, y, z, block);
 }
 
 void WorldGeometry::rotate_block(int x, int y, int z) {
@@ -328,8 +352,9 @@ void WorldGeometry::_add_square(Block block, int &vertex, int x, int y, int z, O
         vertex_texture_uv_data[vertex + id++] = 0;
     }
 
+    const uint8_t face_data = block.texture_id(face);
     for (unsigned int i = 0; i < 6; i++) {
-        block_face_data[vertex + i] = block.texture_id(face);
+        block_face_data[vertex + i] = face_data;
     }
 
     vertex += 6;

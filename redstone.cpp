@@ -283,7 +283,10 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
 }
 
 void RedstoneCircuit::tick() {
-    for (const Vec3 &v : delay_gates) {
+
+#pragma omp parallel for
+    for (size_t i = 0; i < delay_gates.size(); i++) {
+        const Vec3 &v = delay_gates[i];
         Delay &delay = delays(v);
         uint8_t &ticks = delay.ticks;
         if (ticks != 0xff) {
@@ -298,6 +301,7 @@ void RedstoneCircuit::tick() {
 
     evaluate_parallel();
 
+#pragma omp parallel for collapse(3)
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
@@ -309,7 +313,9 @@ void RedstoneCircuit::tick() {
         }
     }
 
-    for (const Vec3 &v : delay_gates) {
+#pragma omp parallel for
+    for (size_t i = 0; i < delay_gates.size(); i++) {
+        const Vec3 &v = delay_gates[i];
         Delay &delay = delays(v);
         const Block &block = world_geometry->get_block(v);
 
@@ -338,6 +344,7 @@ void RedstoneCircuit::evaluate_parallel() {
         uint32_t end = expression_indices[level + 1];
         total_end = end;
 
+#pragma omp parallel for
         for (uint32_t expr_i = start; expr_i < end; expr_i++) {
             evaluate(expr_i);
         }

@@ -220,6 +220,12 @@ class WorldGeometry {
     void benchmark_world();
 
     void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
+
+  private:
+    void _update_block_map(int x, int y, int z, const Block &block) {
+        block_map(x, y, z) = block;
+        world_buffer_data[zyx_major(x, y, z)] = block;
+    }
 };
 
 class RedstoneCircuit {

@@ -2,6 +2,8 @@
 
 #include "config.h"
 #include <algorithm>
+#include <chrono>
+#include <functional>
 
 #define IN_BOUND(x) (0 <= (x) && (x) < WORLD_SIZE)
 
@@ -40,3 +42,10 @@ template <typename ValueType, unsigned int N> class Tensor {
   private:
     ValueType *buffer;
 };
+
+static size_t time_function(std::function<void()> f) {
+    auto start = std::chrono::steady_clock::now();
+    { f(); }
+    auto end = std::chrono::steady_clock::now();
+    size_t ms_elapsed = std::chrono::duration<double, std::milli>(end - start).count();
+}
