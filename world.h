@@ -293,9 +293,9 @@ class RedstoneCircuit {
         void reset() { ticks = 0xff; }
     };
 
-    std::mutex expressions_lock;
     Tensor<std::atomic_uint, WORLD_SIZE> rebuild_visited;
     Tensor<std::mutex, WORLD_SIZE> expression_lock;
+    std::atomic_uint num_expressions;
     std::vector<Expression> expressions;
     Tensor<uint32_t, WORLD_SIZE> block_to_expression;
 

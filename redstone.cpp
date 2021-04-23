@@ -23,36 +23,50 @@ void RedstoneCircuit::rebuild() {
     // index 0: unused since indices are unsigned so 0 is default (therefore invalid)
     // index 1: always true
     // index 2: always false
-    expressions.resize(3);
+    num_expressions.store(3);
 
     block_to_expression.clear(0);
 
     rebuild_visited.clear();
     expression_lock.clear();
 
+    unsigned int max_expressions = 3;
+
+    for (int x = 0; x < WORLD_SIZE; ++x) {
+        for (int y = 0; y < WORLD_SIZE; ++y) {
+            for (int z = 0; z < WORLD_SIZE; ++z) {
+                const Block block = world_geometry->get_block_safe(x, y, z);
+                if (block.is_delay_gate()) {
+                    delay_gates.emplace_back(x, y, z);
+                } else {
+                    delays(x, y, z).reset();
+                }
+
+                if (!block.is(Block::Air)) {
+                    max_expressions++;
+                }
+            }
+        }
+    }
+
+    expressions.resize(max_expressions);
+
+#pragma omp parallel for collapse(3)
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
                 const Vec3 v(x, y, z);
                 Block block = world_geometry->get_block_safe(v);
                 build_expression(v, block);
-
-                if (block.is_delay_gate()) {
-                    delay_gates.emplace_back(x, y, z);
-                } else {
-                    delays(v).reset();
-                }
             }
         }
     }
 
-    for (Expression &expr : expressions) {
-        expr.height = UINT_MAX;
-    }
+    const unsigned int _num_expressions = num_expressions.load();
 
-    ordered_expressions.resize(expressions.size());
-    expression_indices.resize(expressions.size());
-    index_to_expression.resize(expressions.size());
+    ordered_expressions.resize(_num_expressions);
+    expression_indices.resize(_num_expressions);
+    index_to_expression.resize(_num_expressions);
     std::iota(expression_indices.begin(), expression_indices.end(), 0);
     std::iota(index_to_expression.begin(), index_to_expression.end(), 0);
 
@@ -83,11 +97,8 @@ void RedstoneCircuit::rebuild() {
 }
 
 inline uint32_t RedstoneCircuit::allocate_expression() {
-    expressions_lock.lock();
-    uint32_t i = expressions.size();
-    expressions.resize(i + 1);
+    uint32_t i = num_expressions++;
     expressions[i].height = 0;
-    expressions_lock.unlock();
     return i;
 }
 
@@ -181,7 +192,15 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
     std::vector<Vec3> frontier(1, v);
     std::vector<Vec3> new_frontier;
 
-    const auto _early_return = [&]() { return get_expression_midbuild(v); };
+    unsigned int thread = thread_mask();
+
+    const auto _early_return = [&]() {
+        for (const Vec3 &vec : ball) {
+            rebuild_visited(vec).fetch_and(~thread);
+        }
+
+        return get_expression_midbuild(v);
+    };
 
     const auto _add = [&](const Vec3 &vec, const Orientation &o) {
         const Vec3 nv = vec + o.direction();
@@ -192,9 +211,9 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
 
         const Block neighbor = world_geometry->get_block(nv);
         if (BallPredicate(neighbor)) {
-            unsigned int thread = thread_mask();
-            unsigned int mask = rebuild_visited(nv).fetch_or(thread);
+            unsigned int mask = rebuild_visited(nv).fetch_or(thread) & ~(thread - 1);
             if (thread < mask) {
+                rebuild_visited(nv).fetch_and(~thread);
                 return true;
             } else if (thread > mask) {
                 ball.push_back(nv);
@@ -377,7 +396,7 @@ void RedstoneCircuit::tick() {
 
 void RedstoneCircuit::evaluate_parallel() {
     evaluation_memo.clear();
-    evaluation_memo.resize(expressions.size());
+    evaluation_memo.resize(num_expressions.load());
     std::fill(evaluation_memo.begin(), evaluation_memo.end(), EVALUATION_UNDEFINED);
 
     // for each level in the expression tree
@@ -435,6 +454,7 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
         return evaluation_memo[expr_i];
     }
     assert(false);
+    return false;
 }
 
 std::string RedstoneCircuit::Expression::to_string() const {
