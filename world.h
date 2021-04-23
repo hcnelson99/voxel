@@ -1,9 +1,11 @@
 #pragma once
 
 #include <GL/glew.h>
+#include <atomic>
 #include <cstring>
 #include <functional>
 #include <glm/glm.hpp>
+#include <mutex>
 #include <sstream>
 #include <string.h>
 #include <string>
@@ -291,7 +293,9 @@ class RedstoneCircuit {
         void reset() { ticks = 0xff; }
     };
 
-    Tensor<bool, WORLD_SIZE> rebuild_visited;
+    std::mutex expressions_lock;
+    Tensor<std::atomic_uint, WORLD_SIZE> rebuild_visited;
+    Tensor<std::mutex, WORLD_SIZE> expression_lock;
     std::vector<Expression> expressions;
     Tensor<uint32_t, WORLD_SIZE> block_to_expression;
 
@@ -304,6 +308,8 @@ class RedstoneCircuit {
     Tensor<Delay, WORLD_SIZE> delays;
     std::vector<Vec3> delay_gates;
 
+    inline uint32_t allocate_expression();
+    inline uint32_t get_expression_midbuild(const Vec3 &v);
     uint32_t set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr);
     uint32_t build_expression(const Vec3 &v, const Block &block);
 

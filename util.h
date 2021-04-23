@@ -36,6 +36,12 @@ template <typename ValueType, unsigned int N> class Tensor {
     inline ValueType &at(int x, int y, int z) { return buffer[x * N * N + y * N + z]; }
 
     void clear(ValueType v) { std::fill((ValueType *)buffer, (ValueType *)buffer + N * N * N, v); }
+    void clear() {
+        for (size_t i = 0; i < N * N * N; i++) {
+            buffer[i].~ValueType();
+            new (&buffer[i]) ValueType();
+        }
+    }
 
     inline ValueType *get_buffer() { return buffer; }
 
