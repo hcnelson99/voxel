@@ -233,18 +233,10 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
 
     while (frontier.size() > 0) {
         for (const Vec3 &vec : frontier) {
-            if (_add(vec, Orientation::PosX))
+            if (_add(vec, Orientation::PosX) || _add(vec, Orientation::NegX) || _add(vec, Orientation::PosY) ||
+                _add(vec, Orientation::NegY) || _add(vec, Orientation::PosZ) || _add(vec, Orientation::NegZ)) {
                 return _early_return();
-            if (_add(vec, Orientation::NegX))
-                return _early_return();
-            if (_add(vec, Orientation::PosY))
-                return _early_return();
-            if (_add(vec, Orientation::NegY))
-                return _early_return();
-            if (_add(vec, Orientation::PosZ))
-                return _early_return();
-            if (_add(vec, Orientation::NegZ))
-                return _early_return();
+            }
         }
 
         std::swap(frontier, new_frontier);
