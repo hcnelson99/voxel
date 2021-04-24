@@ -56,4 +56,5 @@ static size_t time_function(std::function<void()> f) {
     { f(); }
     auto end = std::chrono::steady_clock::now();
     size_t ms_elapsed = std::chrono::duration<double, std::milli>(end - start).count();
+    return ms_elapsed;
 }
