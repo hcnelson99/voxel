@@ -13,8 +13,10 @@ struct Vec3 {
     int z;
     Vec3() : x(0), y(0), z(0) {}
     Vec3(int x, int y, int z) : x(x), y(y), z(z) {}
+    Vec3(int x) : x(x), y(x), z(x) {}
 
     Vec3 operator+(const Vec3 &v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
+    Vec3 operator/(int d) const { return Vec3(x / d, y / d, z / d); }
 
     bool in_world() const { return IN_BOUND(x) && IN_BOUND(y) && IN_BOUND(z); }
     void invalidate() { x = WORLD_SIZE + 1; }

@@ -103,7 +103,7 @@ inline uint32_t RedstoneCircuit::allocate_expression() {
 }
 
 inline uint32_t RedstoneCircuit::get_expression_midbuild(const Vec3 &v) {
-    expression_lock(v).lock();
+    expression_lock(v / expression_lock_granularity).lock();
     uint32_t ret;
     if (block_to_expression(v) == 0) {
         uint32_t i = allocate_expression();
@@ -113,12 +113,12 @@ inline uint32_t RedstoneCircuit::get_expression_midbuild(const Vec3 &v) {
     } else {
         ret = block_to_expression(v);
     }
-    expression_lock(v).unlock();
+    expression_lock(v / expression_lock_granularity).unlock();
     return ret;
 }
 
 uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr) {
-    expression_lock(v).lock();
+    expression_lock(v / expression_lock_granularity).lock();
     uint32_t ret;
     if (expr_i == 0) {
         if (block_to_expression(v) != 0) {
@@ -143,7 +143,7 @@ uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Express
             ret = expr_i;
         }
     }
-    expression_lock(v).unlock();
+    expression_lock(v / expression_lock_granularity).unlock();
     return ret;
 }
 
