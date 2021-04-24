@@ -32,12 +32,17 @@ void RedstoneCircuit::rebuild() {
 
     unsigned int max_expressions = 3;
 
+    std::mutex delay_gates_lock;
+
+#pragma omp parallel for collapse(3) reduction(+ : max_expressions)
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
                 const Block block = world_geometry->get_block_safe(x, y, z);
                 if (block.is_delay_gate()) {
+                    delay_gates_lock.lock();
                     delay_gates.emplace_back(x, y, z);
+                    delay_gates_lock.unlock();
                 } else {
                     delays(x, y, z).reset();
                 }
