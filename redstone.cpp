@@ -185,28 +185,30 @@ inline uint32_t RedstoneCircuit::get_expression_midbuild(const Vec3 &v) {
     return ret;
 }
 
-uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr) {
+uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i) {
     uint32_t ret = 0;
-    if (expr_i == 0) {
-        uint32_t i = allocate_expression();
-
-        if (block_to_expression(v).compare_exchange_strong(ret, i)) {
-            expressions[i] = expr;
-            ret = i;
-        } else {
-            expressions[ret] = expr;
-            cancel_allocated_expression();
-        }
-
+    if (block_to_expression(v).compare_exchange_strong(ret, expr_i)) {
+        ret = expr_i;
     } else {
-        if (block_to_expression(v).compare_exchange_strong(ret, expr_i)) {
-            ret = expr_i;
-        } else {
-            expressions[ret].init_linear(Expression::Type::Alias);
-            expressions[ret].height = UINT_MAX;
-            expressions[ret].alias = expr_i;
-        }
+        expressions[ret].init_linear(Expression::Type::Alias);
+        expressions[ret].height = UINT_MAX;
+        expressions[ret].alias = expr_i;
     }
+    return ret;
+}
+
+uint32_t RedstoneCircuit::set_expression(const Vec3 &v, Expression &expr) {
+    uint32_t ret = 0;
+    uint32_t i = allocate_expression();
+
+    if (block_to_expression(v).compare_exchange_strong(ret, i)) {
+        expressions[i] = expr;
+        ret = i;
+    } else {
+        expressions[ret] = expr;
+        cancel_allocated_expression();
+    }
+
     return ret;
 }
 
@@ -214,10 +216,9 @@ template <uint32_t Default, bool Negate>
 uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &block) {
     const Vec3 input_v = v + block.get_orientation().opposite().direction();
     const Block input = world_geometry->get_block_safe(input_v);
-    Expression expr;
 
     if (!input.output_in_direction(block.get_orientation())) {
-        return set_expression(v, Default, expr);
+        return set_expression(v, Default);
     } else {
         const uint32_t i = build_expression(input_v, input);
 
@@ -226,13 +227,14 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
 
         switch (i) {
         case ALWAYS_TRUE:
-            return set_expression(v, true_input, expr);
+            return set_expression(v, true_input);
         case ALWAYS_FALSE:
-            return set_expression(v, false_input, expr);
+            return set_expression(v, false_input);
         case 0:
             assert(false);
         default:
             if (Negate) {
+                Expression expr;
                 expr.init_linear(Expression::Type::Negation);
                 if (expressions[i].height == UINT_MAX) {
                     expr.height = UINT_MAX;
@@ -240,9 +242,9 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
                     expr.height = expressions[i].height + 1;
                 }
                 expr.negation = i;
-                return set_expression(v, 0, expr);
+                return set_expression(v, expr);
             } else {
-                return set_expression(v, i, expr);
+                return set_expression(v, i);
             }
         }
     }
@@ -350,8 +352,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
     }
 
     for (const Vec3 &vec : ball) {
-        Expression temp_expr;
-        set_expression(vec, expr_i, temp_expr);
+        set_expression(vec, expr_i);
     }
 
     return expr_i;
@@ -393,7 +394,7 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
         expr.init_linear(Expression::Type::Variable);
         expr.height = 0;
         expr.variable = v;
-        return set_expression(v, 0, expr);
+        return set_expression(v, expr);
     } else {
         return 0;
     }
