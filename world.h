@@ -242,7 +242,7 @@ class RedstoneCircuit {
 
     struct Expression {
         enum Type : uint8_t { Invalid = 0, Variable = 1, Negation = 2, Disjunction = 3, Alias = 4 };
-        uint32_t height;
+        uint32_t height = 0;
         union {
             Vec3 variable;
             uint32_t negation;

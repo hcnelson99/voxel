@@ -89,8 +89,45 @@ void RedstoneCircuit::rebuild() {
     std::iota(expression_indices.begin(), expression_indices.end(), 0);
     std::iota(index_to_expression.begin(), index_to_expression.end(), 0);
 
-    std::sort(expression_indices.begin() + 3, expression_indices.end(),
-              [this](uint32_t i1, uint32_t i2) { return expressions[i1].height < expressions[i2].height; });
+    // sort the expressions by height
+    {
+        std::vector<unsigned int> height_counts(1, 0);
+        std::vector<unsigned int> height_indices;
+
+        for (size_t i = 3; i < _num_expressions; i++) {
+            const uint32_t &height = expressions[i].height;
+            if (height == UINT_MAX) {
+                height_counts[0]++;
+            } else if (height + 1 >= height_counts.size()) {
+                height_counts.resize(height + 2);
+                height_counts[height + 1] = 1;
+            } else {
+                height_counts[height + 1]++;
+            }
+        }
+
+        unsigned int levels = height_counts.size();
+        height_indices.resize(levels);
+        height_indices[1] = 3;
+        for (size_t i = 2; i < levels; i++) {
+            height_indices[i] = height_indices[i - 1] + height_counts[i - 1];
+        }
+        height_indices[0] = height_indices[levels - 1] + height_counts[levels - 1];
+
+        for (size_t i = 3; i < _num_expressions; i++) {
+            uint32_t height = expressions[i].height;
+            if (height == UINT_MAX) {
+                height = 0;
+            } else {
+                height++;
+            }
+            const unsigned int index = height_indices[height]++;
+            expression_indices[index] = i;
+        }
+
+        // std::sort(expression_indices.begin() + 3, expression_indices.end(),
+        //          [this](uint32_t i1, uint32_t i2) { return expressions[i1].height < expressions[i2].height; });
+    }
 
     {
         for (size_t i = 0; i < expression_indices.size(); i++) {
