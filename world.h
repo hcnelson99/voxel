@@ -293,13 +293,16 @@ class RedstoneCircuit {
         void reset() { ticks = 0xff; }
     };
 
-    inline constexpr static size_t expression_lock_granularity = 8;
-
     Tensor<std::atomic_uint, WORLD_SIZE> rebuild_visited;
-    Tensor<std::mutex, WORLD_SIZE / expression_lock_granularity> expression_lock;
+    struct ThreadData {
+        uint32_t remaining = 0;
+        uint32_t expression_index;
+        uint32_t padding[14];
+    };
+    std::vector<ThreadData> thread_data;
     std::atomic_uint num_expressions;
     std::vector<Expression> expressions;
-    Tensor<uint32_t, WORLD_SIZE> block_to_expression;
+    Tensor<std::atomic_uint, WORLD_SIZE> block_to_expression;
 
     std::vector<Expression> ordered_expressions;
     std::vector<uint32_t> index_to_expression;
@@ -311,6 +314,7 @@ class RedstoneCircuit {
     std::vector<Vec3> delay_gates;
 
     inline uint32_t allocate_expression();
+    inline void cancel_allocated_expression();
     inline uint32_t get_expression_midbuild(const Vec3 &v);
     uint32_t set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr);
     uint32_t build_expression(const Vec3 &v, const Block &block);

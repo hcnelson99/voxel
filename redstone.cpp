@@ -14,6 +14,10 @@ constexpr uint32_t ALWAYS_FALSE = 2;
 constexpr uint8_t EVALUATION_UNDEFINED = 2;
 constexpr uint8_t EVALUATION_IN_PROGRESS = 3;
 
+constexpr int THREAD_LOCAL_EXPRS = 100;
+
+unsigned int num_threads;
+
 inline unsigned int thread_mask() { return 1 << omp_get_thread_num(); }
 
 void RedstoneCircuit::rebuild() {
@@ -25,14 +29,24 @@ void RedstoneCircuit::rebuild() {
     // index 2: always false
     num_expressions.store(3);
 
-    block_to_expression.clear(0);
+    block_to_expression.clear();
 
     rebuild_visited.clear();
-    expression_lock.clear();
 
     unsigned int max_expressions = 3;
 
     std::mutex delay_gates_lock;
+
+    {
+#pragma omp parallel
+        {
+#pragma omp single
+            num_threads = omp_get_num_threads();
+        }
+    }
+
+    thread_data.clear();
+    thread_data.resize(num_threads);
 
 #pragma omp parallel for collapse(3) reduction(+ : max_expressions)
     for (int x = 0; x < WORLD_SIZE; ++x) {
@@ -54,7 +68,7 @@ void RedstoneCircuit::rebuild() {
         }
     }
 
-    expressions.resize(max_expressions);
+    expressions.resize(max_expressions + THREAD_LOCAL_EXPRS * num_threads);
 
 #pragma omp parallel for collapse(3)
     for (int x = 0; x < WORLD_SIZE; ++x) {
@@ -101,54 +115,61 @@ void RedstoneCircuit::rebuild() {
     }
 }
 
+inline void RedstoneCircuit::cancel_allocated_expression() {
+    ThreadData &thread = thread_data[omp_get_thread_num()];
+    thread.remaining++;
+    thread.expression_index--;
+}
+
 inline uint32_t RedstoneCircuit::allocate_expression() {
-    uint32_t i = num_expressions++;
+    ThreadData &thread = thread_data[omp_get_thread_num()];
+    uint32_t i;
+    if (thread.remaining == 0) {
+        thread.remaining = THREAD_LOCAL_EXPRS;
+        thread.expression_index = num_expressions.fetch_add(THREAD_LOCAL_EXPRS);
+    }
+
+    i = thread.expression_index++;
+    thread.remaining--;
+
     expressions[i].height = 0;
     return i;
 }
 
 inline uint32_t RedstoneCircuit::get_expression_midbuild(const Vec3 &v) {
-    expression_lock(v / expression_lock_granularity).lock();
-    uint32_t ret;
-    if (block_to_expression(v) == 0) {
-        uint32_t i = allocate_expression();
+    uint32_t i = allocate_expression();
+    uint32_t ret = 0;
+    if (block_to_expression(v).compare_exchange_strong(ret, i)) {
         expressions[i].height = UINT_MAX;
-        block_to_expression(v) = i;
         ret = i;
     } else {
-        ret = block_to_expression(v);
+        cancel_allocated_expression();
     }
-    expression_lock(v / expression_lock_granularity).unlock();
     return ret;
 }
 
 uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i, Expression &expr) {
-    expression_lock(v / expression_lock_granularity).lock();
-    uint32_t ret;
+    uint32_t ret = 0;
     if (expr_i == 0) {
-        if (block_to_expression(v) != 0) {
-            int k = block_to_expression(v);
-            expressions[k] = expr;
-            ret = k;
+        uint32_t i = allocate_expression();
+
+        if (block_to_expression(v).compare_exchange_strong(ret, i)) {
+            expressions[i] = expr;
+            ret = i;
         } else {
-            uint32_t k = allocate_expression();
-            expressions[k] = expr;
-            block_to_expression(v) = k;
-            ret = k;
+            expressions[ret] = expr;
+            cancel_allocated_expression();
         }
+
     } else {
-        if (block_to_expression(v) != 0) {
-            int k = block_to_expression(v);
-            expressions[k].init_linear(Expression::Type::Alias);
-            expressions[k].height = UINT_MAX;
-            expressions[k].alias = expr_i;
-            ret = k;
-        } else {
-            block_to_expression(v) = expr_i;
+        if (block_to_expression(v).compare_exchange_strong(ret, expr_i)) {
             ret = expr_i;
+        } else {
+            expressions[ret].init_linear(Expression::Type::Alias);
+            expressions[ret].height = UINT_MAX;
+            expressions[ret].alias = expr_i;
         }
     }
-    expression_lock(v / expression_lock_granularity).unlock();
     return ret;
 }
 
@@ -364,8 +385,8 @@ void RedstoneCircuit::tick() {
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                if (block_to_expression(x, y, z) != 0) {
-                    const bool active = evaluate(index_to_expression[block_to_expression(x, y, z)]);
+                if (block_to_expression(x, y, z).load() != 0) {
+                    const bool active = evaluate(index_to_expression[block_to_expression(x, y, z).load()]);
                     world_geometry->set_active(x, y, z, active);
                 }
             }
@@ -450,7 +471,6 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
         evaluation_memo[expr_i] = evaluate(index_to_expression[expr.alias]);
         return evaluation_memo[expr_i];
     }
-    assert(false);
     return false;
 }
 
