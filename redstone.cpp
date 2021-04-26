@@ -462,7 +462,7 @@ void RedstoneCircuit::evaluate_parallel() {
         uint32_t end = expression_indices[level + 1];
         total_end = end;
 
-#pragma omp parallel for
+#pragma omp simd
         for (uint32_t expr_i = start; expr_i < end; expr_i++) {
             evaluate(expr_i);
         }
