@@ -257,7 +257,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
     std::vector<Vec3> frontier(1, v);
     std::vector<Vec3> new_frontier;
 
-    unsigned int thread = thread_mask();
+    const unsigned int thread = thread_mask();
 
     const auto _early_return = [&]() {
         for (const Vec3 &vec : ball) {
@@ -423,8 +423,9 @@ void RedstoneCircuit::tick() {
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                if (block_to_expression(x, y, z).load() != 0) {
-                    const bool active = evaluate(index_to_expression[block_to_expression(x, y, z).load()]);
+                const unsigned int expr_i = block_to_expression(x, y, z).load();
+                if (expr_i != 0) {
+                    const bool active = evaluate(expr_i);
                     world_geometry->set_active(x, y, z, active);
                 }
             }
@@ -488,17 +489,17 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
     }
     evaluation_memo[expr_i] = EVALUATION_IN_PROGRESS;
 
-    const Expression &expr = ordered_expressions[expr_i];
+    const Expression &expr = ordered_expressions[index_to_expression[expr_i]];
     switch (expr.get_type()) {
     case Expression::Type::Variable:
         evaluation_memo[expr_i] = world_geometry->get_block(expr.variable).is_active();
         return evaluation_memo[expr_i];
     case Expression::Type::Negation:
-        evaluation_memo[expr_i] = !evaluate(index_to_expression[expr.negation]);
+        evaluation_memo[expr_i] = !evaluate(expr.negation);
         return evaluation_memo[expr_i];
     case Expression::Type::Disjunction:
         for (uint32_t i = 0; i < expr.disjuncts.size; i++) {
-            if (evaluate(index_to_expression[expr.disjuncts.expressions[i]])) {
+            if (evaluate(expr.disjuncts.expressions[i])) {
                 evaluation_memo[expr_i] = true;
                 return true;
             }
@@ -506,7 +507,7 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
         evaluation_memo[expr_i] = false;
         return false;
     case Expression::Type::Alias:
-        evaluation_memo[expr_i] = evaluate(index_to_expression[expr.alias]);
+        evaluation_memo[expr_i] = evaluate(expr.alias);
         return evaluation_memo[expr_i];
     }
     return false;
