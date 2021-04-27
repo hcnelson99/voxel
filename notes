@@ -85,4 +85,6 @@ Deferred rendering to gbuffer, then second pass for path trace
 OR
 Just one render call, do all rendering in one frag shader
 
+https://doc.lagout.org/science/0_Computer%20Science/Real-Time%20Volume%20Graphics.pdf
 
+- 7.3.1 pg 170 early ray termination cost (use double loop?)
