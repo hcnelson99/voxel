@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <chrono>
 #include <functional>
+#include <sstream>
 
 #define IN_BOUND(x) (0 <= (x) && (x) < WORLD_SIZE)
 

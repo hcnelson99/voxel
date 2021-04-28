@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <vector>
 
-#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,11 +21,12 @@
 
 #define STB_INCLUDE_IMPLEMENTATION
 #define STB_INCLUDE_LINE_GLSL
-#include "stb/stb_include.h"
 
+#include "opengl_util.h"
 #include "tracy/Tracy.hpp"
 #include "tracy/TracyOpenGL.hpp"
 
+#include "config.h"
 #include "ray.h"
 #include "repl.h"
 #include "world.h"
@@ -34,47 +34,6 @@
 constexpr size_t MS_BETWEEN_TICK = 100;
 
 World *world;
-
-void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
-                      const void *_arg) {
-    switch (type) {
-    case GL_DEBUG_TYPE_ERROR:
-        fprintf(stderr, "ERROR");
-        break;
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        fprintf(stderr, "DEPRECATED_BEHAVIOR");
-        break;
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        fprintf(stderr, "UNDEFINED_BEHAVIOR");
-        break;
-    case GL_DEBUG_TYPE_PORTABILITY:
-        fprintf(stderr, "PORTABILITY");
-        break;
-    case GL_DEBUG_TYPE_PERFORMANCE:
-        fprintf(stderr, "PERFORMANCE");
-        break;
-    case GL_DEBUG_TYPE_OTHER:
-        return;
-    }
-
-    fprintf(stderr, " (");
-    switch (severity) {
-    case GL_DEBUG_SEVERITY_LOW:
-        fprintf(stderr, "LOW");
-        break;
-    case GL_DEBUG_SEVERITY_MEDIUM:
-        fprintf(stderr, "MEDIUM");
-        break;
-    case GL_DEBUG_SEVERITY_HIGH:
-        fprintf(stderr, "HIGH");
-        break;
-    }
-    fprintf(stderr, "): %s\n", message);
-
-    if (severity == GL_DEBUG_SEVERITY_HIGH && source != GL_DEBUG_SOURCE_SHADER_COMPILER) {
-        exit(1);
-    }
-}
 
 class ShaderProgram {
   public:
@@ -85,11 +44,10 @@ class ShaderProgram {
     }
 
     bool compile_shader(GLuint shader, std::string filename) {
-        std::string path_to_include = "glsl/";
-        std::string path = path_to_include + filename;
+        std::string path = GLSL_PATH + filename;
         char inject[1] = "";
         char error[256];
-        char *code = stb_include_file(&path[0], inject, &path_to_include[0], error);
+        char *code = stb_include_file(&path[0], inject, &GLSL_PATH[0], error);
         if (!code) {
             fprintf(stderr, "%s\n", error);
             return false;
@@ -178,15 +136,7 @@ class Game {
                 exit(1);
             }
 
-            glewExperimental = GL_TRUE;
-            GLenum res = glewInit();
-            if (res != GLEW_OK) {
-                fprintf(stderr, "%s\n", glewGetErrorString(res));
-            }
-
-            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-            glDebugMessageCallback(gl_debug_message, NULL);
-            glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
+            initialize_opengl();
 
             SDL_SetRelativeMouseMode(SDL_TRUE);
             // do not adaptive sync
