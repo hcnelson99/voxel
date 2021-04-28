@@ -263,7 +263,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
     std::vector<Vec3> frontier(1, v);
     std::vector<Vec3> new_frontier;
 
-    unsigned int thread = thread_mask();
+    const unsigned int thread = thread_mask();
 
     const auto _add = [&](const Vec3 &vec, const Orientation &o) {
         const Vec3 nv = vec + o.direction();
@@ -456,7 +456,7 @@ void RedstoneCircuit::evaluate_parallel() {
         uint32_t end = expression_indices[level + 1];
         total_end = end;
 
-#pragma omp simd
+#pragma omp parallel for
         for (uint32_t expr_i = start; expr_i < end; expr_i++) {
             evaluate(expr_i);
         }
