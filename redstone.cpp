@@ -29,9 +29,9 @@ void RedstoneCircuit::rebuild() {
     // index 2: always false
     num_expressions.store(3);
 
-    block_to_expression.clear();
+    block_to_expression.clear(0);
 
-    rebuild_visited.clear();
+    rebuild_visited.clear(false);
 
     unsigned int max_expressions = 3;
 
@@ -174,42 +174,42 @@ inline uint32_t RedstoneCircuit::allocate_expression() {
 }
 
 inline uint32_t RedstoneCircuit::get_expression_midbuild(const Vec3 &v) {
-    uint32_t i = allocate_expression();
-    uint32_t ret = 0;
-    if (block_to_expression(v).compare_exchange_strong(ret, i)) {
+    if (block_to_expression(v) == 0) {
+        uint32_t i = allocate_expression();
         expressions[i].height = UINT_MAX;
-        ret = i;
+        block_to_expression(v) = i;
+        return i;
     } else {
-        cancel_allocated_expression();
+        return block_to_expression(v);
     }
-    return ret;
 }
 
 uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i) {
-    uint32_t ret = 0;
-    if (block_to_expression(v).compare_exchange_strong(ret, expr_i)) {
-        ret = expr_i;
+    if (block_to_expression(v) == 0) {
+        block_to_expression(v) = expr_i;
+        return expr_i;
     } else {
-        expressions[ret].init_linear(Expression::Type::Alias);
-        expressions[ret].height = UINT_MAX;
-        expressions[ret].alias = expr_i;
+        uint32_t i = block_to_expression(v);
+        if (expressions[i].get_type() == Expression::Type::Invalid) {
+            expressions[i].init_linear(Expression::Type::Alias);
+            expressions[i].height = UINT_MAX;
+            expressions[i].alias = expr_i;
+        }
+        return i;
     }
-    return ret;
 }
 
 uint32_t RedstoneCircuit::set_expression(const Vec3 &v, Expression &expr) {
-    uint32_t ret = 0;
-    uint32_t i = allocate_expression();
-
-    if (block_to_expression(v).compare_exchange_strong(ret, i)) {
+    if (block_to_expression(v) == 0) {
+        uint32_t i = allocate_expression();
         expressions[i] = expr;
-        ret = i;
+        block_to_expression(v) = i;
+        return i;
     } else {
-        expressions[ret] = expr;
-        cancel_allocated_expression();
+        uint32_t i = block_to_expression(v);
+        expressions[i] = expr;
+        return i;
     }
-
-    return ret;
 }
 
 template <uint32_t Default, bool Negate>
@@ -253,19 +253,12 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
 template <bool BallPredicate(const Block &b), bool TerminalPredicate(const Block &b)>
 uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &block) {
     std::vector<Vec3> terminals;
-    std::vector<Vec3> ball(1, v);
+    Vec3Set ball;
+    ball.insert(v);
     std::vector<Vec3> frontier(1, v);
     std::vector<Vec3> new_frontier;
 
     const unsigned int thread = thread_mask();
-
-    const auto _early_return = [&]() {
-        for (const Vec3 &vec : ball) {
-            rebuild_visited(vec).fetch_and(~thread);
-        }
-
-        return get_expression_midbuild(v);
-    };
 
     const auto _add = [&](const Vec3 &vec, const Orientation &o) {
         const Vec3 nv = vec + o.direction();
@@ -275,15 +268,10 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         }
 
         const Block neighbor = world_geometry->get_block(nv);
-        if (BallPredicate(neighbor)) {
-            unsigned int mask = rebuild_visited(nv).fetch_or(thread) & ~(thread - 1);
-            if (thread < mask) {
-                rebuild_visited(nv).fetch_and(~thread);
-                return true;
-            } else if (thread > mask) {
-                ball.push_back(nv);
-                new_frontier.push_back(nv);
-            }
+        if (BallPredicate(neighbor) && !ball.contains(nv)) {
+            ball.insert(nv);
+            new_frontier.push_back(nv);
+            rebuild_visited(nv) = true;
         } else if (TerminalPredicate(neighbor) && neighbor.output_in_direction(o.opposite())) {
             terminals.push_back(nv);
         }
@@ -293,10 +281,12 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
 
     while (frontier.size() > 0) {
         for (const Vec3 &vec : frontier) {
-            if (_add(vec, Orientation::PosX) || _add(vec, Orientation::NegX) || _add(vec, Orientation::PosY) ||
-                _add(vec, Orientation::NegY) || _add(vec, Orientation::PosZ) || _add(vec, Orientation::NegZ)) {
-                return _early_return();
-            }
+            _add(vec, Orientation::PosX);
+            _add(vec, Orientation::NegX);
+            _add(vec, Orientation::PosY);
+            _add(vec, Orientation::NegY);
+            _add(vec, Orientation::PosZ);
+            _add(vec, Orientation::NegZ);
         }
 
         std::swap(frontier, new_frontier);
@@ -351,9 +341,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
         expressions[expr_i] = expr;
     }
 
-    for (const Vec3 &vec : ball) {
-        set_expression(vec, expr_i);
-    }
+    ball.for_each([&](Vec3 vec) { set_expression(vec, expr_i); });
 
     return expr_i;
 }
@@ -371,9 +359,10 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     using namespace BallPredicates;
 
     {
-        unsigned int zero = 0;
-        if (!rebuild_visited(v).compare_exchange_strong(zero, thread_mask())) {
+        if (rebuild_visited(v)) {
             return get_expression_midbuild(v);
+        } else {
+            rebuild_visited(v) = true;
         }
     }
 
@@ -423,7 +412,7 @@ void RedstoneCircuit::tick() {
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                const unsigned int expr_i = block_to_expression(x, y, z).load();
+                const unsigned int expr_i = block_to_expression(x, y, z);
                 if (expr_i != 0) {
                     const bool active = evaluate(expr_i);
                     world_geometry->set_active(x, y, z, active);

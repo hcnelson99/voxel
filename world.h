@@ -293,7 +293,7 @@ class RedstoneCircuit {
         void reset() { ticks = 0xff; }
     };
 
-    Tensor<std::atomic_uint, WORLD_SIZE> rebuild_visited;
+    Tensor<bool, WORLD_SIZE> rebuild_visited;
     struct ThreadData {
         uint32_t remaining = 0;
         uint32_t expression_index;
@@ -302,7 +302,7 @@ class RedstoneCircuit {
     std::vector<ThreadData> thread_data;
     std::atomic_uint num_expressions;
     std::vector<Expression> expressions;
-    Tensor<std::atomic_uint, WORLD_SIZE> block_to_expression;
+    Tensor<uint32_t, WORLD_SIZE> block_to_expression;
 
     std::vector<Expression> ordered_expressions;
     std::vector<uint32_t> index_to_expression;
