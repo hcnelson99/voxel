@@ -34,8 +34,7 @@ void RedstoneCircuit::rebuild() {
     rebuild_visited.clear(false);
 
     unsigned int max_expressions = 3;
-
-    std::mutex delay_gates_lock;
+    unsigned int num_delay_gates = 0;
 
     {
 #pragma omp parallel
@@ -48,15 +47,13 @@ void RedstoneCircuit::rebuild() {
     thread_data.clear();
     thread_data.resize(num_threads);
 
-#pragma omp parallel for collapse(3) reduction(+ : max_expressions)
+#pragma omp parallel for collapse(3) reduction(+ : max_expressions, num_delay_gates)
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
                 const Block block = world_geometry->get_block_safe(x, y, z);
                 if (block.is_delay_gate()) {
-                    delay_gates_lock.lock();
-                    delay_gates.emplace_back(x, y, z);
-                    delay_gates_lock.unlock();
+                    num_delay_gates++;
                 } else {
                     delays(x, y, z).reset();
                 }
@@ -69,6 +66,9 @@ void RedstoneCircuit::rebuild() {
     }
 
     expressions.resize(max_expressions + THREAD_LOCAL_EXPRS * num_threads);
+    delay_gates.resize(num_delay_gates);
+
+    std::atomic_uint delay_i(0);
 
 #pragma omp parallel for collapse(3)
     for (int x = 0; x < WORLD_SIZE; ++x) {
@@ -76,6 +76,11 @@ void RedstoneCircuit::rebuild() {
             for (int z = 0; z < WORLD_SIZE; ++z) {
                 const Vec3 v(x, y, z);
                 Block block = world_geometry->get_block_safe(v);
+
+                if (block.is_delay_gate()) {
+                    delay_gates[delay_i++] = v;
+                }
+
                 build_expression(v, block);
             }
         }
