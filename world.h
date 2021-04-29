@@ -211,8 +211,12 @@ class WorldGeometry {
 
 class RedstoneCircuit {
   public:
-    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) {}
+    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) {
+        index_to_expression.reserve(BLOCKS);
+        evaluation_memo.reserve(BLOCKS);
+    }
 
+    void init();
     void rebuild();
     void tick();
 
@@ -282,6 +286,7 @@ class RedstoneCircuit {
     std::atomic_uint num_expressions;
     std::vector<Expression> expressions;
     Tensor<std::atomic_uint, WORLD_SIZE> block_to_expression;
+    Tensor<uint32_t, WORLD_SIZE> block_to_expression_scalar;
 
     std::vector<Expression> ordered_expressions;
     std::vector<uint32_t> index_to_expression;
@@ -314,6 +319,7 @@ class World : public WorldGeometry {
 
     void initialize() {
         WorldGeometry::initialize();
+        redstone.init();
         redstone_dirty = true;
     }
 
