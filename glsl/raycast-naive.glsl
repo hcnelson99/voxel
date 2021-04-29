@@ -3,24 +3,22 @@
 // 99th percentile: 17.122457
 
 uint lookup(ivec3 v) {
-        return texelFetch(world_buffer, v, 0).r >> 3;
+    return block_at(v) >> 3;
 }
 
-uint WORLD_SIZE = textureSize(world_buffer, 0).x;
-
 bool in_bounds(vec3 pos) {
-    return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
+    return 0 <= pos.x && pos.x < world_size && 0 <= pos.y && pos.y < world_size && 0 <= pos.z && pos.z < world_size;
 }
 
 uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     if (!in_bounds(pos)) {
         return 0;
     }
-    
 
-    int x = int(clamp(pos.x, 0, WORLD_SIZE - 1));
-    int y = int(clamp(pos.y, 0, WORLD_SIZE - 1));
-    int z = int(clamp(pos.z, 0, WORLD_SIZE - 1));
+
+    int x = int(clamp(pos.x, 0, world_size - 1));
+    int y = int(clamp(pos.y, 0, world_size - 1));
+    int z = int(clamp(pos.z, 0, world_size - 1));
 
     uint res = lookup(ivec3(x, y, z));
     if (res != 0) {
@@ -44,9 +42,9 @@ uint raycast(vec3 pos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     float t_delta_y = abs(1.f / dir.y);
     float t_delta_z = abs(1.f / dir.z);
 
-    int just_out_x = step_x == 1 ? int(WORLD_SIZE) : -1;
-    int just_out_y = step_y == 1 ? int(WORLD_SIZE) : -1;
-    int just_out_z = step_z == 1 ? int(WORLD_SIZE) : -1;
+    int just_out_x = step_x == 1 ? int(world_size) : -1;
+    int just_out_y = step_y == 1 ? int(world_size) : -1;
+    int just_out_z = step_z == 1 ? int(world_size) : -1;
 
     // even though raycast-predicated has this as a while (true), don't change
     // it here. crashes video drivers. we should investigate this.

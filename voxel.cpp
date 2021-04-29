@@ -292,11 +292,11 @@ class Game {
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
                 glEnableVertexAttribArray(0);
 
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, world_buffers.block_ids);
-
                 glBindBuffer(GL_ARRAY_BUFFER, world_buffers.vertex_texture_uv);
-                glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0);
-                glEnableVertexAttribArray(2);
+                glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, 0, 0);
+                glEnableVertexAttribArray(1);
+
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, world_buffers.block_ids);
             }
 
             gshader.init("gvertex.glsl", "gfragment.glsl");
@@ -585,7 +585,7 @@ class Game {
 
                     glUseProgram(gshader.gl_program);
 
-                    glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
+                    glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
                     glDrawArrays(GL_TRIANGLES, 0, world->get_num_vertices());
 
                     glDisable(GL_DEPTH_TEST);
@@ -604,8 +604,7 @@ class Game {
                     glBindTexture(GL_TEXTURE_2D, g_normal);
                     glActiveTexture(GL_TEXTURE2);
                     glBindTexture(GL_TEXTURE_2D, g_color_spec);
-                    glActiveTexture(GL_TEXTURE3);
-                    glBindTexture(GL_TEXTURE_3D, world->get_buffers().world_texture);
+                    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, world->get_buffers().block_ids);
                     glActiveTexture(GL_TEXTURE4);
                     glBindTexture(GL_TEXTURE_2D, terrain_texture);
                     glActiveTexture(GL_TEXTURE5);
@@ -670,8 +669,7 @@ class Game {
                 glBindTexture(GL_TEXTURE_2D, g_normal);
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, g_color_spec);
-                glActiveTexture(GL_TEXTURE3);
-                glBindTexture(GL_TEXTURE_3D, world->get_buffers().world_texture);
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, world->get_buffers().block_ids);
                 glActiveTexture(GL_TEXTURE4);
                 glBindTexture(GL_TEXTURE_2D, terrain_texture);
                 glActiveTexture(GL_TEXTURE5);

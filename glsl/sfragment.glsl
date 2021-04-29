@@ -7,7 +7,7 @@ layout (location = 2) uniform uint player_block_selection;
 layout (binding = 0) uniform sampler2D g_position;
 layout (binding = 1) uniform sampler2D g_normal;
 layout (binding = 2) uniform sampler2D g_color_spec;
-layout (binding = 3) uniform usampler3D world_buffer;
+layout(std430, binding = 3) buffer buffer0 { uint block_map[]; };
 layout (binding = 4) uniform sampler2D terrain_texture;
 layout (binding = 5) uniform sampler2D lighting_texture;
 layout (binding = 6) uniform sampler2D taa_lighting;
@@ -16,6 +16,10 @@ in vec2 uv;
 
 out vec4 frag_color;
 
+// this should insert a line with const uint world_size = WORLD_SIZE
+#inject
+
+#include "block_map.glsl"
 #include "util.glsl"
 #include "raycast.glsl"
 
@@ -53,7 +57,7 @@ void gbuffer_debug() {
     vec2 uv_local = uv;
     if (uv.x < 0.5 && uv.y < 0.5) {
         uv_local *= 2;
-        frag_color = texture(g_position, uv_local) / WORLD_SIZE;
+        frag_color = texture(g_position, uv_local) / world_size;
     } else if (uv.x < 0.5 && uv.y >= 0.5) {
         uv_local.x *= 2;
         uv_local.y = uv_local.y * 2 - 1;
@@ -144,7 +148,7 @@ vec3 blur(vec2 uv) {
     return res;
 }
 
-void main() { 
+void main() {
     if (render_mode == 0) {
         vec3 color = texture(g_color_spec, uv).xyz;
         vec3 brightness = texture(taa_lighting, uv).xyz;

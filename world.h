@@ -156,7 +156,6 @@ class WorldGeometry {
         GLuint block_ids;
         GLuint vertices;
         GLuint vertex_texture_uv;
-        GLuint world_texture;
     };
 
     // this is used instead of constructor because GL functions need to be
@@ -175,8 +174,6 @@ class WorldGeometry {
 
     // buffers that are directly used by OpenGL
     struct {
-        uint8_t *world_buffer_data;
-
         // the position of each vertex
         glm::vec3 *vertex_data;
 
