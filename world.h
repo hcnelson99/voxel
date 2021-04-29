@@ -17,10 +17,6 @@
 #include "tracy/Tracy.hpp"
 #include "util.h"
 
-#define VERTICES_PER_BLOCK (6 * 3 * 2) // 6 faces, 2 triangles per face
-#define BLOCKS (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE)
-#define VERTICES (WORLD_SIZE * WORLD_SIZE * WORLD_SIZE * VERTICES_PER_BLOCK)
-
 inline int zyx_major(int x, int y, int z) { return ((z)*WORLD_SIZE * WORLD_SIZE + (y)*WORLD_SIZE + (x)); }
 
 enum class Axis : uint8_t { X = 0, Y = 1, Z = 2 };
@@ -39,8 +35,6 @@ struct Orientation {
     static Orientation from(uint8_t o) { return Orientation(o); }
 
     static Orientation from_direction(glm::vec3 dir);
-
-    uint8_t plane_orientation(const Orientation &o) const;
 
     Orientation opposite() const { return _opposite_map[_orientation]; }
     Vec3 direction() const { return _direction_map[_orientation]; }
@@ -102,8 +96,6 @@ class Block {
     Orientation get_orientation() const { return Orientation::from(_block & OrientationMask); }
     operator uint8_t() const { return _block; }
 
-    uint8_t texture_id(const Orientation orientation) const;
-
     void rotate() { _block = (_block & TypeMask) | Orientation::from((get_orientation() + 1)); }
 
     void set_type(BlockType type) { _block = type | (_block & OrientationMask); }
@@ -150,14 +142,12 @@ class WorldGeometry {
   public:
     WorldGeometry() {
         world_buffer_data = new uint8_t[BLOCKS];
-        block_face_data = new uint8_t[VERTICES];
         vertex_data = new glm::vec3[VERTICES];
         vertex_texture_uv_data = new uint8_t[VERTICES];
     }
 
     ~WorldGeometry() {
         delete[] world_buffer_data;
-        delete[] block_face_data;
         delete[] vertex_data;
         delete[] vertex_texture_uv_data;
     }
@@ -178,15 +168,14 @@ class WorldGeometry {
 
     void sync_buffers();
 
+    Tensor<Block, WORLD_SIZE> block_map;
+
   protected:
     OpenGLBuffers buffers;
 
     // buffers that are directly used by OpenGL
     struct {
         uint8_t *world_buffer_data;
-
-        // the block type for each vertex
-        uint8_t *block_face_data;
 
         // the position of each vertex
         glm::vec3 *vertex_data;
@@ -196,8 +185,6 @@ class WorldGeometry {
     };
 
     unsigned int num_vertices = 0;
-
-    Tensor<Block, WORLD_SIZE> block_map;
 
     // maps logical block coordinate to index into list of vertices
     Tensor<int, WORLD_SIZE> block_coordinates_to_id;
@@ -221,7 +208,7 @@ class WorldGeometry {
     void flatworld();
     void benchmark_world();
 
-    void _add_square(Block block, int &vertex, int x, int y, int z, Orientation face);
+    void _add_square(Block block, int &vertex, uint8_t offset, int x, int y, int z, Orientation face);
 
   private:
     void _update_block_map(int x, int y, int z, const Block &block) {

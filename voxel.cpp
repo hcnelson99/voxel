@@ -45,9 +45,11 @@ class ShaderProgram {
 
     bool compile_shader(GLuint shader, std::string filename) {
         std::string path = GLSL_PATH + filename;
-        char inject[1] = "";
+        char world_size_str[50];
+        snprintf(world_size_str, sizeof(world_size_str), "const uint world_size = %d;", WORLD_SIZE);
+
         char error[256];
-        char *code = stb_include_file(&path[0], inject, &GLSL_PATH[0], error);
+        char *code = stb_include_file(&path[0], world_size_str, &GLSL_PATH[0], error);
         if (!code) {
             fprintf(stderr, "%s\n", error);
             return false;
@@ -64,21 +66,25 @@ class ShaderProgram {
             std::cout << "failed to compile file " << filename << std::endl;
             return false;
         }
+
         return true;
     }
 
     bool recompile() {
         GLuint gl_program_new, vertex_shader, fragment_shader;
+        char log[256];
 
         gl_program_new = glCreateProgram();
         vertex_shader = glCreateShader(GL_VERTEX_SHADER);
         fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
         if (!compile_shader(vertex_shader, vertex_shader_filename)) {
+            fprintf(stderr, "Failed to recompile vertex shader: %s\n", vertex_shader_filename.c_str());
             return false;
         }
         glAttachShader(gl_program_new, vertex_shader);
         if (!compile_shader(fragment_shader, fragment_shader_filename)) {
+            fprintf(stderr, "Failed to recompile fragment shader: %s\n", fragment_shader_filename.c_str());
             return false;
         }
         glAttachShader(gl_program_new, fragment_shader);
@@ -87,11 +93,15 @@ class ShaderProgram {
         GLint success;
         glGetProgramiv(gl_program_new, GL_LINK_STATUS, &success);
         if (success != GL_TRUE) {
+            int length;
+            glGetProgramInfoLog(gl_program_new, sizeof(log), &length, log);
+            fprintf(stderr, "Error: linker log:\n%s\n", log);
             return false;
         }
 
         // cleanup old gl_program?
         gl_program = gl_program_new;
+
         return true;
     }
 
@@ -282,9 +292,7 @@ class Game {
                 glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
                 glEnableVertexAttribArray(0);
 
-                glBindBuffer(GL_ARRAY_BUFFER, world_buffers.block_ids);
-                glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, 0, 0);
-                glEnableVertexAttribArray(1);
+                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, world_buffers.block_ids);
 
                 glBindBuffer(GL_ARRAY_BUFFER, world_buffers.vertex_texture_uv);
                 glVertexAttribIPointer(2, 1, GL_UNSIGNED_BYTE, 0, 0);
@@ -575,6 +583,12 @@ class Game {
                     glActiveTexture(GL_TEXTURE0);
                     glBindTexture(GL_TEXTURE_2D, terrain_texture);
 
+                    {
+                        GLint blockIdsLoc = glGetUniformLocation(gshader.gl_program, "block_ids");
+                        glProgramUniform1uiv(gshader.gl_program, blockIdsLoc, BLOCKS / 4,
+                                             (uint32_t *)world->block_map.get_buffer());
+                    }
+
                     glUseProgram(gshader.gl_program);
 
                     glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
@@ -707,7 +721,7 @@ class Game {
     double rotate_x = 0, rotate_y = 0;
 
     ShaderProgram gshader, lighting_shader, display_shader, taa_shader;
-    GLuint terrain_texture, world_texture, blue_noise_texture;
+    GLuint terrain_texture, block_ids, blue_noise_texture;
 
     GLuint g_position, g_normal, g_color_spec;
     GLuint gshader_vao, screenspace_vao;

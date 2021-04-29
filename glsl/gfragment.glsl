@@ -2,7 +2,6 @@
 
 layout (binding = 0) uniform sampler2D terrain_texture;
 
-
 in vec3 world_pos;
 flat in uint block_id;
 in vec2 texture_uv;
