@@ -141,13 +141,11 @@ class WorldGeometry {
 
   public:
     WorldGeometry() {
-        world_buffer_data = new uint8_t[BLOCKS];
         vertex_data = new glm::vec3[VERTICES];
         vertex_texture_uv_data = new uint8_t[VERTICES];
     }
 
     ~WorldGeometry() {
-        delete[] world_buffer_data;
         delete[] vertex_data;
         delete[] vertex_texture_uv_data;
     }
@@ -208,10 +206,7 @@ class WorldGeometry {
     void _add_square(Block block, int &vertex, uint8_t offset, int x, int y, int z, Orientation face);
 
   private:
-    void _update_block_map(int x, int y, int z, const Block &block) {
-        block_map(x, y, z) = block;
-        world_buffer_data[zyx_major(x, y, z)] = block;
-    }
+    void _update_block_map(int x, int y, int z, const Block &block) { block_map(x, y, z) = block; }
 };
 
 class RedstoneCircuit {
@@ -375,7 +370,6 @@ class World : public WorldGeometry {
         num_vertices = 0;
         block_coordinates_to_id.clear(-1);
         std::fill((Vec3 *)block_coordinate_order, (Vec3 *)block_coordinate_order + BLOCKS, Vec3());
-        memset((void *)&world_buffer_data[0], 0, BLOCKS * sizeof(uint8_t));
 
         for (int x = 0; x < WORLD_SIZE; ++x) {
             for (int y = 0; y < WORLD_SIZE; ++y) {
