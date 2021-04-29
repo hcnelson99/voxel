@@ -246,10 +246,6 @@ void WorldGeometry::set_active(int x, int y, int z, bool active) {
         assert(false);
     }
 
-    const int block_id = block_coordinates_to_id(x, y, z);
-    assert(block_id != -1);
-    const int vertex = block_id * VERTICES_PER_BLOCK;
-
     _update_block_map(x, y, z, block);
 }
 

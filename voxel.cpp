@@ -583,12 +583,6 @@ class Game {
                     glActiveTexture(GL_TEXTURE0);
                     glBindTexture(GL_TEXTURE_2D, terrain_texture);
 
-                    {
-                        GLint blockIdsLoc = glGetUniformLocation(gshader.gl_program, "block_ids");
-                        glProgramUniform1uiv(gshader.gl_program, blockIdsLoc, BLOCKS / 4,
-                                             (uint32_t *)world->block_map.get_buffer());
-                    }
-
                     glUseProgram(gshader.gl_program);
 
                     glUniformMatrix4fv(3, 1, GL_FALSE, (GLfloat *)&camera);
