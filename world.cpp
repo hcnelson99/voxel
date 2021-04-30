@@ -229,9 +229,12 @@ void WorldGeometry::sync_mipmapped_blockmap() {
     //     }
     // }
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_3D, buffers.mipmapped_block_ids);
-    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, N, N, N, GL_RED_INTEGER, GL_UNSIGNED_BYTE, level0.data());
+    {
+        TracyGpuZone("upload mipmap");
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_3D, buffers.mipmapped_block_ids);
+        glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, N, N, N, GL_RED_INTEGER, GL_UNSIGNED_BYTE, level0.data());
+    }
 }
 
 void WorldGeometry::sync_buffers() {
