@@ -171,9 +171,67 @@ void WorldGeometry::initialize() {
         glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES_PER_BLOCK, vertex_texture_uv_data, GL_DYNAMIC_DRAW);
     }
 
+    glGenTextures(1, &buffers.mipmapped_block_ids);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_3D, buffers.mipmapped_block_ids);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    // TODO: change mipmap levels!!!
+    int N = WORLD_SIZE / 2;
+    glTexStorage3D(GL_TEXTURE_3D, 1, GL_R8UI, N, N, N);
+
     glGenBuffers(1, &buffers.block_positions);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
     glBufferData(GL_ARRAY_BUFFER, sizeof(uint32_t) * BLOCKS, block_positions, GL_DYNAMIC_DRAW);
+}
+
+void WorldGeometry::sync_mipmapped_blockmap() {
+    ZoneScoped;
+
+    assert(WORLD_SIZE % 2 == 0);
+    int N = WORLD_SIZE / 2;
+
+    std::vector<uint8_t> level0;
+    level0.reserve(N * N * N);
+
+    for (int z = 0; z < N; ++z) {
+        for (int y = 0; y < N; ++y) {
+            for (int x = 0; x < N; ++x) {
+                uint8_t mask = 0;
+                for (int zz = 0; zz <= 1; ++zz) {
+                    for (int yy = 0; yy <= 1; ++yy) {
+                        for (int xx = 0; xx <= 1; ++xx) {
+                            bool is_air = block_map.at(x * 2 + xx, y * 2 + yy, z * 2 + zz).is(Block::BlockType::Air);
+                            int b = is_air ? 0 : 1;
+                            mask <<= 1;
+                            mask += b;
+                        }
+                    }
+                }
+                level0.push_back(mask);
+            }
+        }
+    }
+
+    // for (int x = 0; x < WORLD_SIZE; x++) {
+    //     for (int y = 0; y < WORLD_SIZE; y++) {
+    //         for (int z = 0; z < WORLD_SIZE; z++) {
+    //             uint8_t mask = level0[(z / 2) * N * N + (y / 2) * N + (x / 2)];
+    //             int xx = (x & 1) ^ 1;
+    //             int yy = (y & 1) ^ 1;
+    //             int zz = (z & 1) ^ 1;
+    //             uint8_t off = (xx << 2) | (yy << 1) | zz;
+    //             bool res = !block_map.at(x, y, z).is(Block::BlockType::Air);
+    //             bool res2 = ((mask >> off) & 1) == 1;
+    //             printf("(%d %d %d) (%d %d %d) -> %d | %u | bm %d us %d\n", x, y, z, xx, yy, zz, off, mask, res,
+    //             res2); assert(res == res2);
+    //         }
+    //     }
+    // }
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_3D, buffers.mipmapped_block_ids);
+    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, N, N, N, GL_RED_INTEGER, GL_UNSIGNED_BYTE, level0.data());
 }
 
 void WorldGeometry::sync_buffers() {
@@ -188,6 +246,8 @@ void WorldGeometry::sync_buffers() {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers.block_ids);
         glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, BLOCKS, block_map.get_buffer());
     }
+
+    sync_mipmapped_blockmap();
 }
 
 Block WorldGeometry::get_block(int x, int y, int z) { return block_map(x, y, z); }

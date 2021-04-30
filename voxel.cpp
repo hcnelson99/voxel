@@ -626,6 +626,8 @@ class Game {
                     glBindTexture(GL_TEXTURE_2D, terrain_texture);
                     glActiveTexture(GL_TEXTURE5);
                     glBindTexture(GL_TEXTURE_2D, blue_noise_texture);
+                    glActiveTexture(GL_TEXTURE6);
+                    glBindTexture(GL_TEXTURE_3D, world->get_buffers().mipmapped_block_ids);
 
                     glUseProgram(lighting_shader.gl_program);
 
@@ -693,6 +695,8 @@ class Game {
                 glBindTexture(GL_TEXTURE_2D, l_buffer);
                 glActiveTexture(GL_TEXTURE6);
                 glBindTexture(GL_TEXTURE_2D, taa_output);
+                glActiveTexture(GL_TEXTURE7);
+                glBindTexture(GL_TEXTURE_3D, world->get_buffers().mipmapped_block_ids);
 
                 glUseProgram(display_shader.gl_program);
 
