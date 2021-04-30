@@ -1,5 +1,4 @@
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#pragma once
 
 #include "config.h"
 #include <algorithm>
@@ -60,5 +59,3 @@ static size_t time_function(std::function<void()> f) {
     size_t ms_elapsed = std::chrono::duration<double, std::milli>(end - start).count();
     return ms_elapsed;
 }
-
-#endif

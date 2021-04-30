@@ -1,10 +1,10 @@
-#ifndef __OPENGL_UTIL_H__
-#define __OPENGL_UTIL_H__
+#pragma once
 
+#include "stb/stb_include.h"
 #include <GL/glew.h>
 
-static void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                             const GLchar *message, const void *_arg) {
+void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
+                      const void *_arg) {
     switch (type) {
     case GL_DEBUG_TYPE_ERROR:
         fprintf(stderr, "ERROR");
@@ -44,7 +44,7 @@ static void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum sever
     }
 }
 
-static void initialize_opengl() {
+void initialize_opengl() {
     glewExperimental = GL_TRUE;
     GLenum res = glewInit();
     if (res != GLEW_OK) {
@@ -55,5 +55,3 @@ static void initialize_opengl() {
     glDebugMessageCallback(gl_debug_message, NULL);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
 }
-
-#endif

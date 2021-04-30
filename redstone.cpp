@@ -1,3 +1,4 @@
+#include "config.h"
 #include "world.h"
 #include <algorithm>
 #include <iostream>
@@ -6,8 +7,6 @@
 #include <stack>
 #include <string.h>
 #include <vector>
-
-#include "redstone_tick.h"
 
 constexpr uint32_t ALWAYS_TRUE = 1;
 constexpr uint32_t ALWAYS_FALSE = 2;
@@ -20,10 +19,6 @@ constexpr int THREAD_LOCAL_EXPRS = 100;
 unsigned int num_threads;
 
 inline unsigned int thread_mask() { return 1 << omp_get_thread_num(); }
-
-RedstoneTickShader tick_shader;
-
-void RedstoneCircuit::init() { tick_shader.init(); }
 
 void RedstoneCircuit::rebuild() {
     delay_gates.clear();
@@ -158,15 +153,6 @@ void RedstoneCircuit::rebuild() {
                 }
             }
             expression_indices.push_back(std::min(i, index_to_expression.size()));
-        }
-    }
-
-#pragma omp parallel for collapse(3)
-    for (int x = 0; x < WORLD_SIZE; ++x) {
-        for (int y = 0; y < WORLD_SIZE; ++y) {
-            for (int z = 0; z < WORLD_SIZE; ++z) {
-                block_to_expression_scalar(x, y, z) = index_to_expression[block_to_expression(x, y, z).load()];
-            }
         }
     }
 }
@@ -438,7 +424,6 @@ void RedstoneCircuit::tick() {
 
     evaluate_parallel();
 
-    /*
 #pragma omp parallel for collapse(3)
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
@@ -450,12 +435,6 @@ void RedstoneCircuit::tick() {
             }
         }
     }
-    */
-    tick_shader.tick((RedstoneTickShader::TickData){
-        .block_map = (uint8_t *)world_geometry->block_map.get_buffer(),
-        .expression_values = evaluation_memo.data(),
-        .block_to_expression = block_to_expression_scalar.get_buffer(),
-    });
 
 #pragma omp parallel for
     for (size_t i = 0; i < delay_gates.size(); i++) {
@@ -479,9 +458,7 @@ void RedstoneCircuit::tick() {
 void RedstoneCircuit::evaluate_parallel() {
     evaluation_memo.clear();
     evaluation_memo.resize(num_expressions.load());
-    std::fill(evaluation_memo.begin(), evaluation_memo.end() + num_expressions.load(), EVALUATION_UNDEFINED);
-    evaluation_memo[ALWAYS_TRUE] = true;
-    evaluation_memo[ALWAYS_FALSE] = true;
+    std::fill(evaluation_memo.begin(), evaluation_memo.end(), EVALUATION_UNDEFINED);
 
     // for each level in the expression tree
     uint32_t total_end = 0;
