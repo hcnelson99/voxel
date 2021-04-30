@@ -603,8 +603,7 @@ class Game {
                     glUseProgram(gshader.gl_program);
 
                     glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
-                    glDrawArraysInstanced(GL_TRIANGLES, 0, VERTICES_PER_BLOCK,
-                                          world->get_num_vertices() / VERTICES_PER_BLOCK);
+                    glDrawArraysInstanced(GL_TRIANGLES, 0, VERTICES_PER_BLOCK, world->get_num_blocks());
 
                     glDisable(GL_DEPTH_TEST);
                 }

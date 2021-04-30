@@ -160,7 +160,7 @@ class WorldGeometry {
     // initialized by GLEW first
     void initialize();
 
-    unsigned int get_num_vertices() const { return num_vertices; }
+    unsigned int get_num_blocks() const { return num_blocks; }
     const OpenGLBuffers &get_buffers() const { return buffers; }
 
     void sync_buffers();
@@ -178,7 +178,7 @@ class WorldGeometry {
         uint32_t *block_positions;
     };
 
-    unsigned int num_vertices = 0;
+    unsigned int num_blocks = 0;
 
     // maps logical block coordinate to index into list of vertices
     Tensor<int, WORLD_SIZE> block_coordinates_to_id;
@@ -331,7 +331,7 @@ class World : public WorldGeometry {
     bool load(const char *filepath);
     bool save(const char *filepath);
     void copy(std::string cmd);
-    void log_frame() { Log::log_frame_world(num_vertices / VERTICES_PER_BLOCK); }
+    void log_frame() { Log::log_frame_world(num_blocks); }
 
     Block get_block(int x, int y, int z) { return WorldGeometry::get_block(x, y, z); }
     void set_block(int x, int y, int z, Block block) {
@@ -364,7 +364,7 @@ class World : public WorldGeometry {
     bool redstone_dirty = false;
 
     void _derive_geometry_from_block_map() {
-        num_vertices = 0;
+        num_blocks = 0;
         block_coordinates_to_id.clear(-1);
         std::fill((Vec3 *)block_coordinate_order, (Vec3 *)block_coordinate_order + BLOCKS, Vec3());
 

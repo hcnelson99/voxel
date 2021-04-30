@@ -180,7 +180,6 @@ void WorldGeometry::sync_buffers() {
     ZoneScoped;
 
     {
-        size_t num_blocks = num_vertices / VERTICES_PER_BLOCK;
         glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(uint32_t) * num_blocks, (void *)block_positions);
     }
@@ -201,7 +200,6 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
 
     int block_id = block_coordinates_to_id(x, y, z);
     if (block_id == -1) {
-        size_t num_blocks = num_vertices / VERTICES_PER_BLOCK;
         const Vec3 v(x, y, z);
 
         block_coordinates_to_id(x, y, z) = num_blocks;
@@ -209,7 +207,7 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
 
         block_positions[num_blocks] = v.encode();
 
-        num_vertices += VERTICES_PER_BLOCK;
+        num_blocks++;
     }
 
     _update_block_map(x, y, z, block);
@@ -218,15 +216,14 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
 void WorldGeometry::delete_block(int x, int y, int z) {
     int block_id = block_coordinates_to_id(x, y, z);
     if (block_id != -1) {
-        int vertex = block_id * VERTICES_PER_BLOCK;
-        num_vertices -= VERTICES_PER_BLOCK;
+        num_blocks--;
 
         _update_block_map(x, y, z, Block::Air);
 
         block_coordinates_to_id(x, y, z) = -1;
 
-        if (vertex != num_vertices) {
-            size_t last_block = num_vertices / VERTICES_PER_BLOCK;
+        if (block_id != num_blocks) {
+            const size_t last_block = num_blocks;
 
             const Vec3 &c = block_coordinate_order[last_block];
             block_coordinates_to_id(c) = block_id;
