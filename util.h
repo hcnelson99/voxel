@@ -28,6 +28,9 @@ struct Vec3 {
     }
 
     uint32_t encode() const { return (x << 20) | (y << 10) | z; }
+    static Vec3 decode(const uint32_t encoded) {
+        return Vec3((encoded >> 20) & 0xFF, (encoded >> 10) & 0xFF, (encoded)&0xFF);
+    }
 };
 
 template <typename ValueType, unsigned int N> class Tensor {

@@ -424,15 +424,12 @@ void RedstoneCircuit::tick() {
 
     evaluate_parallel();
 
-#pragma omp parallel for collapse(3)
-    for (int x = 0; x < WORLD_SIZE; ++x) {
-        for (int y = 0; y < WORLD_SIZE; ++y) {
-            for (int z = 0; z < WORLD_SIZE; ++z) {
-                if (block_to_expression(x, y, z).load() != 0) {
-                    const bool active = evaluate(index_to_expression[block_to_expression(x, y, z).load()]);
-                    world_geometry->set_active(x, y, z, active);
-                }
-            }
+#pragma omp parallel for
+    for (size_t i = 0; i < world_geometry->num_blocks; i++) {
+        const Vec3 v = Vec3::decode(world_geometry->block_positions[i]);
+        if (block_to_expression(v).load() != 0) {
+            const bool active = evaluate(index_to_expression[block_to_expression(v).load()]);
+            world_geometry->set_active(v.x, v.y, v.z, active);
         }
     }
 
