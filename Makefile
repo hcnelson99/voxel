@@ -6,10 +6,6 @@ HEADERS=world.h log.h repl.h ray.h config.h
 .PHONY: tests
 tests: tests/blocks tests/basic_redstone_propagation tests/basic_not_gate tests/basic_delay_gate tests/chained_not_gate tests/chained_delay_gate tests/blinker tests/and_gate tests/order_of_not_gates tests/loops tests/diode tests/switch tests/display tests/bluestone tests/loops_bluestone
 
-.PHONY: test
-test:
-	g++ -o test test.cpp $(SOURCES) $(CXXFLAGS) $(CFLAGS)
-
 tests/%: tests/%.cpp $(SOURCES)
 	@echo "Running test: $@"
 	@g++ -o $@ $(SOURCES) $< $(CXXFLAGS)
