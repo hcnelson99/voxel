@@ -72,6 +72,7 @@ class ShaderProgram {
 
     bool recompile() {
         GLuint gl_program_new, vertex_shader, fragment_shader;
+        int log_length;
         char log[256];
 
         gl_program_new = glCreateProgram();
@@ -80,11 +81,15 @@ class ShaderProgram {
 
         if (!compile_shader(vertex_shader, vertex_shader_filename)) {
             fprintf(stderr, "Failed to recompile vertex shader: %s\n", vertex_shader_filename.c_str());
+            glGetShaderInfoLog(vertex_shader, sizeof(log), &log_length, log);
+            fprintf(stderr, "%s\n", log);
             return false;
         }
         glAttachShader(gl_program_new, vertex_shader);
         if (!compile_shader(fragment_shader, fragment_shader_filename)) {
             fprintf(stderr, "Failed to recompile fragment shader: %s\n", fragment_shader_filename.c_str());
+            glGetShaderInfoLog(fragment_shader, sizeof(log), &log_length, log);
+            fprintf(stderr, "%s\n", log);
             return false;
         }
         glAttachShader(gl_program_new, fragment_shader);
@@ -93,8 +98,7 @@ class ShaderProgram {
         GLint success;
         glGetProgramiv(gl_program_new, GL_LINK_STATUS, &success);
         if (success != GL_TRUE) {
-            int length;
-            glGetProgramInfoLog(gl_program_new, sizeof(log), &length, log);
+            glGetProgramInfoLog(gl_program_new, sizeof(log), &log_length, log);
             fprintf(stderr, "Error: linker log:\n%s\n", log);
             return false;
         }
@@ -288,13 +292,15 @@ class Game {
                 glGenVertexArrays(1, &gshader_vao);
                 glBindVertexArray(gshader_vao);
 
-                glBindBuffer(GL_ARRAY_BUFFER, world_buffers.vertices);
-                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-                glEnableVertexAttribArray(0);
-
                 glBindBuffer(GL_ARRAY_BUFFER, world_buffers.vertex_texture_uv);
                 glVertexAttribIPointer(1, 1, GL_UNSIGNED_BYTE, 0, 0);
                 glEnableVertexAttribArray(1);
+
+                glBindBuffer(GL_ARRAY_BUFFER, world_buffers.block_positions);
+                int block_position_binding = 2;
+                glVertexAttribIPointer(block_position_binding, 1, GL_UNSIGNED_INT, 0, 0);
+                glEnableVertexAttribArray(block_position_binding);
+                glVertexAttribDivisor(block_position_binding, 1);
 
                 glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, world_buffers.block_ids);
             }
@@ -597,7 +603,8 @@ class Game {
                     glUseProgram(gshader.gl_program);
 
                     glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
-                    glDrawArrays(GL_TRIANGLES, 0, world->get_num_vertices());
+                    glDrawArraysInstanced(GL_TRIANGLES, 0, VERTICES_PER_BLOCK,
+                                          world->get_num_vertices() / VERTICES_PER_BLOCK);
 
                     glDisable(GL_DEPTH_TEST);
                 }

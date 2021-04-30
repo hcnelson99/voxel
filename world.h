@@ -141,19 +141,19 @@ class WorldGeometry {
 
   public:
     WorldGeometry() {
-        vertex_data = new glm::vec3[VERTICES];
-        vertex_texture_uv_data = new uint8_t[VERTICES];
+        vertex_texture_uv_data = new uint8_t[VERTICES_PER_BLOCK];
+        block_positions = new uint32_t[BLOCKS + 1];
     }
 
     ~WorldGeometry() {
-        delete[] vertex_data;
         delete[] vertex_texture_uv_data;
+        delete[] block_positions;
     }
 
     struct OpenGLBuffers {
         GLuint block_ids;
-        GLuint vertices;
         GLuint vertex_texture_uv;
+        GLuint block_positions;
     };
 
     // this is used instead of constructor because GL functions need to be
@@ -172,11 +172,10 @@ class WorldGeometry {
 
     // buffers that are directly used by OpenGL
     struct {
-        // the position of each vertex
-        glm::vec3 *vertex_data;
-
         // the texture position of each vertex
         uint8_t *vertex_texture_uv_data;
+
+        uint32_t *block_positions;
     };
 
     unsigned int num_vertices = 0;
@@ -202,8 +201,6 @@ class WorldGeometry {
     void randomize();
     void flatworld();
     void benchmark_world();
-
-    void _add_square(Block block, int &vertex, uint8_t offset, int x, int y, int z, Orientation face);
 
   private:
     void _update_block_map(int x, int y, int z, const Block &block) { block_map(x, y, z) = block; }

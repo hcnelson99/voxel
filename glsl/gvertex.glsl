@@ -1,7 +1,7 @@
 #version 430
 
-layout (location = 0) in vec3 vertex_pos;
 layout (location = 1) in uint texture_uv_in;
+layout (location = 2) in uint block_position;
 
 layout(std430, binding = 1) buffer buffer0 { uint block_map[]; };
 
@@ -18,15 +18,20 @@ out vec2 texture_uv;
 #include "block_map.glsl"
 
 void main() {
-    gl_Position = camera * vec4(vertex_pos, 1);
-    world_pos = vertex_pos;
 
     uint face = (texture_uv_in >> 5) & 7;
     uint offset_x = (texture_uv_in >> 4) & 1;
     uint offset_y = (texture_uv_in >> 3) & 1;
     uint offset_z = (texture_uv_in >> 2) & 1;
 
-    ivec3 vpos = ivec3(vertex_pos) - ivec3(offset_x, offset_y, offset_z);
+    ivec3 vpos = ivec3(
+        (block_position >> 20) & 1023,
+        (block_position >> 10) & 1023,
+        (block_position >>  0) & 1023
+    );
+    ivec3 offset = ivec3(offset_x, offset_y, offset_z);
+
+    vec3 vertex_coord = vpos + offset;
 
     uint block = block_at(vpos);
     uint orientation = block & 7;
@@ -61,5 +66,7 @@ void main() {
         block_id = (block >> 3) * 6 + 2 + offset;
     }
 
+    gl_Position = camera * vec4(vertex_coord, 1);
+    world_pos = vertex_coord;
     texture_uv = vec2((texture_uv_in >> 1) & 1, texture_uv_in & 1);
 }

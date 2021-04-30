@@ -26,6 +26,8 @@ struct Vec3 {
         ss << "<" << x << ", " << y << ", " << z << ">";
         return ss.str();
     }
+
+    uint32_t encode() const { return (x << 20) | (y << 10) | z; }
 };
 
 template <typename ValueType, unsigned int N> class Tensor {

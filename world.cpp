@@ -110,32 +110,80 @@ std::string Block::to_string() const {
     return type_name + "(" + get_orientation().to_string() + ")";
 }
 
+static void _add_square(int vertex, uint8_t offset, int x, int y, int z, Orientation face,
+                        uint8_t *vertex_texture_uv_data) {
+    glm::vec3 p0, p1, p2, p3;
+    uint8_t offset1 = offset, offset2 = offset, offset3 = offset;
+    p0 = glm::vec3(x, y, z);
+    uint8_t o = 1;
+    if (face.axis() == Axis::Z) {
+        p1 = glm::vec3(x + 1, y, z);
+        offset1 |= 0b100;
+        p2 = glm::vec3(x, y + 1, z);
+        offset2 |= 0b010;
+        p3 = glm::vec3(x + 1, y + 1, z);
+        offset3 |= 0b110;
+    } else if (face.axis() == Axis::X) {
+        p1 = glm::vec3(x, y + 1, z);
+        offset1 |= 0b010;
+        p2 = glm::vec3(x, y, z + 1);
+        offset2 |= 0b001;
+        p3 = glm::vec3(x, y + 1, z + 1);
+        offset3 |= 0b011;
+        o = 0;
+    } else if (face.axis() == Axis::Y) {
+        p1 = glm::vec3(x + 1, y, z);
+        offset1 |= 0b100;
+        p2 = glm::vec3(x, y, z + 1);
+        offset2 |= 0b001;
+        p3 = glm::vec3(x + 1, y, z + 1);
+        offset3 |= 0b101;
+    }
+
+    {
+        unsigned int id = 0;
+
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset << 2) | 3;
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset1 << 2) | (2 - o);
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset3 << 2) | 0;
+
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset << 2) | 3;
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset2 << 2) | (1 + o);
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset3 << 2) | 0;
+    }
+}
+
 void WorldGeometry::initialize() {
     glGenBuffers(1, &buffers.block_ids);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers.block_ids);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint8_t) * BLOCKS, NULL, GL_DYNAMIC_DRAW);
 
-    glGenBuffers(1, &buffers.vertices);
-    glBindBuffer(GL_ARRAY_BUFFER, buffers.vertices);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * VERTICES, vertex_data, GL_DYNAMIC_DRAW);
+    {
+        _add_square(0, 0b000, 0, 0, 0, Orientation::PosX, vertex_texture_uv_data);
+        _add_square(6, 0b000, 0, 0, 0, Orientation::PosY, vertex_texture_uv_data);
+        _add_square(12, 0b000, 0, 0, 0, Orientation::PosZ, vertex_texture_uv_data);
+        _add_square(18, 0b100, 1, 0, 0, Orientation::NegX, vertex_texture_uv_data);
+        _add_square(24, 0b010, 0, 1, 0, Orientation::NegY, vertex_texture_uv_data);
+        _add_square(30, 0b001, 0, 0, 1, Orientation::NegZ, vertex_texture_uv_data);
 
-    glGenBuffers(1, &buffers.vertex_texture_uv);
-    glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex_texture_uv);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES, vertex_texture_uv_data, GL_DYNAMIC_DRAW);
+        glGenBuffers(1, &buffers.vertex_texture_uv);
+        glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex_texture_uv);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES_PER_BLOCK, vertex_texture_uv_data, GL_DYNAMIC_DRAW);
+    }
+
+    glGenBuffers(1, &buffers.block_positions);
+    glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(uint32_t) * BLOCKS, block_positions, GL_DYNAMIC_DRAW);
 }
 
 void WorldGeometry::sync_buffers() {
     ZoneScoped;
 
-    const int start = 0;
-    const int end = num_vertices;
-
-    const auto copy = [&](GLuint buffer, size_t size, auto *ptr) {
-        glBindBuffer(GL_ARRAY_BUFFER, buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, (start), ((end) - (start)) * (size), &ptr[start]);
-    };
-    copy(buffers.vertices, sizeof(glm::vec3), vertex_data);
-    copy(buffers.vertex_texture_uv, sizeof(uint8_t), vertex_texture_uv_data);
+    {
+        size_t num_blocks = num_vertices / VERTICES_PER_BLOCK;
+        glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(uint32_t) * num_blocks, (void *)block_positions);
+    }
 
     {
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers.block_ids);
@@ -152,27 +200,16 @@ void WorldGeometry::set_block(int x, int y, int z, Block block) {
     }
 
     int block_id = block_coordinates_to_id(x, y, z);
-    int vertex;
-    bool new_block = false;
     if (block_id == -1) {
-        new_block = true;
-        vertex = num_vertices;
-        block_coordinates_to_id(x, y, z) = num_vertices / VERTICES_PER_BLOCK;
-        block_coordinate_order[vertex / VERTICES_PER_BLOCK] = Vec3(x, y, z);
-    } else {
-        vertex = block_id * VERTICES_PER_BLOCK;
-    }
-    const int original_vertex = vertex;
+        size_t num_blocks = num_vertices / VERTICES_PER_BLOCK;
+        const Vec3 v(x, y, z);
 
-    _add_square(block, vertex, 0b000, x, y, z, Orientation::PosX);
-    _add_square(block, vertex, 0b000, x, y, z, Orientation::PosY);
-    _add_square(block, vertex, 0b000, x, y, z, Orientation::PosZ);
-    _add_square(block, vertex, 0b100, x + 1, y, z, Orientation::NegX);
-    _add_square(block, vertex, 0b010, x, y + 1, z, Orientation::NegY);
-    _add_square(block, vertex, 0b001, x, y, z + 1, Orientation::NegZ);
+        block_coordinates_to_id(x, y, z) = num_blocks;
+        block_coordinate_order[num_blocks] = v;
 
-    if (new_block) {
-        num_vertices = vertex;
+        block_positions[num_blocks] = v.encode();
+
+        num_vertices += VERTICES_PER_BLOCK;
     }
 
     _update_block_map(x, y, z, block);
@@ -189,15 +226,13 @@ void WorldGeometry::delete_block(int x, int y, int z) {
         block_coordinates_to_id(x, y, z) = -1;
 
         if (vertex != num_vertices) {
-            const auto swap = [&](auto *ptr, size_t size) {
-                memcpy(&ptr[vertex], &ptr[num_vertices], size * VERTICES_PER_BLOCK);
-            };
-            swap(vertex_data, sizeof(glm::vec3));
-            swap(vertex_texture_uv_data, sizeof(uint8_t));
+            size_t last_block = num_vertices / VERTICES_PER_BLOCK;
 
-            const Vec3 &c = block_coordinate_order[num_vertices / VERTICES_PER_BLOCK];
+            const Vec3 &c = block_coordinate_order[last_block];
             block_coordinates_to_id(c) = block_id;
-            block_coordinate_order[block_id] = Vec3(c.x, c.y, c.z);
+            block_coordinate_order[block_id] = c;
+
+            block_positions[block_id] = c.encode();
         }
     }
 }
@@ -236,62 +271,6 @@ void WorldGeometry::rotate_block(int x, int y, int z) {
     Block block = get_block(x, y, z);
     block.rotate();
     set_block(x, y, z, block);
-}
-
-void WorldGeometry::_add_square(Block block, int &vertex, uint8_t offset, int x, int y, int z, Orientation face) {
-    glm::vec3 p0, p1, p2, p3;
-    uint8_t offset1 = offset, offset2 = offset, offset3 = offset;
-    p0 = glm::vec3(x, y, z);
-    uint8_t o = 1;
-    if (face.axis() == Axis::Z) {
-        p1 = glm::vec3(x + 1, y, z);
-        offset1 |= 0b100;
-        p2 = glm::vec3(x, y + 1, z);
-        offset2 |= 0b010;
-        p3 = glm::vec3(x + 1, y + 1, z);
-        offset3 |= 0b110;
-    } else if (face.axis() == Axis::X) {
-        p1 = glm::vec3(x, y + 1, z);
-        offset1 |= 0b010;
-        p2 = glm::vec3(x, y, z + 1);
-        offset2 |= 0b001;
-        p3 = glm::vec3(x, y + 1, z + 1);
-        offset3 |= 0b011;
-        o = 0;
-    } else if (face.axis() == Axis::Y) {
-        p1 = glm::vec3(x + 1, y, z);
-        offset1 |= 0b100;
-        p2 = glm::vec3(x, y, z + 1);
-        offset2 |= 0b001;
-        p3 = glm::vec3(x + 1, y, z + 1);
-        offset3 |= 0b101;
-    }
-
-    {
-        unsigned int id = 0;
-
-        vertex_data[vertex + id++] = p0;
-        vertex_data[vertex + id++] = p1;
-        vertex_data[vertex + id++] = p3;
-
-        vertex_data[vertex + id++] = p0;
-        vertex_data[vertex + id++] = p2;
-        vertex_data[vertex + id++] = p3;
-    }
-
-    {
-        unsigned int id = 0;
-
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset << 2) | 3;
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset1 << 2) | (2 - o);
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset3 << 2) | 0;
-
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset << 2) | 3;
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset2 << 2) | (1 + o);
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset3 << 2) | 0;
-    }
-
-    vertex += 6;
 }
 
 void WorldGeometry::randomize() {
