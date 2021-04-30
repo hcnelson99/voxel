@@ -282,11 +282,11 @@ void WorldGeometry::_add_square(Block block, int &vertex, uint8_t offset, int x,
     {
         unsigned int id = 0;
 
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | 3;
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset << 2) | 3;
         vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset1 << 2) | (2 - o);
         vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset3 << 2) | 0;
 
-        vertex_texture_uv_data[vertex + id++] = (face << 5) | 3;
+        vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset << 2) | 3;
         vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset2 << 2) | (1 + o);
         vertex_texture_uv_data[vertex + id++] = (face << 5) | (offset3 << 2) | 0;
     }
