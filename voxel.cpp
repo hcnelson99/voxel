@@ -348,6 +348,7 @@ class Game {
         std::vector<double> benchmark_times;
         std::chrono::steady_clock::time_point benchmark_begin;
         bool benchmarking = false;
+        bool render_even_if_not_grabbed = false;
 
         auto begin_time = std::chrono::steady_clock::now();
         size_t last_tick_time = 0;
@@ -435,6 +436,15 @@ class Game {
                         fprintf(stderr, "toggling render mode\n");
                         render_mode += 1;
                         render_mode %= 5;
+                        break;
+                    case SDLK_l:
+                        if (render_even_if_not_grabbed) {
+                            render_even_if_not_grabbed = false;
+                            fprintf(stderr, "always render off\n");
+                        } else {
+                            render_even_if_not_grabbed = true;
+                            fprintf(stderr, "always render on\n");
+                        }
                         break;
                     case SDLK_1:
                         player_block_selection = Block::InactiveRedstone;
@@ -553,7 +563,8 @@ class Game {
                 world->player_click(ray, player_block_selection, player_mouse_modify.value());
             }
 
-            if (mouse_grabbed && (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS)) {
+            if (render_even_if_not_grabbed ||
+                (mouse_grabbed && (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS))) {
                 {
                     size_t ms_elapsed = std::chrono::duration<double, std::milli>(time - begin_time).count();
                     if (ms_elapsed >= last_tick_time + MS_BETWEEN_TICK) {
