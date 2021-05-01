@@ -318,6 +318,8 @@ class World : public WorldGeometry {
 
     enum class PlayerMouseModify { PlaceBlock, BreakBlock, RotateBlock, Identify };
 
+    void handle_player_action(PlayerMouseModify player_action, Block block, glm::ivec3 pos,
+                              std::optional<glm::ivec3> prev_pos);
     void player_click(Ray ray, Block block, PlayerMouseModify player_action);
 
     void tick() {

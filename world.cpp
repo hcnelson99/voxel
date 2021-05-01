@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <fcntl.h>
 #include <iostream>
+#include <optional>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -509,6 +510,25 @@ void World::copy(std::string cmd) {
     }
 }
 
+void World::handle_player_action(PlayerMouseModify player_action, Block block, glm::ivec3 pos,
+                                 std::optional<glm::ivec3> prev_pos) {
+    if (player_action == PlayerMouseModify::PlaceBlock && prev_pos.has_value()) {
+        set_block(prev_pos->x, prev_pos->y, prev_pos->z, block);
+    } else if (player_action == PlayerMouseModify::BreakBlock) {
+        set_block(pos.x, pos.y, pos.z, Block::Air);
+    } else if (player_action == PlayerMouseModify::RotateBlock) {
+        const Block &selected_block = get_block(pos.x, pos.y, pos.z);
+        if (selected_block.is_switch()) {
+            set_active(pos.x, pos.y, pos.z, !selected_block.is_active());
+        } else {
+            rotate_block(pos.x, pos.y, pos.z);
+        }
+    } else if (player_action == PlayerMouseModify::Identify) {
+        Block block = get_block(pos.x, pos.y, pos.z);
+        std::cout << "(" << pos.x << ", " << pos.y << ", " << pos.z << "): " << block << std::endl;
+    }
+}
+
 void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) {
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
@@ -533,20 +553,10 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
 
     glm::ivec3 just_out = next * glm::ivec3(WORLD_SIZE + 1) - glm::ivec3(1);
 
-    if (!get_block(pos.x, pos.y, pos.z).is(Block::Air)) {
-        if (player_action == PlayerMouseModify::BreakBlock) {
-            set_block(pos.x, pos.y, pos.z, Block::Air);
-            return;
-        } else if (player_action == PlayerMouseModify::RotateBlock) {
-            const Block &selected_block = get_block(pos.x, pos.y, pos.z);
-            if (selected_block.is_switch()) {
-                set_active(pos.x, pos.y, pos.z, !selected_block.is_active());
-            } else {
-                rotate_block(pos.x, pos.y, pos.z);
-            }
-
-            return;
-        }
+    const Block &selected_block = get_block(pos.x, pos.y, pos.z);
+    if (!selected_block.is(Block::Air)) {
+        handle_player_action(player_action, block, pos, std::nullopt);
+        return;
     }
 
     while (true) {
@@ -564,20 +574,7 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
 
         const Block &selected_block = get_block(pos.x, pos.y, pos.z);
         if (!selected_block.is(Block::Air)) {
-            if (player_action == PlayerMouseModify::PlaceBlock) {
-                set_block(prev_pos.x, prev_pos.y, prev_pos.z, block);
-            } else if (player_action == PlayerMouseModify::BreakBlock) {
-                set_block(pos.x, pos.y, pos.z, Block::Air);
-            } else if (player_action == PlayerMouseModify::RotateBlock) {
-                if (selected_block.is_switch()) {
-                    set_active(pos.x, pos.y, pos.z, !selected_block.is_active());
-                } else {
-                    rotate_block(pos.x, pos.y, pos.z);
-                }
-            } else if (player_action == PlayerMouseModify::Identify) {
-                Block block = get_block(pos.x, pos.y, pos.z);
-                std::cout << "(" << pos.x << ", " << pos.y << ", " << pos.z << "): " << block << std::endl;
-            }
+            handle_player_action(player_action, block, pos, prev_pos);
             return;
         }
     }
