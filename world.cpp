@@ -267,6 +267,11 @@ void WorldGeometry::sync_mipmapped_blockmap() {
 void WorldGeometry::sync_buffers() {
     ZoneScoped;
 
+    if (!dirty) {
+        return;
+    }
+    dirty = false;
+
     {
         glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(uint32_t) * num_blocks, (void *)block_positions);
