@@ -521,48 +521,28 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
         ray.pos += ray.dir * t;
     }
 
-    int x = clamp(ray.pos.x, 0, WORLD_SIZE - 1);
-    int y = clamp(ray.pos.y, 0, WORLD_SIZE - 1);
-    int z = clamp(ray.pos.z, 0, WORLD_SIZE - 1);
+    glm::ivec3 pos = glm::clamp(ray.pos, 0.f, WORLD_SIZE - 1.f);
 
-    int step_x = sgn(ray.dir.x);
-    int step_y = sgn(ray.dir.y);
-    int step_z = sgn(ray.dir.z);
+    glm::ivec3 istep = glm::sign(ray.dir);
 
-    // assert(0 <= x && x < WORLD_SIZE);
-    // assert(0 <= y && y < WORLD_SIZE);
-    // assert(0 <= z && z < WORLD_SIZE);
+    glm::ivec3 next = glm::clamp(istep, 0, 1);
 
-    // assert(x <= ray.pos.x && ray.pos.x <= x + step_x);
-    // assert(y <= ray.pos.y && ray.pos.y <= y + step_y);
-    // assert(z <= ray.pos.z && ray.pos.z <= z + step_z);
+    glm::vec3 t_max = (glm::vec3(pos) + glm::vec3(next) - ray.pos) / ray.dir;
 
-    int next_x = step_x == 1 ? 1 : 0;
-    int next_y = step_y == 1 ? 1 : 0;
-    int next_z = step_z == 1 ? 1 : 0;
+    glm::vec3 t_delta = glm::abs(glm::vec3(1.f) / ray.dir);
 
-    float t_max_x = (x + next_x - ray.pos.x) / ray.dir.x;
-    float t_max_y = (y + next_y - ray.pos.y) / ray.dir.y;
-    float t_max_z = (z + next_z - ray.pos.z) / ray.dir.z;
+    glm::ivec3 just_out = next * glm::ivec3(WORLD_SIZE + 1) - glm::ivec3(1);
 
-    float t_delta_x = fabs(1.f / ray.dir.x);
-    float t_delta_y = fabs(1.f / ray.dir.y);
-    float t_delta_z = fabs(1.f / ray.dir.z);
-
-    int just_out_x = step_x == 1 ? WORLD_SIZE : -1;
-    int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
-    int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
-
-    if (!get_block(x, y, z).is(Block::Air)) {
+    if (!get_block(pos.x, pos.y, pos.z).is(Block::Air)) {
         if (player_action == PlayerMouseModify::BreakBlock) {
-            set_block(x, y, z, Block::Air);
+            set_block(pos.x, pos.y, pos.z, Block::Air);
             return;
         } else if (player_action == PlayerMouseModify::RotateBlock) {
-            const Block &selected_block = get_block(x, y, z);
+            const Block &selected_block = get_block(pos.x, pos.y, pos.z);
             if (selected_block.is_switch()) {
-                set_active(x, y, z, !selected_block.is_active());
+                set_active(pos.x, pos.y, pos.z, !selected_block.is_active());
             } else {
-                rotate_block(x, y, z);
+                rotate_block(pos.x, pos.y, pos.z);
             }
 
             return;
@@ -570,68 +550,33 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
     }
 
     while (true) {
-        int prev_x = x, prev_y = y, prev_z = z;
+        glm::vec3 prev_pos = pos;
 
-        if (t_max_x < t_max_y) {
-            if (t_max_x < t_max_z) {
-                x += step_x;
-                if (x == just_out_x) {
-                    return;
-                }
-                t_max_x += t_delta_x;
-            } else {
-                z += step_z;
-                if (z == just_out_z) {
-                    return;
-                }
-                t_max_z += t_delta_z;
-            }
-        } else {
-            if (t_max_y < t_max_z) {
-                y += step_y;
-                if (y == just_out_y) {
-                    return;
-                }
-                t_max_y += t_delta_y;
+        float t_min = std::min(t_max.x, std::min(t_max.y, t_max.z));
+        glm::ivec3 mask = glm::ivec3(glm::equal(t_max, glm::vec3(t_min)));
 
-            } else {
-                z += step_z;
-                if (z == just_out_z) {
-                    return;
-                }
-                t_max_z += t_delta_z;
-            }
+        pos += istep * mask;
+        t_max += t_delta * glm::vec3(mask);
+
+        if (glm::any(glm::equal(pos, just_out))) {
+            return;
         }
 
-        const Block &selected_block = get_block(x, y, z);
+        const Block &selected_block = get_block(pos.x, pos.y, pos.z);
         if (!selected_block.is(Block::Air)) {
             if (player_action == PlayerMouseModify::PlaceBlock) {
-                set_block(prev_x, prev_y, prev_z, block);
+                set_block(prev_pos.x, prev_pos.y, prev_pos.z, block);
             } else if (player_action == PlayerMouseModify::BreakBlock) {
-                set_block(x, y, z, Block::Air);
+                set_block(pos.x, pos.y, pos.z, Block::Air);
             } else if (player_action == PlayerMouseModify::RotateBlock) {
                 if (selected_block.is_switch()) {
-                    set_active(x, y, z, !selected_block.is_active());
+                    set_active(pos.x, pos.y, pos.z, !selected_block.is_active());
                 } else {
-                    rotate_block(x, y, z);
+                    rotate_block(pos.x, pos.y, pos.z);
                 }
-
-                // How to compute intersection location:
-
-                // printf("%f %f %f\n", ray.pos.x, ray.pos.y, ray.pos.z);
-                // printf("%d %d %d\n", x, y, z);
-                // if (x != prev_x) {
-                //     t_max_x -= t_delta_x;
-                // } else if (y != prev_y) {
-                //     t_max_y -= t_delta_y;
-                // } else if (z != prev_z) {
-                //     t_max_z -= t_delta_z;
-                // }
-                // float t = std::min(t_max_x, std::min(t_max_y, t_max_z));
-                // std::cout << glm::to_string(ray.pos + ray.dir * t) << std::endl;
             } else if (player_action == PlayerMouseModify::Identify) {
-                Block block = get_block(x, y, z);
-                std::cout << "(" << x << ", " << y << ", " << z << "): " << block << std::endl;
+                Block block = get_block(pos.x, pos.y, pos.z);
+                std::cout << "(" << pos.x << ", " << pos.y << ", " << pos.z << "): " << block << std::endl;
             }
             return;
         }
