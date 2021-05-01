@@ -33,7 +33,6 @@ void RedstoneCircuit::rebuild() {
 
     rebuild_visited.clear();
 
-    unsigned int max_expressions = 3;
     unsigned int num_delay_gates = 0;
 
     {
@@ -47,43 +46,32 @@ void RedstoneCircuit::rebuild() {
     thread_data.clear();
     thread_data.resize(num_threads);
 
-#pragma omp parallel for collapse(3) reduction(+ : max_expressions, num_delay_gates)
-    for (int x = 0; x < WORLD_SIZE; ++x) {
-        for (int y = 0; y < WORLD_SIZE; ++y) {
-            for (int z = 0; z < WORLD_SIZE; ++z) {
-                const Block block = world_geometry->get_block_safe(x, y, z);
-                if (block.is_delay_gate()) {
-                    num_delay_gates++;
-                } else {
-                    delays(x, y, z).reset();
-                }
-
-                if (!block.is(Block::Air)) {
-                    max_expressions++;
-                }
-            }
+#pragma omp parallel for reduction(+ : num_delay_gates)
+    for (size_t i = 0; i < world_geometry->num_blocks; i++) {
+        const Vec3 v = Vec3::decode(world_geometry->block_positions[i]);
+        const Block block = world_geometry->get_block_safe(v);
+        if (block.is_delay_gate()) {
+            num_delay_gates++;
+        } else {
+            delays(v).reset();
         }
     }
 
-    expressions.resize(max_expressions + THREAD_LOCAL_EXPRS * num_threads);
+    expressions.resize(world_geometry->num_blocks + 3 + THREAD_LOCAL_EXPRS * num_threads);
     delay_gates.resize(num_delay_gates);
 
     std::atomic_uint delay_i(0);
 
-#pragma omp parallel for collapse(3)
-    for (int x = 0; x < WORLD_SIZE; ++x) {
-        for (int y = 0; y < WORLD_SIZE; ++y) {
-            for (int z = 0; z < WORLD_SIZE; ++z) {
-                const Vec3 v(x, y, z);
-                Block block = world_geometry->get_block_safe(v);
+#pragma omp parallel for
+    for (size_t i = 0; i < world_geometry->num_blocks; i++) {
+        const Vec3 v = Vec3::decode(world_geometry->block_positions[i]);
+        Block block = world_geometry->get_block_safe(v);
 
-                if (block.is_delay_gate()) {
-                    delay_gates[delay_i++] = v;
-                }
-
-                build_expression(v, block);
-            }
+        if (block.is_delay_gate()) {
+            delay_gates[delay_i++] = v;
         }
+
+        build_expression(v, block);
     }
 
     const unsigned int _num_expressions = num_expressions.load();
