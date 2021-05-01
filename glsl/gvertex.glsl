@@ -16,6 +16,7 @@ out vec2 texture_uv;
 
 #include "util.glsl"
 #include "block_map.glsl"
+#include "face_orientation_to_block_id.glsl"
 
 void main() {
 
@@ -34,37 +35,7 @@ void main() {
     vec3 vertex_coord = vpos + offset;
 
     uint block = block_at(vpos);
-    uint orientation = block & 7;
-
-    if (orientation == face) {
-        block_id = (block >> 3) * 6 + 1;
-    } else if (orientation / 2 == face / 2) {
-        block_id = (block >> 3) * 6 + 0;
-    } else {
-        uint offset = 0;
-        if (orientation == 1) {
-            offset = 2;
-        } else if (orientation == 0) {
-            offset = 0;
-        } else if (orientation == 3) {
-            offset = 3;
-        } else if (orientation == 2) {
-            offset = 1;
-        } else if (orientation == 5 && face / 2 == 0) {
-            offset = 2;
-        } else if (orientation == 5 && face == 3) {
-            offset = 3;
-        } else if (orientation == 5 && face == 2) {
-            offset = 3;
-        } else if (orientation == 4 && face / 2 == 0) {
-            offset = 0;
-        } else if (orientation == 4 && face == 3) {
-            offset = 1;
-        } else if (orientation == 4 && face == 2) {
-            offset = 1;
-        }
-        block_id = (block >> 3) * 6 + 2 + offset;
-    }
+    block_id = face_orientation_to_block_id(block, face);
 
     gl_Position = camera * vec4(vertex_coord, 1);
     world_pos = vertex_coord;
