@@ -155,9 +155,13 @@ static void _add_square(int vertex, uint8_t offset, int x, int y, int z, Orienta
 }
 
 void WorldGeometry::initialize() {
-    glGenBuffers(1, &buffers.block_ids);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers.block_ids);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(uint8_t) * BLOCKS, NULL, GL_DYNAMIC_DRAW);
+    glGenTextures(1, &buffers.block_ids);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_3D, buffers.block_ids);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                 block_map.get_buffer());
 
     {
         _add_square(0, 0b000, 0, 0, 0, Orientation::PosX, vertex_texture_uv_data);
@@ -275,8 +279,10 @@ void WorldGeometry::sync_buffers() {
     }
 
     {
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, buffers.block_ids);
-        glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, BLOCKS, block_map.get_buffer());
+        TracyGpuZone("copy world texture");
+        glBindTexture(GL_TEXTURE_3D, buffers.block_ids);
+        glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                        block_map.get_buffer());
     }
 
     sync_mipmapped_blockmap();
