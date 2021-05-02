@@ -344,6 +344,7 @@ class Game {
         Block player_block_selection = Block::InactiveRedstone;
 
         glm::mat4 camera, prev_camera;
+        double rotate_x = 0, rotate_y = 0;
 
         unsigned int frame_number = 0;
         bool running = true;
@@ -352,6 +353,10 @@ class Game {
         std::chrono::steady_clock::time_point benchmark_begin;
         bool benchmarking = false;
         bool render_even_if_not_grabbed = false;
+
+        bool smooth_camera = false;
+        double rotate_x_target = 0, rotate_y_target = 0;
+        glm::vec3 player_pos_target;
 
         auto begin_time = std::chrono::steady_clock::now();
         size_t last_tick_time = 0;
@@ -378,15 +383,23 @@ class Game {
                     int dx = event.motion.xrel;
                     int dy = event.motion.yrel;
 
-                    float speed = 0.05f;
+                    double speed = 5;
 
+                    double *cx, *cy;
+                    if (smooth_camera) {
+                        cx = &rotate_x_target;
+                        cy = &rotate_y_target;
+                    } else {
+                        cx = &rotate_x;
+                        cy = &rotate_y;
+                    }
                     if (mouse_grabbed) {
-                        rotate_x -= speed * dx;
-                        rotate_y -= speed * dy;
-                        if (rotate_y > 89) {
-                            rotate_y = 89;
-                        } else if (rotate_y < -89) {
-                            rotate_y = -89;
+                        *cx -= speed * dx * dt;
+                        *cy -= speed * dy * dt;
+                        if (*cy > 89) {
+                            *cy = 89;
+                        } else if (*cy < -89) {
+                            *cy = -89;
                         }
                     }
                 } break;
@@ -441,12 +454,22 @@ class Game {
                         render_mode %= 5;
                         break;
                     case SDLK_l:
+                        render_even_if_not_grabbed = !render_even_if_not_grabbed;
                         if (render_even_if_not_grabbed) {
-                            render_even_if_not_grabbed = false;
-                            fprintf(stderr, "always render off\n");
-                        } else {
-                            render_even_if_not_grabbed = true;
                             fprintf(stderr, "always render on\n");
+                        } else {
+                            fprintf(stderr, "always render off\n");
+                        }
+                        break;
+                    case SDLK_c:
+                        smooth_camera = !smooth_camera;
+                        if (smooth_camera) {
+                            fprintf(stderr, "smooth camera enabled\n");
+                            rotate_x_target = rotate_x;
+                            rotate_y_target = rotate_y;
+                            player_pos_target = player_pos;
+                        } else {
+                            fprintf(stderr, "smooth camera disabled\n");
                         }
                         break;
                     case SDLK_1:
@@ -489,6 +512,13 @@ class Game {
                     }
                 }
             }
+
+            if (smooth_camera) {
+                double smoothness = 3;
+                rotate_x += (rotate_x_target - rotate_x) * smoothness * dt;
+                rotate_y += (rotate_y_target - rotate_y) * smoothness * dt;
+            }
+
             glm::mat4 player_look = glm::rotate((float)glm::radians(rotate_x), glm::vec3(0, 1, 0)) *
                                     glm::rotate((float)glm::radians(-rotate_y), glm::vec3(1, 0, 0));
 
@@ -542,14 +572,24 @@ class Game {
                 velocity = glm::normalize(velocity);
             }
             velocity *= move;
-            player_pos += velocity;
 
+            glm::vec3 *pos;
+            if (smooth_camera) {
+                pos = &player_pos_target;
+            } else {
+                pos = &player_pos;
+            }
+
+            *pos += velocity;
             if (keystate[SDL_SCANCODE_SPACE]) {
-
-                player_pos += glm::vec3(0, move, 0);
+                *pos += glm::vec3(0, move, 0);
             }
             if (keystate[SDL_SCANCODE_LSHIFT]) {
-                player_pos += glm::vec3(0, -move, 0);
+                *pos += glm::vec3(0, -move, 0);
+            }
+            if (smooth_camera) {
+                float smoothness = 2;
+                player_pos += (player_pos_target - player_pos) * smoothness * (float)dt;
             }
 
             if (player_mouse_modify.has_value()) {
@@ -727,7 +767,6 @@ class Game {
     bool mouse_grabbed = true;
 
     glm::vec3 player_pos = glm::vec3(5, 5, 5);
-    double rotate_x = 0, rotate_y = 0;
 
     ShaderProgram gshader, lighting_shader, display_shader, taa_shader;
     GLuint terrain_texture, block_ids, blue_noise_texture;

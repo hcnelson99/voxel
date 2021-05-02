@@ -72,7 +72,7 @@ vec3 light(vec3 pos, vec3 normal, uint i) {
 
     for (int bounce = 0; bounce < bounces_per_pixel; bounce++) {
         uint j = i * bounces_per_pixel + 2 * bounce;
-        vec3 brightness = shadow_ray(pos, normal, j);
+        res += contribution * shadow_ray(pos, normal, j);
 
         vec4 noise = generate_noise(uv, frame_number, j + 1);
         vec3 dir = normalize(noise.xyz * 2 - 1);
@@ -81,11 +81,11 @@ vec3 light(vec3 pos, vec3 normal, uint i) {
         }
         vec3 new_pos, new_normal;
         uint blid = raycast(pos + normal * STEP, dir, new_pos, new_normal);
-        vec3 dist = new_pos - pos;
-        brightness += blid_to_emissive_color(blid) / max(dot(dist, dist), 1);
-
-        res += contribution * brightness;
         if (blid == 0) break;
+        vec3 dist = new_pos - pos;
+        vec3 brightness = blid_to_emissive_color(blid) / max(dot(dist, dist), 1);
+        res += contribution * brightness;
+
         contribution *= max(dot(dir, normal), 0);
         pos = new_pos;
         normal = new_normal;
