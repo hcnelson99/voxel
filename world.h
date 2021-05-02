@@ -343,7 +343,12 @@ class World : public WorldGeometry {
 
     // used for testing my CPU implementation of mipmapped raycasting (hence why it's so inefficient)
     bool get_block_mipmapped(int x, int y, int z, int level) {
-        int scale = 2;
+        if (level == 0) {
+            Block block = get_block(x, y, z);
+            return !block.is(Block::BlockType::Air);
+        }
+
+        int scale = 1;
         for (int i = 0; i < level; i++) {
             scale *= 2;
         }

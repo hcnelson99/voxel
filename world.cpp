@@ -595,9 +595,6 @@ void World::player_click_mipmapped(Ray ray, Block block, PlayerMouseModify playe
 
     glm::ivec3 just_out = next * glm::ivec3(WORLD_SIZE + 1) - glm::ivec3(1);
 
-    // pos /= 2;
-    // just_out = next * glm::ivec3((WORLD_SIZE / 2) + 1) - glm::ivec3(1);
-
     int level = 0;
     int count = 0;
     int scale = 1;
@@ -621,15 +618,12 @@ void World::player_click_mipmapped(Ray ray, Block block, PlayerMouseModify playe
             return;
         }
 
-        if (level == 0) {
-            const Block &selected_block = get_block(pos.x, pos.y, pos.z);
-            if (!selected_block.is(Block::Air)) {
-                handle_player_action(player_action, block, pos, prev_pos);
+        uint8_t block = get_block_mipmapped(pos.x, pos.y, pos.z, level);
+        if (block) {
+            if (level == 0) {
+                handle_player_action(player_action, get_block(pos.x, pos.y, pos.z), pos, prev_pos);
                 return;
-            }
-        } else {
-            bool is_block = get_block_mipmapped(pos.x, pos.y, pos.z, level - 1);
-            if (is_block) {
+            } else {
                 // Go down a level
                 scale /= 2;
                 pos = (ray.pos + t_min * ray.dir) / glm::vec3(scale);
@@ -639,9 +633,10 @@ void World::player_click_mipmapped(Ray ray, Block block, PlayerMouseModify playe
                 just_out = next * glm::ivec3((WORLD_SIZE / scale) + 1) - glm::ivec3(1);
             }
         }
+
         count++;
         if (count > 4 && level < 6) {
-            if (get_block_mipmapped(pos.x / 2, pos.y / 2, pos.z / 2, level)) {
+            if (get_block_mipmapped(pos.x / 2, pos.y / 2, pos.z / 2, level + 1)) {
                 // The level above us is filled. Stay on this level
                 count = 0;
             } else {
@@ -656,6 +651,7 @@ void World::player_click_mipmapped(Ray ray, Block block, PlayerMouseModify playe
 }
 
 void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) {
-    // player_click_normal(ray, block, player_action);
+    player_click_normal(ray, block, player_action);
     player_click_mipmapped(ray, block, player_action);
+    printf("\n");
 }
