@@ -625,33 +625,32 @@ void World::player_click_mipmapped(Ray ray, Block block, PlayerMouseModify playe
                 return;
             } else {
                 // Go down a level
+                level--;
                 scale /= 2;
                 pos = (ray.pos + t_min * ray.dir) / glm::vec3(scale);
                 t_max = (glm::vec3(pos * scale) + glm::vec3(next * scale) - ray.pos) / ray.dir;
-                level--;
-                count = 0;
                 just_out = next * glm::ivec3((WORLD_SIZE / scale) + 1) - glm::ivec3(1);
+                count = 0;
             }
         }
 
         count++;
-        if (count > 4 && level < 6) {
-            if (get_block_mipmapped(pos.x / 2, pos.y / 2, pos.z / 2, level + 1)) {
-                // The level above us is filled. Stay on this level
-                count = 0;
-            } else {
+        if (count > 1 && level < 6) {
+            if (!get_block_mipmapped(pos.x / 2, pos.y / 2, pos.z / 2, level + 1)) {
+                // Go up a level
                 level++;
                 scale *= 2;
                 pos /= 2;
                 t_max = (glm::vec3(pos * scale) + glm::vec3(next * scale) - ray.pos) / ray.dir;
                 just_out = next * glm::ivec3((WORLD_SIZE / scale) + 1) - glm::ivec3(1);
             }
+            count = 0;
         }
     }
 }
 
 void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) {
     player_click_normal(ray, block, player_action);
-    player_click_mipmapped(ray, block, player_action);
-    printf("\n");
+    // player_click_mipmapped(ray, block, player_action);
+    // printf("\n");
 }
