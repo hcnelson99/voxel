@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <fcntl.h>
+#include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <optional>
 #include <stdio.h>
@@ -473,25 +474,9 @@ bool World::save(const char *filepath) {
     return true;
 }
 
-int sgn(float x) {
-    if (x < 0)
-        return -1;
-    if (x > 0)
-        return 1;
-    return 0;
-}
-
 bool in_bounds(glm::vec3 pos) {
     return 0 <= pos.x && pos.x < WORLD_SIZE && 0 <= pos.y && pos.y < WORLD_SIZE && 0 <= pos.z && pos.z < WORLD_SIZE;
 }
-
-float clamp(float x, float min, float max) {
-    if (x < min)
-        return min;
-    if (x > max)
-        return max;
-    return x;
-};
 
 void World::copy(std::string cmd) {
     int sx, sy, sz, ex, ey, ez, dx, dy, dz;
@@ -529,7 +514,7 @@ void World::handle_player_action(PlayerMouseModify player_action, Block block, g
     }
 }
 
-void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) {
+void World::player_click_normal(Ray ray, Block block, PlayerMouseModify player_action) {
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
 
@@ -578,4 +563,93 @@ void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) 
             return;
         }
     }
+}
+
+void World::player_click_mipmapped(Ray ray, Block block, PlayerMouseModify player_action) {
+    if (!in_bounds(ray.pos)) {
+        BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
+
+        float t = bbox.hit(ray);
+        if (t < 0) {
+            return;
+        }
+
+        ray.pos += ray.dir * t;
+    }
+
+    glm::ivec3 pos = glm::clamp(ray.pos, 0.f, WORLD_SIZE - 1.f);
+
+    glm::ivec3 istep = glm::sign(ray.dir);
+
+    glm::ivec3 next = glm::clamp(istep, 0, 1);
+
+    glm::vec3 t_max = (glm::vec3(pos) + glm::vec3(next) - ray.pos) / ray.dir;
+
+    glm::vec3 t_delta = glm::abs(glm::vec3(1.f) / ray.dir);
+
+    glm::ivec3 just_out = next * glm::ivec3(WORLD_SIZE + 1) - glm::ivec3(1);
+
+    // pos /= 2;
+    // just_out = next * glm::ivec3((WORLD_SIZE / 2) + 1) - glm::ivec3(1);
+
+    int level = 0;
+    int count = 0;
+    int scale = 1;
+
+    const Block &selected_block = get_block(pos.x, pos.y, pos.z);
+    if (!selected_block.is(Block::Air)) {
+        handle_player_action(player_action, block, pos, std::nullopt);
+        return;
+    }
+
+    while (true) {
+        glm::ivec3 prev_pos = pos;
+
+        float t_min = std::min(t_max.x, std::min(t_max.y, t_max.z));
+        glm::ivec3 mask = glm::ivec3(glm::equal(t_max, glm::vec3(t_min)));
+
+        pos += istep * mask;
+        t_max += t_delta * glm::vec3(mask) * (float)scale;
+
+        if (glm::any(glm::equal(pos, just_out))) {
+            return;
+        }
+
+        if (level == 0) {
+            const Block &selected_block = get_block(pos.x, pos.y, pos.z);
+            if (!selected_block.is(Block::Air)) {
+                handle_player_action(player_action, block, pos, prev_pos);
+                return;
+            }
+        } else {
+            bool is_block = get_block_mipmapped(pos.x, pos.y, pos.z, level - 1);
+            if (is_block) {
+                // Go down a level
+                scale /= 2;
+                pos = (ray.pos + t_min * ray.dir) / glm::vec3(scale);
+                t_max = (glm::vec3(pos * scale) + glm::vec3(next * scale) - ray.pos) / ray.dir;
+                level--;
+                count = 0;
+                just_out = next * glm::ivec3((WORLD_SIZE / scale) + 1) - glm::ivec3(1);
+            }
+        }
+        count++;
+        if (count > 4 && level < 6) {
+            if (get_block_mipmapped(pos.x / 2, pos.y / 2, pos.z / 2, level)) {
+                // The level above us is filled. Stay on this level
+                count = 0;
+            } else {
+                level++;
+                scale *= 2;
+                pos /= 2;
+                t_max = (glm::vec3(pos * scale) + glm::vec3(next * scale) - ray.pos) / ray.dir;
+                just_out = next * glm::ivec3((WORLD_SIZE / scale) + 1) - glm::ivec3(1);
+            }
+        }
+    }
+}
+
+void World::player_click(Ray ray, Block block, PlayerMouseModify player_action) {
+    // player_click_normal(ray, block, player_action);
+    player_click_mipmapped(ray, block, player_action);
 }

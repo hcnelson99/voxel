@@ -320,6 +320,8 @@ class World : public WorldGeometry {
 
     void handle_player_action(PlayerMouseModify player_action, Block block, glm::ivec3 pos,
                               std::optional<glm::ivec3> prev_pos);
+    void player_click_normal(Ray ray, Block block, PlayerMouseModify player_action);
+    void player_click_mipmapped(Ray ray, Block block, PlayerMouseModify player_action);
     void player_click(Ray ray, Block block, PlayerMouseModify player_action);
 
     void tick() {
@@ -338,6 +340,30 @@ class World : public WorldGeometry {
     void log_frame() { Log::log_frame_world(num_blocks); }
 
     Block get_block(int x, int y, int z) { return WorldGeometry::get_block(x, y, z); }
+
+    // used for testing my CPU implementation of mipmapped raycasting (hence why it's so inefficient)
+    bool get_block_mipmapped(int x, int y, int z, int level) {
+        int scale = 2;
+        for (int i = 0; i < level; i++) {
+            scale *= 2;
+        }
+
+        assert(0 <= x && x < WORLD_SIZE / scale);
+        assert(0 <= y && y < WORLD_SIZE / scale);
+        assert(0 <= z && z < WORLD_SIZE / scale);
+
+        for (int i = 0; i < scale; i++) {
+            for (int j = 0; j < scale; j++) {
+                for (int k = 0; k < scale; k++) {
+                    Block block = get_block(x * scale + i, y * scale + j, z * scale + k);
+                    if (!block.is(Block::BlockType::Air)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
     void set_block(int x, int y, int z, Block block) {
         WorldGeometry::set_block(x, y, z, block);
         redstone_dirty = true;
