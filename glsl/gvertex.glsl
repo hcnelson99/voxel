@@ -18,12 +18,12 @@ flat out vec3 normal;
 #include "face_orientation_to_block_id.glsl"
 
 const vec3[] normals = vec3[](
-    vec3(-1, 0, 0),
     vec3(1, 0, 0),
-    vec3(0, -1, 0),
+    vec3(-1, 0, 0),
     vec3(0, 1, 0),
-    vec3(0, 0, -1),
-    vec3(0, 0, 1)
+    vec3(0, -1, 0),
+    vec3(0, 0, 1),
+    vec3(0, 0, -1)
 );
 
 void main() {
