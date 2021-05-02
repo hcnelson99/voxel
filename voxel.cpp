@@ -302,7 +302,8 @@ class Game {
                 glEnableVertexAttribArray(block_position_binding);
                 glVertexAttribDivisor(block_position_binding, 1);
 
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, world_buffers.block_ids);
+                glActiveTexture(GL_TEXTURE3);
+                glBindTexture(GL_TEXTURE_3D, world_buffers.block_ids);
             }
 
             gshader.init("gvertex.glsl", "gfragment.glsl");
@@ -621,7 +622,8 @@ class Game {
                     glBindTexture(GL_TEXTURE_2D, g_normal);
                     glActiveTexture(GL_TEXTURE2);
                     glBindTexture(GL_TEXTURE_2D, g_color_spec);
-                    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, world->get_buffers().block_ids);
+                    glActiveTexture(GL_TEXTURE3);
+                    glBindTexture(GL_TEXTURE_3D, world->get_buffers().block_ids);
                     glActiveTexture(GL_TEXTURE4);
                     glBindTexture(GL_TEXTURE_2D, terrain_texture);
                     glActiveTexture(GL_TEXTURE5);
@@ -688,7 +690,8 @@ class Game {
                 glBindTexture(GL_TEXTURE_2D, g_normal);
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, g_color_spec);
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, world->get_buffers().block_ids);
+                glActiveTexture(GL_TEXTURE3);
+                glBindTexture(GL_TEXTURE_3D, world->get_buffers().block_ids);
                 glActiveTexture(GL_TEXTURE4);
                 glBindTexture(GL_TEXTURE_2D, terrain_texture);
                 glActiveTexture(GL_TEXTURE5);
