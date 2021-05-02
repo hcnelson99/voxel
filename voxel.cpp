@@ -496,7 +496,7 @@ class Game {
             glm::mat4 player_look = glm::rotate((float)glm::radians(rotate_x), glm::vec3(0, 1, 0)) *
                                     glm::rotate((float)glm::radians(-rotate_y), glm::vec3(1, 0, 0));
 
-            glm::mat4 projection = glm::perspective(glm::radians(75.0f), (float)width / height, .1f, 100.0f);
+            glm::mat4 projection = glm::perspective(glm::radians(75.0f), (float)width / height, .1f, 512.0f);
             glm::mat4 view = glm::lookAt(player_pos, player_pos + glm::vec3(player_look * glm::vec4(0, 0, 1, 1)),
                                          glm::vec3(0, 1, 0));
 

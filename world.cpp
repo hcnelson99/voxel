@@ -513,6 +513,22 @@ void World::handle_player_action(PlayerMouseModify player_action, Block block, g
     }
 }
 
+int sgn(float x) {
+    if (x < 0)
+        return -1;
+    if (x > 0)
+        return 1;
+    return 0;
+}
+
+float clamp(float x, float min, float max) {
+    if (x < min)
+        return min;
+    if (x > max)
+        return max;
+    return x;
+}
+
 void World::player_click_normal(Ray ray, Block block, PlayerMouseModify player_action) {
     if (!in_bounds(ray.pos)) {
         BBox bbox(glm::vec3(0, 0, 0), glm::vec3(WORLD_SIZE, WORLD_SIZE, WORLD_SIZE));
@@ -525,40 +541,81 @@ void World::player_click_normal(Ray ray, Block block, PlayerMouseModify player_a
         ray.pos += ray.dir * t;
     }
 
-    glm::ivec3 pos = glm::clamp(ray.pos, 0.f, WORLD_SIZE - 1.f);
+    int x = clamp(ray.pos.x, 0, WORLD_SIZE - 1);
+    int y = clamp(ray.pos.y, 0, WORLD_SIZE - 1);
+    int z = clamp(ray.pos.z, 0, WORLD_SIZE - 1);
 
-    glm::ivec3 istep = glm::sign(ray.dir);
+    int step_x = sgn(ray.dir.x);
+    int step_y = sgn(ray.dir.y);
+    int step_z = sgn(ray.dir.z);
 
-    glm::ivec3 next = glm::clamp(istep, 0, 1);
+    // assert(0 <= x && x < WORLD_SIZE);
+    // assert(0 <= y && y < WORLD_SIZE);
+    // assert(0 <= z && z < WORLD_SIZE);
 
-    glm::vec3 t_max = (glm::vec3(pos) + glm::vec3(next) - ray.pos) / ray.dir;
+    // assert(x <= ray.pos.x && ray.pos.x <= x + step_x);
+    // assert(y <= ray.pos.y && ray.pos.y <= y + step_y);
+    // assert(z <= ray.pos.z && ray.pos.z <= z + step_z);
 
-    glm::vec3 t_delta = glm::abs(glm::vec3(1.f) / ray.dir);
+    int next_x = step_x == 1 ? 1 : 0;
+    int next_y = step_y == 1 ? 1 : 0;
+    int next_z = step_z == 1 ? 1 : 0;
 
-    glm::ivec3 just_out = next * glm::ivec3(WORLD_SIZE + 1) - glm::ivec3(1);
+    float t_max_x = (x + next_x - ray.pos.x) / ray.dir.x;
+    float t_max_y = (y + next_y - ray.pos.y) / ray.dir.y;
+    float t_max_z = (z + next_z - ray.pos.z) / ray.dir.z;
 
-    const Block &selected_block = get_block(pos.x, pos.y, pos.z);
+    float t_delta_x = fabs(1.f / ray.dir.x);
+    float t_delta_y = fabs(1.f / ray.dir.y);
+    float t_delta_z = fabs(1.f / ray.dir.z);
+
+    int just_out_x = step_x == 1 ? WORLD_SIZE : -1;
+    int just_out_y = step_y == 1 ? WORLD_SIZE : -1;
+    int just_out_z = step_z == 1 ? WORLD_SIZE : -1;
+
+    const Block &selected_block = get_block(x, y, z);
     if (!selected_block.is(Block::Air)) {
-        handle_player_action(player_action, block, pos, std::nullopt);
+        handle_player_action(player_action, block, glm::ivec3(x, y, z), std::nullopt);
         return;
     }
 
     while (true) {
-        glm::vec3 prev_pos = pos;
+        glm::ivec3 prev_pos = glm::ivec3(x, y, z);
 
-        float t_min = std::min(t_max.x, std::min(t_max.y, t_max.z));
-        glm::ivec3 mask = glm::ivec3(glm::equal(t_max, glm::vec3(t_min)));
+        if (t_max_x < t_max_y) {
+            if (t_max_x < t_max_z) {
+                x += step_x;
+                if (x == just_out_x) {
+                    return;
+                }
+                t_max_x += t_delta_x;
+            } else {
+                z += step_z;
+                if (z == just_out_z) {
+                    return;
+                }
+                t_max_z += t_delta_z;
+            }
+        } else {
+            if (t_max_y < t_max_z) {
+                y += step_y;
+                if (y == just_out_y) {
+                    return;
+                }
+                t_max_y += t_delta_y;
 
-        pos += istep * mask;
-        t_max += t_delta * glm::vec3(mask);
-
-        if (glm::any(glm::equal(pos, just_out))) {
-            return;
+            } else {
+                z += step_z;
+                if (z == just_out_z) {
+                    return;
+                }
+                t_max_z += t_delta_z;
+            }
         }
 
-        const Block &selected_block = get_block(pos.x, pos.y, pos.z);
+        const Block &selected_block = get_block(x, y, z);
         if (!selected_block.is(Block::Air)) {
-            handle_player_action(player_action, block, pos, prev_pos);
+            handle_player_action(player_action, block, glm::ivec3(x, y, z), prev_pos);
             return;
         }
     }
