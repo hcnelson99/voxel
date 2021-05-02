@@ -64,7 +64,7 @@ vec3 blid_to_emissive_color(uint blid) {
 
 
 vec3 light(vec3 pos, vec3 normal, uint i) {
-    vec3 res = vec3(0, 0, 0);
+    vec3 res = vec3(unlit_brightness);
     float contribution = 1;
 
     uint blid = lookup(ivec3(pos - normal * STEP));
