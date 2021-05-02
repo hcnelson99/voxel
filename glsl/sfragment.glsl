@@ -11,7 +11,6 @@ layout (binding = 3) uniform usampler3D block_map;
 layout (binding = 4) uniform sampler2D terrain_texture;
 layout (binding = 5) uniform sampler2D lighting_texture;
 layout (binding = 6) uniform sampler2D taa_lighting;
-layout (binding = 7) uniform usampler3D mipmapped_block_map;
 
 in vec2 uv;
 

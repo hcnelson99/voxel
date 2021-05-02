@@ -9,7 +9,6 @@ layout (binding = 2) uniform sampler2D g_color_spec;
 layout (binding = 3) uniform usampler3D block_map;
 layout (binding = 4) uniform sampler2D terrain_texture;
 layout (binding = 5) uniform sampler2D blue_noise;
-layout (binding = 6) uniform usampler3D mipmapped_block_map;
 
 in vec2 uv;
 

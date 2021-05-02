@@ -161,8 +161,13 @@ void WorldGeometry::initialize() {
     glBindTexture(GL_TEXTURE_3D, buffers.block_ids);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, 0, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
-                 block_map.get_buffer());
+    int levels = 0;
+    for (int i = WORLD_SIZE; i > 0; i /= 2) {
+        levels++;
+    }
+    glTexStorage3D(GL_TEXTURE_3D, levels, GL_R8UI, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE);
+    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, WORLD_SIZE, WORLD_SIZE, WORLD_SIZE, GL_RED_INTEGER, GL_UNSIGNED_BYTE,
+                    block_map.get_buffer());
 
     {
         _add_square(0, 0b000, 0, 0, 0, Orientation::PosX, vertex_texture_uv_data);
@@ -176,18 +181,6 @@ void WorldGeometry::initialize() {
         glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex_texture_uv);
         glBufferData(GL_ARRAY_BUFFER, sizeof(uint8_t) * VERTICES_PER_BLOCK, vertex_texture_uv_data, GL_DYNAMIC_DRAW);
     }
-
-    glGenTextures(1, &buffers.mipmapped_block_ids);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_3D, buffers.mipmapped_block_ids);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    int N = WORLD_SIZE / 2;
-    int levels = 0;
-    for (int i = WORLD_SIZE / 2; i > 0; i /= 2) {
-        levels++;
-    }
-    glTexStorage3D(GL_TEXTURE_3D, levels, GL_R8UI, N, N, N);
 
     glGenBuffers(1, &buffers.block_positions);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
@@ -203,9 +196,9 @@ void WorldGeometry::sync_mipmapped_blockmap() {
     std::vector<uint8_t> prev_level;
     prev_level.reserve(N * N * N);
 
-    for (int z = 0; z < N; ++z) {
+    for (int x = 0; x < N; ++x) {
         for (int y = 0; y < N; ++y) {
-            for (int x = 0; x < N; ++x) {
+            for (int z = 0; z < N; ++z) {
                 bool occupied = false;
                 for (int zz = 0; zz <= 1; ++zz) {
                     for (int yy = 0; yy <= 1; ++yy) {
@@ -220,17 +213,17 @@ void WorldGeometry::sync_mipmapped_blockmap() {
         }
     }
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_3D, buffers.mipmapped_block_ids);
-    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, N, N, N, GL_RED_INTEGER, GL_UNSIGNED_BYTE, prev_level.data());
+    glBindTexture(GL_TEXTURE_3D, buffers.block_ids);
+    glTexSubImage3D(GL_TEXTURE_3D, 1, 0, 0, 0, N, N, N, GL_RED_INTEGER, GL_UNSIGNED_BYTE, prev_level.data());
 
     int M = N / 2;
-    for (int level = 1; M > 0; level++) {
+    for (int level = 2; M > 0; level++) {
         std::vector<uint8_t> current_level;
         current_level.reserve(M * M * M);
 
-        for (int z = 0; z < M; ++z) {
+        for (int x = 0; x < M; ++x) {
             for (int y = 0; y < M; ++y) {
-                for (int x = 0; x < M; ++x) {
+                for (int z = 0; z < M; ++z) {
                     bool occupied = false;
                     for (int l = 0; l < 2; ++l) {
                         for (int k = 0; k < 2; ++k) {
@@ -240,7 +233,7 @@ void WorldGeometry::sync_mipmapped_blockmap() {
                                 int xx = x * 2 + j;
 
                                 int pM = M * 2;
-                                bool is_block = prev_level[zz * pM * pM + yy * pM + xx] != 0;
+                                bool is_block = prev_level[xx * pM * pM + yy * pM + zz] != 0;
                                 occupied = occupied || is_block;
                             }
                         }

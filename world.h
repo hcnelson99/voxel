@@ -152,7 +152,6 @@ class WorldGeometry {
 
     struct OpenGLBuffers {
         GLuint block_ids;
-        GLuint mipmapped_block_ids;
         GLuint vertex_texture_uv;
         GLuint block_positions;
     };
