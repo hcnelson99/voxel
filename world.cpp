@@ -208,7 +208,7 @@ void WorldGeometry::sync_mipmapped_blockmap() {
                         }
                     }
                 }
-                prev_level.push_back(occupied ? 1 : 0);
+                prev_level.push_back(occupied ? 8 : 0);
             }
         }
     }
@@ -238,7 +238,7 @@ void WorldGeometry::sync_mipmapped_blockmap() {
                             }
                         }
                     }
-                    current_level.push_back(occupied ? 1 : 0);
+                    current_level.push_back(occupied ? 8 : 0);
                 }
             }
         }

@@ -2,10 +2,6 @@
 // 50th percentile: 22.870298
 // 99th percentile: 17.122457
 
-uint lookup(ivec3 v) {
-    return block_at(v) >> 3;
-}
-
 bool in_bounds(vec3 pos) {
     return 0 <= pos.x && pos.x < world_size && 0 <= pos.y && pos.y < world_size && 0 <= pos.z && pos.z < world_size;
 }

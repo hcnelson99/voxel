@@ -1,7 +1,3 @@
-uint lookup(ivec3 v) {
-    return block_at(v) >> 3;
-}
-
 bool in_bounds(vec3 pos) {
     return 0 <= pos.x && pos.x < world_size && 0 <= pos.y && pos.y < world_size && 0 <= pos.z && pos.z < world_size;
 }
@@ -32,7 +28,7 @@ uint raycast(vec3 fpos, vec3 dir, out vec3 dest_pos, out vec3 normal) {
     int count = 0;
     int scale = 1;
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100; i++) {
         vec3 prev_pos = pos;
         float t_min = min(t_max.x, min(t_max.y, t_max.z));
         ivec3 mask = ivec3(equal(t_max, vec3(t_min)));

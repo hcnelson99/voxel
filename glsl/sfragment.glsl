@@ -39,7 +39,7 @@ vec4 blid_to_color(uint blid) {
 
 vec4 debug_world_buffer(vec2 uv) {
     vec3 pos = texture(g_position, uv).xyz;
-    uint blid = lookup(ivec3(floor(pos)));
+    uint blid = block_at(ivec3(floor(pos)));
     return blid_to_color(blid);
 }
 

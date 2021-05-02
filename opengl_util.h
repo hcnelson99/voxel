@@ -1,6 +1,5 @@
 #pragma once
 
-#include "stb/stb_include.h"
 #include <GL/glew.h>
 
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,

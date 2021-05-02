@@ -15,12 +15,8 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-// TODO: move this to another file at some point?
-#define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
-
-#define STB_INCLUDE_IMPLEMENTATION
-#define STB_INCLUDE_LINE_GLSL
+#include "stb/stb_include.h"
 
 #include "opengl_util.h"
 #include "tracy/Tracy.hpp"
@@ -516,10 +512,11 @@ class Game {
                 printf("Benchmark ended\n");
                 size_t frame_count = benchmark_times.size();
                 printf("%lu frames in %f seconds\n", frame_count, benchmark_time);
-                printf("Average fps: %f\n", frame_count / benchmark_time);
+                double avg_frame_time = benchmark_time / frame_count;
+                printf("Average frame time: %.2f ms (%.2f fps)\n", avg_frame_time * 1000.f, 1.f / avg_frame_time);
                 std::sort(benchmark_times.begin(), benchmark_times.end());
-                printf("50th percentile: %f\n", 1. / benchmark_times[frame_count * 0.5]);
-                printf("99th percentile: %f\n", 1. / benchmark_times[frame_count * 0.99]);
+                printf("50th percentile: %.2f ms\n", 1000.f * benchmark_times[frame_count * 0.5]);
+                printf("99th percentile: %.2f ms\n", 1000.f * benchmark_times[frame_count * 0.99]);
             }
 
             if (keystate[SDL_SCANCODE_W] || benchmarking) {
