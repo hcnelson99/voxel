@@ -104,7 +104,7 @@ def pack_circuit(in_coord, out_coord, side):
 # display
 for i in range(16):
     for j in range(16):
-        pixels[12 * 16 + i][13 * 16 + j] = (0, 0, 0, 255)
+        pixels[12 * 16 + i][13 * 16 + j] = (42, 42, 42, 255)
         pixels[11 * 16 + i][13 * 16 + j] = (255, 255, 255, 255)
 
 # switch
