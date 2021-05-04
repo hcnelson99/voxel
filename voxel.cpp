@@ -383,7 +383,7 @@ class Game {
                     int dx = event.motion.xrel;
                     int dy = event.motion.yrel;
 
-                    double speed = 5;
+                    double speed = 0.05f;
 
                     double *cx, *cy;
                     if (smooth_camera) {
@@ -394,8 +394,8 @@ class Game {
                         cy = &rotate_y;
                     }
                     if (mouse_grabbed) {
-                        *cx -= speed * dx * dt;
-                        *cy -= speed * dy * dt;
+                        *cx -= speed * dx;
+                        *cy -= speed * dy;
                         if (*cy > 89) {
                             *cy = 89;
                         } else if (*cy < -89) {
