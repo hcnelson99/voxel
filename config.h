@@ -9,7 +9,7 @@ constexpr uint8_t DELAY_TICKS = 1;
 
 // world is WORLD_SIZE x WORLD_SIZE x WORLD_SIZE
 #ifndef WORLD_SIZE
-#define WORLD_SIZE (64)
+#define WORLD_SIZE (256)
 #endif
 
 #define VERTICES_PER_BLOCK (6 * 3 * 2) // 6 faces, 2 triangles per face
