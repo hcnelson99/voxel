@@ -267,10 +267,10 @@ void WorldGeometry::sync_mipmapped_blockmap() {
 void WorldGeometry::sync_buffers() {
     ZoneScoped;
 
-    if (!dirty) {
+    if (!blocks_dirty) {
         return;
     }
-    dirty = false;
+    blocks_dirty = false;
 
     {
         glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
@@ -284,7 +284,10 @@ void WorldGeometry::sync_buffers() {
                         block_map.get_buffer());
     }
 
-    sync_mipmapped_blockmap();
+    if (geometry_dirty) {
+        sync_mipmapped_blockmap();
+    }
+    geometry_dirty = false;
 }
 
 Block WorldGeometry::get_block(int x, int y, int z) { return block_map(x, y, z); }

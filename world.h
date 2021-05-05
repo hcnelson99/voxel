@@ -169,7 +169,8 @@ class WorldGeometry {
 
   protected:
     OpenGLBuffers buffers;
-    bool dirty = true;
+    bool blocks_dirty = true;
+    bool geometry_dirty = true;
 
     // buffers that are directly used by OpenGL
     struct {
@@ -205,7 +206,10 @@ class WorldGeometry {
 
   private:
     void _update_block_map(int x, int y, int z, const Block &block) {
-        dirty = true;
+        blocks_dirty = true;
+        if (block_map(x, y, z).is(Block::Air) != block.is(Block::Air)) {
+            geometry_dirty = true;
+        }
         block_map(x, y, z) = block;
     }
     void sync_mipmapped_blockmap();
