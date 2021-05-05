@@ -656,6 +656,7 @@ class Game {
                     glUseProgram(gshader.gl_program);
 
                     glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
+                    glUniform3f(3, player_pos.x, player_pos.y, player_pos.z);
                     glDrawArraysInstanced(GL_TRIANGLES, 0, VERTICES_PER_BLOCK, world->get_num_blocks());
 
                     glDisable(GL_DEPTH_TEST);

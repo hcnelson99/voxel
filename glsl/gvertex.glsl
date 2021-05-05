@@ -5,6 +5,7 @@ layout (location = 2) in uint block_position;
 layout (binding = 3) uniform usampler3D block_map;
 
 layout (location = 2) uniform mat4 camera;
+layout (location = 3) uniform vec3 position;
 
 out vec3 g_world_pos;
 out vec2 g_texture_uv;
@@ -48,7 +49,8 @@ void main() {
 
     uint block = block_at(vpos);
     ivec3 neighbor = vpos + normal;
-    if (all(greaterThanEqual(neighbor, ivec3(0, 0, 0))) && all(lessThan(neighbor, ivec3(world_size, world_size, world_size))) && (block_at(neighbor) >> 3) > 0) {
+
+    if (any(greaterThan((vertex_coord - position) * g_normal, abs(g_normal) * vec3(1)))) {
         cull = 1;
     } else {
         cull = 0;
