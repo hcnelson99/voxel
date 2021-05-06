@@ -227,7 +227,7 @@ class WorldGeometryWithRedstone : public WorldGeometry {
             uint32_t negation;
             struct {
                 uint32_t size;
-                uint32_t *expressions;
+                uint32_t index;
             } disjuncts;
             uint32_t alias;
         };
@@ -250,16 +250,10 @@ class WorldGeometryWithRedstone : public WorldGeometry {
             type = _type;
         }
 
-        void init_disjunction(uint32_t terms) {
+        void init_disjunction(uint32_t terms, uint32_t index) {
             type = Type::Disjunction;
             disjuncts.size = terms;
-            disjuncts.expressions = new uint32_t[terms];
-        }
-
-        ~Expression() {
-            if (type == Type::Disjunction) {
-                delete[] disjuncts.expressions;
-            }
+            disjuncts.index = index;
         }
 
       private:
@@ -282,6 +276,9 @@ class WorldGeometryWithRedstone : public WorldGeometry {
     std::atomic_uint num_expressions;
     std::vector<Expression> expressions;
     Tensor<std::atomic_uint, WORLD_SIZE> block_to_expression;
+
+    std::atomic_uint disjunction_bump_allocator;
+    std::vector<uint32_t> disjunction_memory;
 
     std::vector<Expression> ordered_expressions;
     std::vector<uint32_t> index_to_expression;

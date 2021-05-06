@@ -21,6 +21,8 @@ unsigned int num_threads;
 inline unsigned int thread_mask() { return 1 << omp_get_thread_num(); }
 
 void WorldGeometryWithRedstone::rebuild() {
+    disjunction_memory.resize(BLOCKS);
+    disjunction_bump_allocator.store(0);
     delay_gates.clear();
 
     expressions.clear();
@@ -334,11 +336,12 @@ uint32_t WorldGeometryWithRedstone::build_ball_expression(const Vec3 &v, const B
         expr_i = terms[0];
     } else {
         Expression expr;
-        expr.init_disjunction(terms.size());
+        uint32_t num_terms = terms.size();
+        expr.init_disjunction(num_terms, disjunction_bump_allocator.fetch_add(num_terms));
 
         std::sort(terms.begin(), terms.end(),
                   [this](uint32_t a, uint32_t b) { return expressions[a].height < expressions[b].height; });
-        memcpy(expr.disjuncts.expressions, terms.data(), sizeof(uint32_t) * terms.size());
+        memcpy(&disjunction_memory[expr.disjuncts.index], terms.data(), sizeof(uint32_t) * terms.size());
 
         if (max_height == UINT_MAX) {
             expr.height = UINT_MAX;
@@ -501,7 +504,7 @@ bool WorldGeometryWithRedstone::evaluate(uint32_t expr_i) {
         return evaluation_memo[expr_i];
     case Expression::Type::Disjunction:
         for (uint32_t i = 0; i < expr.disjuncts.size; i++) {
-            if (evaluate(index_to_expression[expr.disjuncts.expressions[i]])) {
+            if (evaluate(index_to_expression[disjunction_memory[expr.disjuncts.index + i]])) {
                 evaluation_memo[expr_i] = true;
                 return true;
             }
@@ -528,15 +531,7 @@ std::string WorldGeometryWithRedstone::Expression::to_string() const {
         ss << "Negation(" << negation << ")";
         break;
     case Type::Disjunction: {
-        ss << "Disjunction(";
-        for (size_t i = 0; i < disjuncts.size; i++) {
-            if (i == 0) {
-                ss << disjuncts.expressions[i];
-            } else {
-                ss << " v " << disjuncts.expressions[i];
-            }
-        }
-        ss << ")";
+        ss << "Disjunction(" << disjuncts.size << " terms)";
         break;
     }
     case Type::Alias:
