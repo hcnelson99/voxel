@@ -4,6 +4,8 @@ project(voxel)
 
 add_definitions(-DGLM_ENABLE_EXPERIMENTAL -DTRACY_ENABLE)
 
+set(CMAKE_CXX_FLAGS "-O3")
+
 add_executable(voxel voxel.cpp world.cpp redstone.cpp stb_image.cpp stb_include.cpp tracy/TracyClient.cpp)
 target_compile_features(voxel PRIVATE cxx_std_17)
 
