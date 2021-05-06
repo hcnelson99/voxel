@@ -20,7 +20,7 @@ unsigned int num_threads;
 
 inline unsigned int thread_mask() { return 1 << omp_get_thread_num(); }
 
-void RedstoneCircuit::rebuild() {
+void WorldGeometryWithRedstone::rebuild() {
     delay_gates.clear();
 
     expressions.clear();
@@ -47,9 +47,9 @@ void RedstoneCircuit::rebuild() {
     thread_data.resize(num_threads);
 
 #pragma omp parallel for reduction(+ : num_delay_gates)
-    for (size_t i = 0; i < world_geometry->num_blocks; i++) {
-        const Vec3 v = Vec3::decode(world_geometry->block_positions[i]);
-        const Block block = world_geometry->get_block_safe(v);
+    for (size_t i = 0; i < num_blocks; i++) {
+        const Vec3 v = Vec3::decode(block_positions[i]);
+        const Block block = get_block_safe(v);
         if (block.is_delay_gate()) {
             num_delay_gates++;
         } else {
@@ -57,15 +57,15 @@ void RedstoneCircuit::rebuild() {
         }
     }
 
-    expressions.resize(world_geometry->num_blocks + 3 + THREAD_LOCAL_EXPRS * num_threads);
+    expressions.resize(num_blocks + 3 + THREAD_LOCAL_EXPRS * num_threads);
     delay_gates.resize(num_delay_gates);
 
     std::atomic_uint delay_i(0);
 
 #pragma omp parallel for
-    for (size_t i = 0; i < world_geometry->num_blocks; i++) {
-        const Vec3 v = Vec3::decode(world_geometry->block_positions[i]);
-        Block block = world_geometry->get_block_safe(v);
+    for (size_t i = 0; i < num_blocks; i++) {
+        const Vec3 v = Vec3::decode(block_positions[i]);
+        Block block = get_block_safe(v);
 
         if (block.is_delay_gate()) {
             delay_gates[delay_i++] = v;
@@ -143,15 +143,21 @@ void RedstoneCircuit::rebuild() {
             expression_indices.push_back(std::min(i, index_to_expression.size()));
         }
     }
+
+#pragma omp parallel for
+    for (size_t i = 0; i < num_blocks; i++) {
+        const Vec3 v = Vec3::decode(block_positions[i]);
+        block_to_expression(v).store(index_to_expression[block_to_expression(v).load()]);
+    }
 }
 
-inline void RedstoneCircuit::cancel_allocated_expression() {
+inline void WorldGeometryWithRedstone::cancel_allocated_expression() {
     ThreadData &thread = thread_data[omp_get_thread_num()];
     thread.remaining++;
     thread.expression_index--;
 }
 
-inline uint32_t RedstoneCircuit::allocate_expression() {
+inline uint32_t WorldGeometryWithRedstone::allocate_expression() {
     ThreadData &thread = thread_data[omp_get_thread_num()];
     uint32_t i;
     if (thread.remaining == 0) {
@@ -166,7 +172,7 @@ inline uint32_t RedstoneCircuit::allocate_expression() {
     return i;
 }
 
-inline uint32_t RedstoneCircuit::get_expression_midbuild(const Vec3 &v) {
+inline uint32_t WorldGeometryWithRedstone::get_expression_midbuild(const Vec3 &v) {
     uint32_t i = allocate_expression();
     uint32_t ret = 0;
     if (block_to_expression(v).compare_exchange_strong(ret, i)) {
@@ -178,7 +184,7 @@ inline uint32_t RedstoneCircuit::get_expression_midbuild(const Vec3 &v) {
     return ret;
 }
 
-uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i) {
+uint32_t WorldGeometryWithRedstone::set_expression(const Vec3 &v, uint32_t expr_i) {
     uint32_t ret = 0;
     if (block_to_expression(v).compare_exchange_strong(ret, expr_i)) {
         ret = expr_i;
@@ -190,7 +196,7 @@ uint32_t RedstoneCircuit::set_expression(const Vec3 &v, uint32_t expr_i) {
     return ret;
 }
 
-uint32_t RedstoneCircuit::set_expression(const Vec3 &v, Expression &expr) {
+uint32_t WorldGeometryWithRedstone::set_expression(const Vec3 &v, Expression &expr) {
     uint32_t ret = 0;
     uint32_t i = allocate_expression();
 
@@ -206,9 +212,9 @@ uint32_t RedstoneCircuit::set_expression(const Vec3 &v, Expression &expr) {
 }
 
 template <uint32_t Default, bool Negate>
-uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &block) {
+uint32_t WorldGeometryWithRedstone::build_directed_expression(const Vec3 &v, const Block &block) {
     const Vec3 input_v = v + block.get_orientation().opposite().direction();
-    const Block input = world_geometry->get_block_safe(input_v);
+    const Block input = get_block_safe(input_v);
 
     if (!input.output_in_direction(block.get_orientation())) {
         return set_expression(v, Default);
@@ -244,7 +250,7 @@ uint32_t RedstoneCircuit::build_directed_expression(const Vec3 &v, const Block &
 }
 
 template <bool BallPredicate(const Block &b), bool TerminalPredicate(const Block &b)>
-uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &block) {
+uint32_t WorldGeometryWithRedstone::build_ball_expression(const Vec3 &v, const Block &block) {
     std::vector<Vec3> terminals;
     std::vector<Vec3> ball(1, v);
     std::vector<Vec3> frontier(1, v);
@@ -267,7 +273,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
             return false;
         }
 
-        const Block neighbor = world_geometry->get_block(nv);
+        const Block neighbor = get_block(nv);
         if (BallPredicate(neighbor)) {
             unsigned int mask = rebuild_visited(nv).fetch_or(thread) & ~(thread - 1);
             if (thread < mask) {
@@ -302,7 +308,7 @@ uint32_t RedstoneCircuit::build_ball_expression(const Vec3 &v, const Block &bloc
     uint32_t max_height = 0;
     std::vector<uint32_t> terms;
     for (const Vec3 &vec : terminals) {
-        uint32_t i = build_expression(vec, world_geometry->get_block(vec));
+        uint32_t i = build_expression(vec, get_block(vec));
         switch (i) {
         case ALWAYS_FALSE:
             break;
@@ -360,7 +366,7 @@ static inline bool is_display(const Block &b) { return false; }
 static inline bool not_display(const Block &b) { return true; }
 } // namespace BallPredicates
 
-uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
+uint32_t WorldGeometryWithRedstone::build_expression(const Vec3 &v, const Block &block) {
     using namespace BallPredicates;
 
     {
@@ -393,7 +399,7 @@ uint32_t RedstoneCircuit::build_expression(const Vec3 &v, const Block &block) {
     }
 }
 
-void RedstoneCircuit::tick() {
+void WorldGeometryWithRedstone::tick() {
 
 #pragma omp parallel for
     for (size_t i = 0; i < delay_gates.size(); i++) {
@@ -404,7 +410,7 @@ void RedstoneCircuit::tick() {
             ticks--;
 
             if (ticks == 0) {
-                world_geometry->set_active(v.x, v.y, v.z, delay.activating);
+                set_active(v.x, v.y, v.z, delay.activating);
                 ticks = 0xff;
             }
         }
@@ -412,23 +418,18 @@ void RedstoneCircuit::tick() {
 
     evaluate_parallel();
 
-#pragma omp parallel for
-    for (size_t i = 0; i < world_geometry->num_blocks; i++) {
-        const Vec3 v = Vec3::decode(world_geometry->block_positions[i]);
-        if (block_to_expression(v).load() != 0) {
-            const bool active = evaluate(index_to_expression[block_to_expression(v).load()]);
-            world_geometry->set_active(v.x, v.y, v.z, active);
-        }
+    if (num_expressions > 3) {
+        update_blocks();
     }
 
 #pragma omp parallel for
     for (size_t i = 0; i < delay_gates.size(); i++) {
         const Vec3 &v = delay_gates[i];
         Delay &delay = delays(v);
-        const Block &block = world_geometry->get_block(v);
+        const Block &block = get_block(v);
 
         const Vec3 input_v = v + block.get_orientation().opposite().direction();
-        const Block &input = world_geometry->get_block_safe(input_v);
+        const Block &input = get_block_safe(input_v);
         if (input.is_active() != block.is_active()) {
             if (delay.ticks == 0xff || input.is_active() != delay.activating) {
                 delay.activating = input.is_active();
@@ -440,7 +441,19 @@ void RedstoneCircuit::tick() {
     }
 }
 
-void RedstoneCircuit::evaluate_parallel() {
+void WorldGeometryWithRedstone::update_blocks() {
+    ZoneScoped;
+#pragma omp parallel for
+    for (size_t i = 0; i < num_blocks; i++) {
+        const Vec3 v = Vec3::decode(block_positions[i]);
+        if (block_to_expression(v).load() != 0) {
+            const bool active = evaluate(block_to_expression(v).load());
+            set_active(v.x, v.y, v.z, active);
+        }
+    }
+}
+
+void WorldGeometryWithRedstone::evaluate_parallel() {
     evaluation_memo.clear();
     evaluation_memo.resize(num_expressions.load());
     std::fill(evaluation_memo.begin(), evaluation_memo.end(), EVALUATION_UNDEFINED);
@@ -464,7 +477,7 @@ void RedstoneCircuit::evaluate_parallel() {
     }
 }
 
-bool RedstoneCircuit::evaluate(uint32_t expr_i) {
+bool WorldGeometryWithRedstone::evaluate(uint32_t expr_i) {
     if (expr_i == ALWAYS_TRUE) {
         return true;
     } else if (expr_i == ALWAYS_FALSE) {
@@ -481,7 +494,7 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
     const Expression &expr = ordered_expressions[expr_i];
     switch (expr.get_type()) {
     case Expression::Type::Variable:
-        evaluation_memo[expr_i] = world_geometry->get_block(expr.variable).is_active();
+        evaluation_memo[expr_i] = get_block(expr.variable).is_active();
         return evaluation_memo[expr_i];
     case Expression::Type::Negation:
         evaluation_memo[expr_i] = !evaluate(index_to_expression[expr.negation]);
@@ -502,7 +515,7 @@ bool RedstoneCircuit::evaluate(uint32_t expr_i) {
     return false;
 }
 
-std::string RedstoneCircuit::Expression::to_string() const {
+std::string WorldGeometryWithRedstone::Expression::to_string() const {
     std::stringstream ss;
 
     switch (type) {

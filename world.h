@@ -137,8 +137,6 @@ class Block {
 
 // Stores data for vertices that is passed into shader
 class WorldGeometry {
-    friend class RedstoneCircuit;
-
   public:
     WorldGeometry() {
         vertex_texture_uv_data = new uint8_t[VERTICES_PER_BLOCK];
@@ -215,16 +213,12 @@ class WorldGeometry {
     void sync_mipmapped_blockmap();
 };
 
-class RedstoneCircuit {
+class WorldGeometryWithRedstone : public WorldGeometry {
   public:
-    RedstoneCircuit(WorldGeometry *g) : world_geometry(g) {}
-
     void rebuild();
     void tick();
 
   private:
-    WorldGeometry *world_geometry;
-
     struct Expression {
         enum Type : uint8_t { Invalid = 0, Variable = 1, Negation = 2, Disjunction = 3, Alias = 4 };
         uint32_t height = 0;
@@ -310,13 +304,15 @@ class RedstoneCircuit {
     template <bool BallPredicate(const Block &b), bool TerminalPredicate(const Block &b)>
     uint32_t build_ball_expression(const Vec3 &v, const Block &block);
 
+    void update_blocks();
+
     bool evaluate(uint32_t expr_i);
     void evaluate_parallel();
 };
 
-class World : public WorldGeometry {
+class World : public WorldGeometryWithRedstone {
   public:
-    World() : redstone(this) { block_coordinates_to_id.clear(-1); }
+    World() { block_coordinates_to_id.clear(-1); }
 
     void initialize() {
         WorldGeometry::initialize();
@@ -335,9 +331,9 @@ class World : public WorldGeometry {
         ZoneScoped;
         if (redstone_dirty) {
             redstone_dirty = false;
-            redstone.rebuild();
+            WorldGeometryWithRedstone::rebuild();
         }
-        redstone.tick();
+        WorldGeometryWithRedstone::tick();
     }
 
     void reset();
@@ -402,7 +398,6 @@ class World : public WorldGeometry {
     }
 
   private:
-    RedstoneCircuit redstone;
     bool redstone_dirty = false;
 
     void _derive_geometry_from_block_map() {
