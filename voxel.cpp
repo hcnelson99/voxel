@@ -628,7 +628,9 @@ class Game {
                 {
                     TracyGpuZone("gshader");
                     glEnable(GL_DEPTH_TEST);
+                    glEnable(GL_CULL_FACE);
                     glDepthFunc(GL_LESS);
+                    glCullFace(GL_BACK);
 
                     glBindFramebuffer(GL_FRAMEBUFFER, g_framebuffer);
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -643,6 +645,7 @@ class Game {
                     glUniformMatrix4fv(2, 1, GL_FALSE, (GLfloat *)&camera);
                     glDrawArraysInstanced(GL_TRIANGLES, 0, VERTICES_PER_BLOCK, world->get_num_blocks());
 
+                    glDisable(GL_CULL_FACE);
                     glDisable(GL_DEPTH_TEST);
                 }
 
