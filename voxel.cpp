@@ -33,10 +33,9 @@ World *world;
 
 class ShaderProgram {
   public:
-    void init(std::string vertex_fname, std::string fragment_fname, std::string geometry_fname = "") {
+    void init(std::string vertex_fname, std::string fragment_fname) {
         vertex_shader_filename = vertex_fname;
         fragment_shader_filename = fragment_fname;
-        geometry_shader_filename = geometry_fname;
         recompile();
     }
 
@@ -68,18 +67,13 @@ class ShaderProgram {
     }
 
     bool recompile() {
-        GLuint gl_program_new, vertex_shader, fragment_shader, geometry_shader;
+        GLuint gl_program_new, vertex_shader, fragment_shader;
         int log_length;
         char log[256];
-
-        bool has_geometry_shader = !geometry_shader_filename.empty();
 
         gl_program_new = glCreateProgram();
         vertex_shader = glCreateShader(GL_VERTEX_SHADER);
         fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-        if (has_geometry_shader) {
-            geometry_shader = glCreateShader(GL_GEOMETRY_SHADER);
-        }
 
         if (!compile_shader(vertex_shader, vertex_shader_filename)) {
             fprintf(stderr, "Failed to recompile vertex shader: %s\n", vertex_shader_filename.c_str());
@@ -88,15 +82,6 @@ class ShaderProgram {
             return false;
         }
         glAttachShader(gl_program_new, vertex_shader);
-        if (has_geometry_shader) {
-            if (!compile_shader(geometry_shader, geometry_shader_filename)) {
-                fprintf(stderr, "Failed to recompile geometry shader: %s\n", geometry_shader_filename.c_str());
-                glGetShaderInfoLog(geometry_shader, sizeof(log), &log_length, log);
-                fprintf(stderr, "%s\n", log);
-                return false;
-            }
-            glAttachShader(gl_program_new, geometry_shader);
-        }
         if (!compile_shader(fragment_shader, fragment_shader_filename)) {
             fprintf(stderr, "Failed to recompile fragment shader: %s\n", fragment_shader_filename.c_str());
             glGetShaderInfoLog(fragment_shader, sizeof(log), &log_length, log);
@@ -121,7 +106,7 @@ class ShaderProgram {
     }
 
     GLuint gl_program;
-    std::string vertex_shader_filename, fragment_shader_filename, geometry_shader_filename;
+    std::string vertex_shader_filename, fragment_shader_filename;
 };
 
 glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v.w); }
@@ -317,7 +302,7 @@ class Game {
                 glBindTexture(GL_TEXTURE_3D, world_buffers.block_ids);
             }
 
-            gshader.init("gvertex.glsl", "gfragment.glsl", "ggeometry.glsl");
+            gshader.init("gvertex.glsl", "gfragment.glsl");
         }
 
         {
