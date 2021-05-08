@@ -358,6 +358,8 @@ class Game {
         double rotate_x_target = 0, rotate_y_target = 0;
         glm::vec3 player_pos_target;
 
+        bool redstone_ticking = true;
+
         auto begin_time = std::chrono::steady_clock::now();
         size_t last_tick_time = 0;
 
@@ -372,6 +374,8 @@ class Game {
                 benchmark_times.push_back(dt);
             }
             prev_time = time;
+
+            bool tick_redstone_this_frame = false;
 
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
@@ -470,6 +474,23 @@ class Game {
                             player_pos_target = player_pos;
                         } else {
                             fprintf(stderr, "smooth camera disabled\n");
+                        }
+                        break;
+                    case SDLK_m:
+                        redstone_ticking = !redstone_ticking;
+                        if (redstone_ticking) {
+                            fprintf(stderr, "redstone ticking enabled\n");
+                            last_tick_time =
+                                std::chrono::duration<double, std::milli>(time - begin_time).count() - MS_BETWEEN_TICK;
+                        } else {
+                            fprintf(stderr, "redstone ticking disabled\n");
+                        }
+                        break;
+                    case SDLK_n:
+                        if (!redstone_ticking) {
+                            tick_redstone_this_frame = true;
+                        } else {
+                            fprintf(stderr, "cannot tick unless redstone is paused (press M)\n");
                         }
                         break;
                     case SDLK_1:
@@ -609,12 +630,15 @@ class Game {
 
             if (render_even_if_not_grabbed ||
                 (mouse_grabbed && (SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS))) {
-                {
+
+                if (redstone_ticking) {
                     size_t ms_elapsed = std::chrono::duration<double, std::milli>(time - begin_time).count();
                     if (ms_elapsed >= last_tick_time + MS_BETWEEN_TICK) {
                         last_tick_time = ms_elapsed;
                         world->tick();
                     }
+                } else if (tick_redstone_this_frame) {
+                    world->tick();
                 }
 
                 world->sync_buffers();
