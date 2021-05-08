@@ -449,9 +449,9 @@ class Game {
                         player_mouse_modify = World::PlayerMouseModify::RotateBlock;
                         break;
                     case SDLK_t:
-                        fprintf(stderr, "toggling render mode\n");
                         render_mode += 1;
-                        render_mode %= 5;
+                        render_mode %= 6;
+                        fprintf(stderr, "render mode %d\n", render_mode);
                         break;
                     case SDLK_l:
                         render_even_if_not_grabbed = !render_even_if_not_grabbed;

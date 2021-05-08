@@ -179,5 +179,13 @@ void main() {
         draw_gui(uv);
     }  else if (render_mode == 4) {
         gbuffer_debug();
+    } else if (render_mode == 5) {
+        vec3 color = texture(g_color_spec, uv).xyz;
+        vec3 normal = texture(g_normal, uv).xyz;
+        vec3 brightness = vec3(dot(normal, normalize(vec3(1, 3, 2))) / 2 + 0.5);
+        vec3 rgb = color * brightness;
+
+        frag_color = vec4(rgb, 1);
+        draw_gui(uv);
     }
 }

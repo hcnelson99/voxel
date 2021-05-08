@@ -97,7 +97,6 @@ vec3 light(vec3 pos, vec3 normal, uint i) {
 }
 
 vec3 lighting(vec2 uv) {
-
     vec3 brightness = vec3(0);
 
     for (int i = 0; i < rays_per_pixel; i++) {
@@ -107,7 +106,6 @@ vec3 lighting(vec2 uv) {
     }
 
     brightness /= rays_per_pixel;
-
     return brightness;
 }
 
