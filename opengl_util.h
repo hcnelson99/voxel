@@ -1,6 +1,8 @@
 #pragma once
 
 #include <GL/glew.h>
+#include <assert.h>
+#include <stdint.h>
 
 void gl_debug_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                       const void *_arg) {
@@ -54,3 +56,39 @@ void initialize_opengl() {
     glDebugMessageCallback(gl_debug_message, NULL);
     glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, NULL, true);
 }
+
+class GL_Timer {
+  public:
+    GL_Timer() { glGenQueries(2, query); }
+
+    void begin() {
+        assert(mode == 0 || mode == 2);
+        mode = 1;
+        glQueryCounter(query[0], GL_TIMESTAMP);
+    }
+    void end() {
+        assert(mode == 1);
+        mode = 2;
+        glQueryCounter(query[1], GL_TIMESTAMP);
+    }
+
+    bool has_time() { return mode == 2; }
+
+    double get_time() {
+        assert(mode == 2);
+        mode = 0;
+        GLint done = 0;
+        while (!done) {
+            glGetQueryObjectiv(query[1], GL_QUERY_RESULT_AVAILABLE, &done);
+        }
+        GLuint64 begin, end;
+        glGetQueryObjectui64v(query[0], GL_QUERY_RESULT, &begin);
+        glGetQueryObjectui64v(query[1], GL_QUERY_RESULT, &end);
+        assert(end >= begin);
+        return (end - begin) / 1000000000.0;
+    }
+
+  private:
+    GLuint query[2];
+    int mode = 0;
+};

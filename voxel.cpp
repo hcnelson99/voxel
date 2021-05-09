@@ -29,6 +29,8 @@
 
 constexpr size_t MS_BETWEEN_TICK = 100;
 
+constexpr double BENCHMARK_LENGTH_SECONDS = 10.0;
+
 World *world;
 
 class ShaderProgram {
@@ -112,6 +114,28 @@ class ShaderProgram {
 glm::vec3 divide_w(glm::vec4 v) { return glm::vec3(v.x / v.w, v.y / v.w, v.z / v.w); }
 
 glm::vec3 project(glm::vec3 u, glm::vec3 v) { return (glm::dot(u, v) / glm::dot(v, v)) * v; }
+
+class Histogram {
+  public:
+    void clear() { histogram.clear(); }
+    void add(double value) { histogram.push_back(value); }
+
+    void report() {
+        size_t frame_count = histogram.size();
+        double benchmark_time = 0;
+        for (double t : histogram) {
+            benchmark_time += t;
+        }
+        double avg_frame_time = benchmark_time / frame_count;
+        printf("Average: %.2f ms (%.2f fps)\n", avg_frame_time * 1000.f, 1.f / avg_frame_time);
+        std::sort(histogram.begin(), histogram.end());
+        printf("50th percentile: %.2f ms\n", 1000.f * histogram[frame_count * 0.5]);
+        printf("99th percentile: %.2f ms\n", 1000.f * histogram[frame_count * 0.99]);
+    }
+
+  private:
+    std::vector<double> histogram;
+};
 
 class Game {
   public:
@@ -349,9 +373,10 @@ class Game {
         unsigned int frame_number = 0;
         bool running = true;
 
-        std::vector<double> benchmark_times;
-        std::chrono::steady_clock::time_point benchmark_begin;
+        Histogram frame_times, gbuffer_times, lighting_times;
         bool benchmarking = false;
+        std::chrono::steady_clock::time_point benchmark_begin;
+
         bool render_even_if_not_grabbed = false;
 
         bool smooth_camera = false;
@@ -363,6 +388,8 @@ class Game {
         auto begin_time = std::chrono::steady_clock::now();
         size_t last_tick_time = 0;
 
+        GL_Timer gbuffer_timer, lighting_timer;
+
         while (running) {
             Repl::lock();
 
@@ -371,7 +398,7 @@ class Game {
             auto time = std::chrono::steady_clock::now();
             double dt = std::chrono::duration<double>(time - prev_time).count();
             if (benchmarking) {
-                benchmark_times.push_back(dt);
+                frame_times.add(dt);
             }
             prev_time = time;
 
@@ -443,11 +470,11 @@ class Game {
                         fprintf(stderr, "starting benchmark\n");
                         world->benchmark_world();
                         benchmarking = true;
-                        player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, 2);
+                        player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, WORLD_SIZE / 2);
                         rotate_x = 0;
                         rotate_y = 0;
-                        benchmark_times.clear();
                         benchmark_begin = std::chrono::steady_clock::now();
+                        frame_times.clear();
                         break;
                     case SDLK_f:
                         player_mouse_modify = World::PlayerMouseModify::RotateBlock;
@@ -556,21 +583,22 @@ class Game {
             const Uint8 *keystate = SDL_GetKeyboardState(NULL);
             glm::vec3 velocity(0, 0, 0);
 
-            if (benchmarking && player_pos.z >= WORLD_SIZE - 2) {
+            if (benchmarking) {
                 auto benchmark_end = std::chrono::steady_clock::now();
-                benchmarking = false;
-                double benchmark_time = std::chrono::duration<double>(benchmark_end - benchmark_begin).count();
-                printf("Benchmark ended\n");
-                size_t frame_count = benchmark_times.size();
-                printf("%lu frames in %f seconds\n", frame_count, benchmark_time);
-                double avg_frame_time = benchmark_time / frame_count;
-                printf("Average frame time: %.2f ms (%.2f fps)\n", avg_frame_time * 1000.f, 1.f / avg_frame_time);
-                std::sort(benchmark_times.begin(), benchmark_times.end());
-                printf("50th percentile: %.2f ms\n", 1000.f * benchmark_times[frame_count * 0.5]);
-                printf("99th percentile: %.2f ms\n", 1000.f * benchmark_times[frame_count * 0.99]);
+                double duration = std::chrono::duration<double>(benchmark_end - benchmark_begin).count();
+
+                if (duration > BENCHMARK_LENGTH_SECONDS) {
+                    benchmarking = false;
+                    printf("Frame times:\n");
+                    frame_times.report();
+                    printf("GBuffer times:\n");
+                    gbuffer_times.report();
+                    printf("Lighting times:\n");
+                    lighting_times.report();
+                }
             }
 
-            if (keystate[SDL_SCANCODE_W] || benchmarking) {
+            if (keystate[SDL_SCANCODE_W]) {
                 velocity += glm::vec3(player_look * glm::vec4(0, 0, 1, 1));
             }
             if (keystate[SDL_SCANCODE_S]) {
@@ -651,6 +679,9 @@ class Game {
 
                 {
                     TracyGpuZone("gshader");
+
+                    gbuffer_timer.begin();
+
                     glEnable(GL_DEPTH_TEST);
                     glEnable(GL_CULL_FACE);
                     glDepthFunc(GL_LESS);
@@ -671,10 +702,15 @@ class Game {
 
                     glDisable(GL_CULL_FACE);
                     glDisable(GL_DEPTH_TEST);
+
+                    gbuffer_timer.end();
                 }
 
                 {
                     TracyGpuZone("lshader");
+
+                    lighting_timer.begin();
+
                     glBindFramebuffer(GL_FRAMEBUFFER, l_framebuffer);
                     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -700,6 +736,8 @@ class Game {
 
                     // 6 is the number of vertices
                     glDrawArrays(GL_TRIANGLES, 0, 6);
+
+                    lighting_timer.end();
                 }
 
                 {
@@ -737,6 +775,9 @@ class Game {
                     // 6 is the number of vertices
                     glDrawArrays(GL_TRIANGLES, 0, 6);
                 }
+            } else {
+                fprintf(stderr, "ERROR: DID NOT RENDER DURING BENCHMARK\n");
+                exit(1);
             }
 
             {
@@ -772,6 +813,12 @@ class Game {
             }
 
             SDL_GL_SwapWindow(window);
+
+            if (benchmarking) {
+                gbuffer_times.add(gbuffer_timer.get_time());
+                lighting_times.add(lighting_timer.get_time());
+            }
+
             TracyGpuCollect;
             FrameMark;
 
