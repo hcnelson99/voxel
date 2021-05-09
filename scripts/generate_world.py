@@ -13,7 +13,7 @@ BLOCK = {
     "Block::Air": 0 << OrientationWidth,
     "Block::Stone": 1 << OrientationWidth,
     "Block::Dirt": 2 << OrientationWidth,
-    "Block::Wood": 3 << OrientationWidth,
+    "Block::Glowstone": 3 << OrientationWidth,
     "Block::ActiveRedstone": 4 << OrientationWidth,
     "Block::InactiveRedstone": 5 << OrientationWidth,
     "Block(Block::ActiveDelayGate, Orientation::PosX)": 6 << OrientationWidth | 1,

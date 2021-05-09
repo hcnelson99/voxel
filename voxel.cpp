@@ -521,7 +521,7 @@ class Game {
                         player_block_selection = Block::Stone;
                         break;
                     case SDLK_0:
-                        player_block_selection = Block::Wood;
+                        player_block_selection = Block::Glowstone;
                         break;
                     case SDLK_TAB:
                         player_mouse_modify = World::PlayerMouseModify::Identify;

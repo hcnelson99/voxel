@@ -87,7 +87,7 @@ std::string Block::to_string() const {
         CASE(Air);
         CASE(Stone);
         CASE(Dirt)
-        CASE(Wood);
+        CASE(Glowstone);
         CASE(ActiveRedstone);
         CASE(InactiveRedstone);
         CASE(ActiveDelayGate);
@@ -436,7 +436,7 @@ void WorldGeometry::benchmark_world() {
                 bool y_edge = y == 0 || y == WORLD_SIZE - 1;
                 bool z_edge = z == 0 || z == WORLD_SIZE - 1;
                 if (x_edge || y_edge || z_edge) {
-                    Block block = x % 5 == 1 || y % 5 == 1 || z % 5 == 1 ? Block::Wood : Block::Stone;
+                    Block block = x % 5 == 1 || y % 5 == 1 || z % 5 == 1 ? Block::Glowstone : Block::Stone;
                     set_block(x, y, z, block);
                 } else {
                     set_block(x, y, z, Block::Air);

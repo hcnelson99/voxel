@@ -68,7 +68,7 @@ class Block {
         Air = 0 << OrientationWidth,
         Stone = 1 << OrientationWidth,
         Dirt = 2 << OrientationWidth,
-        Wood = 3 << OrientationWidth,
+        Glowstone = 3 << OrientationWidth,
         ActiveRedstone = 4 << OrientationWidth,
         InactiveRedstone = 5 << OrientationWidth,
         ActiveDelayGate = 6 << OrientationWidth,
