@@ -776,8 +776,10 @@ class Game {
                     glDrawArrays(GL_TRIANGLES, 0, 6);
                 }
             } else {
-                fprintf(stderr, "ERROR: DID NOT RENDER DURING BENCHMARK\n");
-                exit(1);
+                if (benchmarking) {
+                    fprintf(stderr, "ERROR: DID NOT RENDER DURING BENCHMARK\n");
+                    exit(1);
+                }
             }
 
             {
