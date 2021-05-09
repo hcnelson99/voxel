@@ -39,8 +39,10 @@ float sunlight_brightness = 0.5;
 float unlit_brightness = 0.03;
 float block_brightness = 5;
 
+vec3 sun_position = world_size * 2 * vec3(1, 4, 2);
+
 vec3 shadow_ray(vec3 pos, vec3 normal, uint i) {
-    vec3 light = vec3(25, 100, 50) + (generate_noise(uv, frame_number, i).xyz * 2 - 1) * vec3(4, 4, 4);
+    vec3 light = sun_position + (generate_noise(uv, frame_number, i).xyz * 2 - 1) * vec3(4, 4, 4);
     vec3 dir = normalize(light - pos);
 
     vec3 sunlight_color = vec3(255, 241, 224) / 255.f;
