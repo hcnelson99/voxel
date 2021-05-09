@@ -1,9 +1,28 @@
-- apply inverse square law based on length of diffuse light bounce?
+Steven
+    - redstone performance at different core counts
+    - pick what worlds to benchmark around
+        - for each benchmark world
+            - redstone component count for each type [Henry]
+            - how many wires are there? [redstone block vs group of redstone block]
+            - statistics about circuit connectivity (tree depth is great, maybe one more thing?)
+    - stress_test benchmark needs to be fixed to no longer have spurious redstone blocks that connect nothing
+    - transposing world to see if theres a perf difference
+    - want data for rebuild
+    - want data for tick
+        - tick has 2 steps we want separate data for
+            - equation solve step (wavefront)
+            - blit step
+            - mention the two other small steps [update delay ticks]
 
-- diode (0-tick one way)
-- switch block
-- display output block (white/black)
-
-- change world size to 256x256
-- create big circuit
-- toggle raytracing on/off
+Henry
+    - add performance counters for
+        - number of rays cast
+        - number of texture lookups
+    - data transfer between host and device (instanced rendering)
+        - might have to bring back pre-instanced rendering code
+        - 36x less data transfer
+        - before stevens computer would get crashed
+    - comparing naive to predicated
+    - comparing mipmap to predicated
+        - how does less branch coherence tradeoff with fewer texture lookups at different world sizes
+    - ray bounce direction effect on performance
