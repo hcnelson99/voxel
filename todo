@@ -26,3 +26,7 @@ Henry
     - comparing mipmap to predicated
         - how does less branch coherence tradeoff with fewer texture lookups at different world sizes
     - ray bounce direction effect on performance
+    - face culling anomaly
+    - the fact that the gshader pass dominates performance on large worlds
+
+    - would be nice if redstone ran on its own thread
