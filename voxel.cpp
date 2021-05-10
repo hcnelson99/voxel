@@ -137,9 +137,11 @@ class Histogram {
     std::vector<double> histogram;
 };
 
+enum class WorldInitialization { Flat, Random, Benchmark };
+
 class Game {
   public:
-    void init() {
+    void init(WorldInitialization world_init) {
         { // Init SDL + OpenGL
             if (SDL_Init(SDL_INIT_VIDEO) < 0) {
                 fprintf(stderr, "Failed to init video\n");
@@ -269,7 +271,14 @@ class Game {
             world = new World;
             world->initialize();
             world->sync_buffers();
-            world->flatworld();
+
+            if (world_init == WorldInitialization::Flat) {
+                world->flatworld();
+            } else if (world_init == WorldInitialization::Benchmark) {
+                world->benchmark_world();
+            } else if (world_init == WorldInitialization::Random) {
+                world->randomize();
+            }
         }
 
         { // Load terrain.png
@@ -360,7 +369,17 @@ class Game {
         }
     }
 
-    void loop() {
+    void begin_benchmark() {
+        fprintf(stderr, "starting benchmark\n");
+        benchmarking = true;
+        player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, WORLD_SIZE / 2);
+        rotate_x = 0;
+        rotate_y = 0;
+        benchmark_begin = std::chrono::steady_clock::now();
+        frame_times.clear();
+    }
+
+    void loop(bool benchmark_and_exit) {
         glClearColor(0, 0, 0, 1);
 
         auto prev_time = std::chrono::steady_clock::now();
@@ -368,14 +387,9 @@ class Game {
         Block player_block_selection = Block::InactiveRedstone;
 
         glm::mat4 camera, prev_camera;
-        double rotate_x = 0, rotate_y = 0;
 
         unsigned int frame_number = 0;
         bool running = true;
-
-        Histogram frame_times, gbuffer_times, lighting_times;
-        bool benchmarking = false;
-        std::chrono::steady_clock::time_point benchmark_begin;
 
         bool render_even_if_not_grabbed = false;
 
@@ -403,6 +417,10 @@ class Game {
             prev_time = time;
 
             bool tick_redstone_this_frame = false;
+
+            if (benchmark_and_exit && !benchmarking) {
+                begin_benchmark();
+            }
 
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
@@ -467,14 +485,8 @@ class Game {
                         world->flatworld();
                         break;
                     case SDLK_b:
-                        fprintf(stderr, "starting benchmark\n");
                         world->benchmark_world();
-                        benchmarking = true;
-                        player_pos = glm::vec3(WORLD_SIZE / 2, WORLD_SIZE / 2, WORLD_SIZE / 2);
-                        rotate_x = 0;
-                        rotate_y = 0;
-                        benchmark_begin = std::chrono::steady_clock::now();
-                        frame_times.clear();
+                        begin_benchmark();
                         break;
                     case SDLK_f:
                         player_mouse_modify = World::PlayerMouseModify::RotateBlock;
@@ -595,6 +607,9 @@ class Game {
                     gbuffer_times.report();
                     printf("Lighting times:\n");
                     lighting_times.report();
+                    if (benchmark_and_exit) {
+                        exit(0);
+                    }
                 }
             }
 
@@ -843,6 +858,11 @@ class Game {
     bool mouse_grabbed = true;
 
     glm::vec3 player_pos = glm::vec3(5, 5, 5);
+    double rotate_x = 0, rotate_y = 0;
+
+    bool benchmarking = false;
+    std::chrono::steady_clock::time_point benchmark_begin;
+    Histogram frame_times, gbuffer_times, lighting_times;
 
     ShaderProgram gshader, lighting_shader, display_shader, taa_shader;
     GLuint terrain_texture, block_ids, blue_noise_texture;
@@ -861,13 +881,33 @@ class Game {
 int main(int argc, char *argv[]) {
     Game game;
 
+    WorldInitialization world_init = WorldInitialization::Flat;
+
+    bool benchmark_and_exit = false;
+
     // parse command line arguments
     {
         int opt;
-        while ((opt = getopt(argc, argv, "v")) != -1) {
+        while ((opt = getopt(argc, argv, "vw:b")) != -1) {
             switch (opt) {
             case 'v':
                 Log::toggle_logging(true);
+                break;
+            case 'w': {
+                std::string world = optarg;
+                if (world == "flat") {
+                    world_init = WorldInitialization::Flat;
+                } else if (world == "random") {
+                    world_init = WorldInitialization::Random;
+                } else if (world == "benchmark") {
+                    world_init = WorldInitialization::Benchmark;
+                } else {
+                    assert(false);
+                }
+                break;
+            }
+            case 'b':
+                benchmark_and_exit = true;
                 break;
             default:
                 fprintf(stderr, "Usage: %s [-v] [file]\n", argv[0]);
@@ -876,7 +916,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    game.init();
+    game.init(world_init);
 
     // load file if specified
     if (optind < argc) {
@@ -888,7 +928,7 @@ int main(int argc, char *argv[]) {
         pthread_create(&repl_thread, NULL, Repl::read, NULL);
     }
 
-    game.loop();
+    game.loop(benchmark_and_exit);
 
     game.shutdown();
     return 0;
