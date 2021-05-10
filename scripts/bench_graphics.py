@@ -5,6 +5,15 @@ import shutil
 def build_dir(world_size):
     return 'build-w' + str(world_size)
 
+def build_cmd(s, w, r, p = None):
+    d = build_dir(s)
+    exe = './' + d + '/voxel'
+    flags = '-b -w ' + w + ' -r ' + r
+    if p != None:
+        flags += ' -p ' + str(p)
+    pipe = '>> bench_output.csv'
+    cmd = exe + ' ' + flags + ' ' + pipe
+    return cmd
 
 def main():
     if 'meson.build' not in os.listdir():
@@ -19,7 +28,13 @@ def main():
     #     if d.startswith('build-w'):
     #         shutil.rmtree(d)
 
-    sizes = [16, 32, 64, 128, 256]
+    # sizes = [16, 32, 64, 128, 256]
+    sizes = [256]
+    ps = [0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
+    # raycasts = ['naive', 'predicated', 'mipmapped']
+    raycasts = ['mipmapped']
+    worlds = ['random']
+
 
     for s in sizes:
         d = build_dir(s)
@@ -29,18 +44,12 @@ def main():
             os.system(cppflags + " " + meson)
         os.system("ninja -C " + d)
 
-    raycasts = ['naive', 'predicated', 'mipmapped']
-    worlds = ['outline']
-
     for s in sizes:
         for r in raycasts:
             for w in worlds:
-                d = build_dir(s)
-                exe = './' + d + '/voxel'
-                flags = '-b -w ' + w + ' -r ' + r
-                pipe = '>> bench_output.csv'
-                cmd = exe + ' ' + flags + ' ' + pipe
-                print(cmd)
-                os.system(cmd)
+                for p in ps:
+                    cmd = build_cmd(s, w, r, p)
+                    print(cmd)
+                    os.system(cmd)
 
 main()

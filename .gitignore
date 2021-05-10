@@ -4,3 +4,4 @@ editor
 test.world
 build*
 benchmark
+/bench_output.csv
