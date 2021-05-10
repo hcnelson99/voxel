@@ -1,0 +1,10 @@
+project('voxel', 'cpp', default_options : ['cpp_std=c++17'])
+
+openmp = dependency('openmp')
+glew = dependency('glew')
+sdl2 = dependency('sdl2')
+cc = meson.get_compiler('cpp')
+dl = cc.find_library('dl')
+
+srcs = ['voxel.cpp', 'world.cpp', 'redstone.cpp', 'stb_image.cpp', 'stb_include.cpp', 'tracy/TracyClient.cpp']
+executable('voxel', srcs, dependencies : [openmp, glew, sdl2, dl], cpp_args : '-DTRACY_ENABLE -DGLM_ENABLE_EXPERIMENTAL')
