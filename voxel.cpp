@@ -126,22 +126,24 @@ class Histogram {
         for (double t : histogram) {
             benchmark_time += t;
         }
-        double avg_frame_time = benchmark_time / frame_count;
-        printf("Average: %.2f ms (%.2f fps)\n", avg_frame_time * 1000.f, 1.f / avg_frame_time);
+        double avg_frame_time = 1000. * (benchmark_time / frame_count);
         std::sort(histogram.begin(), histogram.end());
-        printf("50th percentile: %.2f ms\n", 1000.f * histogram[frame_count * 0.5]);
-        printf("99th percentile: %.2f ms\n", 1000.f * histogram[frame_count * 0.99]);
+        double med_frame_time = 1000. * histogram[frame_count * 0.5];
+        double nn_frame_time = 1000. * histogram[frame_count * 0.99];
+        printf("%.2f,%.2f,%.2f\n", avg_frame_time, med_frame_time, nn_frame_time);
     }
 
   private:
     std::vector<double> histogram;
 };
 
-enum class WorldInitialization { Flat, Random, Benchmark };
+enum class WorldInitialization { Flat, Random, Outline };
 
 class Game {
   public:
-    void init(WorldInitialization world_init) {
+    void init(WorldInitialization world_init, float p) {
+        random_p = p;
+
         { // Init SDL + OpenGL
             if (SDL_Init(SDL_INIT_VIDEO) < 0) {
                 fprintf(stderr, "Failed to init video\n");
@@ -274,10 +276,10 @@ class Game {
 
             if (world_init == WorldInitialization::Flat) {
                 world->flatworld();
-            } else if (world_init == WorldInitialization::Benchmark) {
-                world->benchmark_world();
+            } else if (world_init == WorldInitialization::Outline) {
+                world->outline();
             } else if (world_init == WorldInitialization::Random) {
-                world->randomize();
+                world->randomize(random_p);
             }
         }
 
@@ -478,14 +480,14 @@ class Game {
                         break;
                     case SDLK_o:
                         fprintf(stderr, "randomizing world\n");
-                        world->randomize();
+                        world->randomize(random_p);
                         break;
                     case SDLK_p:
                         fprintf(stderr, "clearing world\n");
                         world->flatworld();
                         break;
                     case SDLK_b:
-                        world->benchmark_world();
+                        world->outline();
                         begin_benchmark();
                         break;
                     case SDLK_f:
@@ -601,12 +603,12 @@ class Game {
 
                 if (duration > BENCHMARK_LENGTH_SECONDS) {
                     benchmarking = false;
-                    printf("Frame times:\n");
-                    frame_times.report();
-                    printf("GBuffer times:\n");
+                    printf("gbuffer,");
                     gbuffer_times.report();
-                    printf("Lighting times:\n");
+                    printf("lighting,");
                     lighting_times.report();
+                    printf("total,");
+                    frame_times.report();
                     if (benchmark_and_exit) {
                         exit(0);
                     }
@@ -864,6 +866,8 @@ class Game {
     std::chrono::steady_clock::time_point benchmark_begin;
     Histogram frame_times, gbuffer_times, lighting_times;
 
+    float random_p;
+
     ShaderProgram gshader, lighting_shader, display_shader, taa_shader;
     GLuint terrain_texture, block_ids, blue_noise_texture;
 
@@ -884,11 +888,12 @@ int main(int argc, char *argv[]) {
     WorldInitialization world_init = WorldInitialization::Flat;
 
     bool benchmark_and_exit = false;
+    float random_p = 0.01;
 
     // parse command line arguments
     {
         int opt;
-        while ((opt = getopt(argc, argv, "vw:b")) != -1) {
+        while ((opt = getopt(argc, argv, "vw:br:")) != -1) {
             switch (opt) {
             case 'v':
                 Log::toggle_logging(true);
@@ -899,8 +904,8 @@ int main(int argc, char *argv[]) {
                     world_init = WorldInitialization::Flat;
                 } else if (world == "random") {
                     world_init = WorldInitialization::Random;
-                } else if (world == "benchmark") {
-                    world_init = WorldInitialization::Benchmark;
+                } else if (world == "outline") {
+                    world_init = WorldInitialization::Outline;
                 } else {
                     assert(false);
                 }
@@ -909,6 +914,11 @@ int main(int argc, char *argv[]) {
             case 'b':
                 benchmark_and_exit = true;
                 break;
+            case 'r': {
+                float p;
+                sscanf(optarg, "%f", &random_p);
+                break;
+            }
             default:
                 fprintf(stderr, "Usage: %s [-v] [file]\n", argv[0]);
                 exit(EXIT_FAILURE);
@@ -916,7 +926,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    game.init(world_init);
+    game.init(world_init, random_p);
 
     // load file if specified
     if (optind < argc) {

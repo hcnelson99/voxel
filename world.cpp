@@ -5,6 +5,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <optional>
+#include <random>
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -390,25 +391,40 @@ void WorldGeometry::rotate_block(int x, int y, int z) {
     set_block(x, y, z, block);
 }
 
-void WorldGeometry::randomize() {
+bool coord_on_outline(int x, int y, int z) {
+    bool x_edge = x == 0 || x == WORLD_SIZE - 1;
+    bool y_edge = y == 0 || y == WORLD_SIZE - 1;
+    bool z_edge = z == 0 || z == WORLD_SIZE - 1;
+    return x_edge || y_edge || z_edge;
+}
+
+bool near_center(int x, int y, int z) {
+    return abs(x - WORLD_SIZE / 2) < 4 && abs(y - WORLD_SIZE / 2) < 4 && abs(z - WORLD_SIZE / 2) < 4;
+}
+
+void WorldGeometry::randomize(float p) {
+    static std::default_random_engine rng;
+    static std::uniform_real_distribution<> dist(0, 1);
+
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                int r = rand() % 10;
-                Block block;
-                if (r == 0) {
-                    block = Block::Stone;
-                } else if (r == 1) {
-                    block = Block::Dirt;
-                } else if (r == 2) {
-                    block = Block::NotGate;
+                if (coord_on_outline(x, y, z)) {
+                    Block block = x % 5 == 1 || y % 5 == 1 || z % 5 == 1 ? Block::Glowstone : Block::Stone;
+                    set_block(x, y, z, block);
+                } else if (near_center(x, y, z)) {
+                    set_block(x, y, z, Block::Air);
                 } else {
-                    block = Block::Air;
+                    float r = dist(rng);
+                    Block block;
+                    if (r < p) {
+                        block = Block::Stone;
+                    } else {
+                        block = Block::Air;
+                    }
+
+                    set_block(x, y, z, block);
                 }
-
-                block.set_orientation(Orientation::from(rand() % 6));
-
-                set_block(x, y, z, block);
             }
         }
     }
@@ -428,14 +444,11 @@ void WorldGeometry::flatworld() {
     }
 }
 
-void WorldGeometry::benchmark_world() {
+void WorldGeometry::outline() {
     for (int x = 0; x < WORLD_SIZE; ++x) {
         for (int y = 0; y < WORLD_SIZE; ++y) {
             for (int z = 0; z < WORLD_SIZE; ++z) {
-                bool x_edge = x == 0 || x == WORLD_SIZE - 1;
-                bool y_edge = y == 0 || y == WORLD_SIZE - 1;
-                bool z_edge = z == 0 || z == WORLD_SIZE - 1;
-                if (x_edge || y_edge || z_edge) {
+                if (coord_on_outline(x, y, z)) {
                     Block block = x % 5 == 1 || y % 5 == 1 || z % 5 == 1 ? Block::Glowstone : Block::Stone;
                     set_block(x, y, z, block);
                 } else {

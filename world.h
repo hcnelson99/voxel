@@ -198,9 +198,9 @@ class WorldGeometry {
     void delete_block(int x, int y, int z);
     void set_active(int x, int y, int z, bool active);
     void rotate_block(int x, int y, int z);
-    void randomize();
+    void randomize(float p);
     void flatworld();
-    void benchmark_world();
+    void outline();
 
   private:
     void _update_block_map(int x, int y, int z, const Block &block) {
@@ -381,16 +381,16 @@ class World : public WorldGeometryWithRedstone {
         WorldGeometry::rotate_block(x, y, z);
         redstone_dirty = true;
     }
-    void randomize() {
-        WorldGeometry::randomize();
+    void randomize(float p) {
+        WorldGeometry::randomize(p);
         redstone_dirty = true;
     }
     void flatworld() {
         WorldGeometry::flatworld();
         redstone_dirty = true;
     }
-    void benchmark_world() {
-        WorldGeometry::benchmark_world();
+    void outline() {
+        WorldGeometry::outline();
         redstone_dirty = true;
     }
 
