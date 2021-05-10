@@ -632,7 +632,7 @@ class Game {
                         sprintf(b, "%.3f", random_p);
                         command_line_world = command_line_world + b;
                     }
-                    printf("%s-%s-%d,%f,%f,%f\n", command_line_raycast.c_str(), command_line_world.c_str(), WORLD_SIZE,
+                    printf("%s-%s-%d,%f,%f,%f\n", command_line_world.c_str(), command_line_raycast.c_str(), WORLD_SIZE,
                            gbuffer_avg, lighting_avg, frame_avg);
                     if (benchmark_and_exit) {
                         exit(0);

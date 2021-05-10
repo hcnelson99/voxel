@@ -1,4 +1,4 @@
-project('voxel', 'cpp', default_options : ['cpp_std=c++17'])
+project('voxel', 'cpp', default_options : ['cpp_std=c++17', 'b_ndebug=if-release'])
 
 openmp = dependency('openmp')
 glew = dependency('glew')
