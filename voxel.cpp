@@ -31,6 +31,7 @@ constexpr size_t MS_BETWEEN_TICK = 100;
 
 constexpr double BENCHMARK_LENGTH_SECONDS = 10.0;
 
+std::string command_line_world;
 World *world;
 
 class ShaderProgram {
@@ -120,13 +121,18 @@ class Histogram {
     void clear() { histogram.clear(); }
     void add(double value) { histogram.push_back(value); }
 
-    void report() {
+    double average() {
         size_t frame_count = histogram.size();
         double benchmark_time = 0;
         for (double t : histogram) {
             benchmark_time += t;
         }
-        double avg_frame_time = 1000. * (benchmark_time / frame_count);
+        return 1000. * (benchmark_time / frame_count);
+    }
+
+    void report() {
+        size_t frame_count = histogram.size();
+        double avg_frame_time = average();
         std::sort(histogram.begin(), histogram.end());
         double med_frame_time = 1000. * histogram[frame_count * 0.5];
         double nn_frame_time = 1000. * histogram[frame_count * 0.99];
@@ -161,10 +167,10 @@ class Game {
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 #ifndef NDEBUG
-            printf("Initializing OpenGL debug context\n");
+            fprintf(stderr, "Initializing OpenGL debug context\n");
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #else
-            printf("Initializing OpenGL release context\n");
+            fprintf(stderr, "Initializing OpenGL release context\n");
 #endif
             SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
@@ -603,12 +609,18 @@ class Game {
 
                 if (duration > BENCHMARK_LENGTH_SECONDS) {
                     benchmarking = false;
-                    printf("gbuffer,");
-                    gbuffer_times.report();
-                    printf("lighting,");
-                    lighting_times.report();
-                    printf("total,");
-                    frame_times.report();
+                    double gbuffer_avg = gbuffer_times.average();
+                    double lighting_avg = lighting_times.average();
+                    double frame_avg = frame_times.average();
+
+                    std::string world_type = command_line_world;
+                    if (command_line_world == "random") {
+                        char b[80];
+                        sprintf(b, "%.3f", random_p);
+                        command_line_world = command_line_world + b;
+                    }
+                    printf("%s-%d,%f,%f,%f\n", command_line_world.c_str(), WORLD_SIZE, gbuffer_avg, lighting_avg,
+                           frame_avg);
                     if (benchmark_and_exit) {
                         exit(0);
                     }
@@ -899,12 +911,12 @@ int main(int argc, char *argv[]) {
                 Log::toggle_logging(true);
                 break;
             case 'w': {
-                std::string world = optarg;
-                if (world == "flat") {
+                command_line_world = optarg;
+                if (command_line_world == "flat") {
                     world_init = WorldInitialization::Flat;
-                } else if (world == "random") {
+                } else if (command_line_world == "random") {
                     world_init = WorldInitialization::Random;
-                } else if (world == "outline") {
+                } else if (command_line_world == "outline") {
                     world_init = WorldInitialization::Outline;
                 } else {
                     assert(false);
