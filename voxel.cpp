@@ -32,6 +32,7 @@ constexpr size_t MS_BETWEEN_TICK = 100;
 constexpr double BENCHMARK_LENGTH_SECONDS = 10.0;
 
 std::string command_line_world;
+std::string command_line_raycast = "mipmapped";
 World *world;
 
 class ShaderProgram {
@@ -47,8 +48,20 @@ class ShaderProgram {
         char world_size_str[50];
         snprintf(world_size_str, sizeof(world_size_str), "const uint world_size = %d;", WORLD_SIZE);
 
+        char *code;
         char error[256];
-        char *code = stb_include_file(&path[0], world_size_str, &GLSL_PATH[0], error);
+
+        if (filename == "lfragment.glsl") {
+            // I sincerely apologize for this hack
+            char raycast_include[100];
+            sprintf(raycast_include, "#include \"raycast-%s.glsl\"\n", command_line_raycast.c_str());
+            char *strs[] = {"#include \"lfragment-prologue.glsl\"\n", raycast_include,
+                            "#include \"lfragment-impl.glsl\"\n"};
+            code = stb_include_strings(strs, 3, world_size_str, &GLSL_PATH[0], "lfragment.glsl", error);
+        } else {
+            code = stb_include_file(&path[0], world_size_str, &GLSL_PATH[0], error);
+        }
+
         if (!code) {
             fprintf(stderr, "%s\n", error);
             return false;
@@ -619,8 +632,8 @@ class Game {
                         sprintf(b, "%.3f", random_p);
                         command_line_world = command_line_world + b;
                     }
-                    printf("%s-%d,%f,%f,%f\n", command_line_world.c_str(), WORLD_SIZE, gbuffer_avg, lighting_avg,
-                           frame_avg);
+                    printf("%s-%s-%d,%f,%f,%f\n", command_line_raycast.c_str(), command_line_world.c_str(), WORLD_SIZE,
+                           gbuffer_avg, lighting_avg, frame_avg);
                     if (benchmark_and_exit) {
                         exit(0);
                     }
@@ -905,7 +918,7 @@ int main(int argc, char *argv[]) {
     // parse command line arguments
     {
         int opt;
-        while ((opt = getopt(argc, argv, "vw:br:")) != -1) {
+        while ((opt = getopt(argc, argv, "vw:bp:r:")) != -1) {
             switch (opt) {
             case 'v':
                 Log::toggle_logging(true);
@@ -926,9 +939,13 @@ int main(int argc, char *argv[]) {
             case 'b':
                 benchmark_and_exit = true;
                 break;
-            case 'r': {
+            case 'p': {
                 float p;
                 sscanf(optarg, "%f", &random_p);
+                break;
+            }
+            case 'r': {
+                command_line_raycast = optarg;
                 break;
             }
             default:

@@ -1,26 +1,3 @@
-#version 430
-
-layout (location = 0) uniform uint render_mode;
-layout (location = 1) uniform uint frame_number;
-
-layout (binding = 0) uniform sampler2D g_position;
-layout (binding = 1) uniform sampler2D g_normal;
-layout (binding = 2) uniform sampler2D g_color_spec;
-layout (binding = 3) uniform usampler3D block_map;
-layout (binding = 4) uniform sampler2D terrain_texture;
-layout (binding = 5) uniform sampler2D blue_noise;
-
-in vec2 uv;
-
-out vec4 frag_color;
-
-// this should insert a line with const uint world_size = WORLD_SIZE
-#inject
-
-#include "block_map.glsl"
-#include "util.glsl"
-#include "raycast.glsl"
-
 int blue_noise_size = textureSize(blue_noise, 0).x;
 
 vec4 generalized_golden_ratio = vec4(1.6180368732830122, 1.3247179943111884, 1.2207440862420311, 1.167303978412138);
@@ -115,3 +92,4 @@ void main() {
     vec3 brightness = lighting(uv);
     frag_color = vec4(brightness, 1);
 }
+
