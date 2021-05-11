@@ -21,6 +21,22 @@ size_t tick() {
     return ms_elapsed;
 }
 
+size_t diff(Tensor<Block, WORLD_SIZE> &temp) {
+    size_t count = 0;
+    for (int x = 0; x < WORLD_SIZE; x++) {
+        for (int y = 0; y < WORLD_SIZE; y++) {
+            for (int z = 0; z < WORLD_SIZE; z++) {
+                const auto block = world->get_block(x, y, z);
+                if (temp(x, y, z) != block) {
+                    count++;
+                }
+                temp(x, y, z) = block;
+            }
+        }
+    }
+    return count;
+}
+
 int main() {
     world = new World;
     world->load(world_file.c_str());
@@ -37,6 +53,59 @@ int main() {
             cout << "tick            : " << ticks[i] << "\n" << endl;
         }
     }
+
+    {
+        int redstone = 0;
+        int not_gate = 0;
+        int delay_gate = 0;
+        int diode = 0;
+        int blocks = 0;
+        for (int x = 0; x < WORLD_SIZE; x++) {
+            for (int y = 0; y < WORLD_SIZE; y++) {
+                for (int z = 0; z < WORLD_SIZE; z++) {
+                    Block block = world->get_block(x, y, z);
+
+                    if (!block.is(Block::Air)) {
+                        blocks++;
+                    }
+
+                    if (block.is_redstone() || block.is_bluestone() || block.is_greenstone()) {
+                        redstone++;
+                    } else if (block.is_not_gate()) {
+                        not_gate++;
+                    } else if (block.is_delay_gate()) {
+                        delay_gate++;
+                    } else if (block.is_diode_gate()) {
+                        diode++;
+                    }
+                }
+            }
+        }
+
+        std::cout << "\nBlock Counts:" << std::endl;
+        std::cout << "total     : " << blocks << std::endl;
+        std::cout << "redstone  : " << redstone << std::endl;
+        std::cout << "not_gate  : " << not_gate << std::endl;
+        std::cout << "delay_gate: " << delay_gate << std::endl;
+        std::cout << "diode     : " << diode << std::endl;
+    }
+
+    Tensor<Block, WORLD_SIZE> temp;
+    diff(temp);
+
+    std::cout << "\nGathering tick stats: " << std::endl;
+
+    size_t changed = 0;
+    tick();
+    changed += diff(temp);
+    tick();
+    changed += diff(temp);
+    tick();
+    changed += diff(temp);
+    tick();
+    changed += diff(temp);
+
+    std::cout << "\nAverage blocks changed per tick: " << changed / 4 << std::endl;
 
     return 0;
 }

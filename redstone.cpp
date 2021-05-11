@@ -424,20 +424,22 @@ uint32_t WorldGeometryWithRedstone::build_expression(const Vec3 &v, const Block 
 
 void WorldGeometryWithRedstone::tick() {
 
+    auto delay_gate_time = time_function([&]() {
 #pragma omp parallel for
-    for (size_t i = 0; i < delay_gates.size(); i++) {
-        const Vec3 &v = delay_gates[i];
-        Delay &delay = delays(v);
-        uint8_t &ticks = delay.ticks;
-        if (ticks != 0xff) {
-            ticks--;
+        for (size_t i = 0; i < delay_gates.size(); i++) {
+            const Vec3 &v = delay_gates[i];
+            Delay &delay = delays(v);
+            uint8_t &ticks = delay.ticks;
+            if (ticks != 0xff) {
+                ticks--;
 
-            if (ticks == 0) {
-                set_active(v.x, v.y, v.z, delay.activating);
-                ticks = 0xff;
+                if (ticks == 0) {
+                    set_active(v.x, v.y, v.z, delay.activating);
+                    ticks = 0xff;
+                }
             }
         }
-    }
+    });
 
     const auto eval_time = time_function([&]() { evaluate_parallel(); });
 
@@ -447,28 +449,31 @@ void WorldGeometryWithRedstone::tick() {
         }
     });
 
+    delay_gate_time += time_function([&]() {
+#pragma omp parallel for
+        for (size_t i = 0; i < delay_gates.size(); i++) {
+            const Vec3 &v = delay_gates[i];
+            Delay &delay = delays(v);
+            const Block &block = get_block(v);
+
+            const Vec3 input_v = v + block.get_orientation().opposite().direction();
+            const Block &input = get_block_safe(input_v);
+            if (input.is_active() != block.is_active()) {
+                if (delay.ticks == 0xff || input.is_active() != delay.activating) {
+                    delay.activating = input.is_active();
+                    delay.ticks = DELAY_TICKS;
+                }
+            } else {
+                delay.ticks = 0xff;
+            }
+        }
+    });
+
 #ifdef REDSTONE_BENCHMARK_ONLY
     std::cout << "eval time       : " << eval_time << std::endl;
     std::cout << "update time     : " << update_time << std::endl;
+    std::cout << "delay gate time : " << delay_gate_time << std::endl;
 #endif
-
-#pragma omp parallel for
-    for (size_t i = 0; i < delay_gates.size(); i++) {
-        const Vec3 &v = delay_gates[i];
-        Delay &delay = delays(v);
-        const Block &block = get_block(v);
-
-        const Vec3 input_v = v + block.get_orientation().opposite().direction();
-        const Block &input = get_block_safe(input_v);
-        if (input.is_active() != block.is_active()) {
-            if (delay.ticks == 0xff || input.is_active() != delay.activating) {
-                delay.activating = input.is_active();
-                delay.ticks = DELAY_TICKS;
-            }
-        } else {
-            delay.ticks = 0xff;
-        }
-    }
 }
 
 void WorldGeometryWithRedstone::update_blocks() {
