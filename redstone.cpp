@@ -21,136 +21,156 @@ unsigned int num_threads;
 inline unsigned int thread_mask() { return 1 << omp_get_thread_num(); }
 
 void WorldGeometryWithRedstone::rebuild() {
-    disjunction_memory.resize(BLOCKS);
-    disjunction_bump_allocator.store(0);
-    delay_gates.clear();
-
-    expressions.clear();
-    // index 0: unused since indices are unsigned so 0 is default (therefore invalid)
-    // index 1: always true
-    // index 2: always false
-    num_expressions.store(3);
-
-    block_to_expression.clear();
-
-    rebuild_visited.clear();
-
     unsigned int num_delay_gates = 0;
 
-    {
-#pragma omp parallel
+    auto allocation_time = time_function([&]() {
+        disjunction_memory.resize(BLOCKS);
+        disjunction_bump_allocator.store(0);
+        delay_gates.clear();
+
+        expressions.clear();
+        // index 0: unused since indices are unsigned so 0 is default (therefore invalid)
+        // index 1: always true
+        // index 2: always false
+        num_expressions.store(3);
+
+        block_to_expression.clear();
+
+        rebuild_visited.clear();
+
         {
+#pragma omp parallel
+            {
 #pragma omp single
-            num_threads = omp_get_num_threads();
+                num_threads = omp_get_num_threads();
+            }
         }
-    }
 
-    thread_data.clear();
-    thread_data.resize(num_threads);
+        thread_data.clear();
+        thread_data.resize(num_threads);
+    });
 
+    auto delay_gate_start = std::chrono::steady_clock::now();
+    {
 #pragma omp parallel for reduction(+ : num_delay_gates)
-    for (size_t i = 0; i < num_blocks; i++) {
-        const Vec3 v = Vec3::decode(block_positions[i]);
-        const Block block = get_block_safe(v);
-        if (block.is_delay_gate()) {
-            num_delay_gates++;
-        } else {
-            delays(v).reset();
+        for (size_t i = 0; i < num_blocks; i++) {
+            const Vec3 v = Vec3::decode(block_positions[i]);
+            const Block block = get_block_safe(v);
+            if (block.is_delay_gate()) {
+                num_delay_gates++;
+            } else {
+                delays(v).reset();
+            }
         }
     }
+    auto delay_gate_end = std::chrono::steady_clock::now();
+    size_t delay_gate_time = std::chrono::duration<double, std::milli>(delay_gate_end - delay_gate_start).count();
 
-    expressions.resize(num_blocks + 3 + THREAD_LOCAL_EXPRS * num_threads);
-    delay_gates.resize(num_delay_gates);
+    allocation_time += time_function([&]() {
+        expressions.resize(num_blocks + 3 + THREAD_LOCAL_EXPRS * num_threads);
+        delay_gates.resize(num_delay_gates);
+    });
 
     std::atomic_uint delay_i(0);
 
+    const auto build_time = time_function([&]() {
 #pragma omp parallel for
-    for (size_t i = 0; i < num_blocks; i++) {
-        const Vec3 v = Vec3::decode(block_positions[i]);
-        Block block = get_block_safe(v);
+        for (size_t i = 0; i < num_blocks; i++) {
+            const Vec3 v = Vec3::decode(block_positions[i]);
+            Block block = get_block_safe(v);
 
-        if (block.is_delay_gate()) {
-            delay_gates[delay_i++] = v;
-        }
-
-        build_expression(v, block);
-    }
-
-    const unsigned int _num_expressions = num_expressions.load();
-
-    ordered_expressions.resize(_num_expressions);
-    expression_indices.resize(_num_expressions);
-    index_to_expression.resize(_num_expressions);
-    std::iota(expression_indices.begin(), expression_indices.end(), 0);
-    std::iota(index_to_expression.begin(), index_to_expression.end(), 0);
-
-    // sort the expressions by height
-    {
-        std::vector<unsigned int> height_counts(1, 0);
-        std::vector<unsigned int> height_indices;
-
-        for (size_t i = 3; i < _num_expressions; i++) {
-            const uint32_t &height = expressions[i].height;
-            if (height == UINT_MAX) {
-                height_counts[0]++;
-            } else if (height + 1 >= height_counts.size()) {
-                height_counts.resize(height + 2);
-                height_counts[height + 1] = 1;
-            } else {
-                height_counts[height + 1]++;
+            if (block.is_delay_gate()) {
+                delay_gates[delay_i++] = v;
             }
+
+            build_expression(v, block);
         }
+    });
 
-        unsigned int levels = height_counts.size();
-        height_indices.resize(levels);
-        height_indices[1] = 3;
-        for (size_t i = 2; i < levels; i++) {
-            height_indices[i] = height_indices[i - 1] + height_counts[i - 1];
-        }
-        height_indices[0] = height_indices[levels - 1] + height_counts[levels - 1];
+    const auto serial_time = time_function([&]() {
+        const unsigned int _num_expressions = num_expressions.load();
 
-        for (size_t i = 3; i < _num_expressions; i++) {
-            uint32_t height = expressions[i].height;
-            if (height == UINT_MAX) {
-                height = 0;
-            } else {
-                height++;
-            }
-            const unsigned int index = height_indices[height]++;
-            expression_indices[index] = i;
-        }
+        ordered_expressions.resize(_num_expressions);
+        expression_indices.resize(_num_expressions);
+        index_to_expression.resize(_num_expressions);
+        std::iota(expression_indices.begin(), expression_indices.end(), 0);
+        std::iota(index_to_expression.begin(), index_to_expression.end(), 0);
 
-        // std::sort(expression_indices.begin() + 3, expression_indices.end(),
-        //          [this](uint32_t i1, uint32_t i2) { return expressions[i1].height < expressions[i2].height; });
-    }
-
-    {
-        for (size_t i = 0; i < expression_indices.size(); i++) {
-            ordered_expressions[i] = expressions[expression_indices[i]];
-            index_to_expression[expression_indices[i]] = i;
-        }
-
-        expression_indices.clear();
-        expression_indices.push_back(3);
+        // sort the expressions by height
         {
-            size_t i;
-            for (i = 4; i < index_to_expression.size(); i++) {
-                if (ordered_expressions[i].height == UINT_MAX) {
-                    break;
-                }
-                if (ordered_expressions[i].height != ordered_expressions[i - 1].height) {
-                    expression_indices.push_back(i);
+            std::vector<unsigned int> height_counts(1, 0);
+            std::vector<unsigned int> height_indices;
+
+            for (size_t i = 3; i < _num_expressions; i++) {
+                const uint32_t &height = expressions[i].height;
+                if (height == UINT_MAX) {
+                    height_counts[0]++;
+                } else if (height + 1 >= height_counts.size()) {
+                    height_counts.resize(height + 2);
+                    height_counts[height + 1] = 1;
+                } else {
+                    height_counts[height + 1]++;
                 }
             }
-            expression_indices.push_back(std::min(i, index_to_expression.size()));
+
+            unsigned int levels = height_counts.size();
+            height_indices.resize(levels);
+            height_indices[1] = 3;
+            for (size_t i = 2; i < levels; i++) {
+                height_indices[i] = height_indices[i - 1] + height_counts[i - 1];
+            }
+            height_indices[0] = height_indices[levels - 1] + height_counts[levels - 1];
+
+            for (size_t i = 3; i < _num_expressions; i++) {
+                uint32_t height = expressions[i].height;
+                if (height == UINT_MAX) {
+                    height = 0;
+                } else {
+                    height++;
+                }
+                const unsigned int index = height_indices[height]++;
+                expression_indices[index] = i;
+            }
+
+            // std::sort(expression_indices.begin() + 3, expression_indices.end(),
+            //          [this](uint32_t i1, uint32_t i2) { return expressions[i1].height < expressions[i2].height; });
         }
-    }
+
+        {
+            for (size_t i = 0; i < expression_indices.size(); i++) {
+                ordered_expressions[i] = expressions[expression_indices[i]];
+                index_to_expression[expression_indices[i]] = i;
+            }
+
+            expression_indices.clear();
+            expression_indices.push_back(3);
+            {
+                size_t i;
+                for (i = 4; i < index_to_expression.size(); i++) {
+                    if (ordered_expressions[i].height == UINT_MAX) {
+                        break;
+                    }
+                    if (ordered_expressions[i].height != ordered_expressions[i - 1].height) {
+                        expression_indices.push_back(i);
+                    }
+                }
+                expression_indices.push_back(std::min(i, index_to_expression.size()));
+            }
+        }
+    });
 
 #pragma omp parallel for
     for (size_t i = 0; i < num_blocks; i++) {
         const Vec3 v = Vec3::decode(block_positions[i]);
         block_to_expression(v).store(index_to_expression[block_to_expression(v).load()]);
     }
+
+#ifdef REDSTONE_BENCHMARK_ONLY
+    std::cout << "allocation time : " << allocation_time << std::endl;
+    std::cout << "delay gate time : " << delay_gate_time << std::endl;
+    std::cout << "build time      : " << build_time << std::endl;
+    std::cout << "serial time     : " << serial_time << std::endl;
+#endif
 }
 
 inline void WorldGeometryWithRedstone::cancel_allocated_expression() {
@@ -419,11 +439,18 @@ void WorldGeometryWithRedstone::tick() {
         }
     }
 
-    evaluate_parallel();
+    const auto eval_time = time_function([&]() { evaluate_parallel(); });
 
-    if (num_expressions > 3) {
-        update_blocks();
-    }
+    const auto update_time = time_function([&]() {
+        if (num_expressions > 3) {
+            update_blocks();
+        }
+    });
+
+#ifdef REDSTONE_BENCHMARK_ONLY
+    std::cout << "eval time       : " << eval_time << std::endl;
+    std::cout << "update time     : " << update_time << std::endl;
+#endif
 
 #pragma omp parallel for
     for (size_t i = 0; i < delay_gates.size(); i++) {

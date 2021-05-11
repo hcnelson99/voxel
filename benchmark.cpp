@@ -28,16 +28,13 @@ int main() {
     for (int f = 0; f < 2; f++) {
         world->set_block(0, 0, 0, world->get_block(0, 0, 0));
         size_t first_tick = tick();
+        cout << "tick & rebuild  : " << first_tick << "\n" << endl;
 
         constexpr size_t n = 2;
         size_t ticks[n];
         for (size_t i = 0; i < n; i++) {
             ticks[i] = tick();
-        }
-
-        cout << first_tick << endl;
-        for (size_t i = 0; i < n; i++) {
-            cout << ticks[i] << endl;
+            cout << "tick            : " << ticks[i] << "\n" << endl;
         }
     }
 
