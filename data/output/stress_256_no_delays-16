@@ -1,0 +1,190 @@
+benchmark_worlds/stress_256_no_delays.world
+
+allocation time : 50
+delay gate time : 2
+build time      : 59
+serial time     : 23
+eval time       : 10
+update time     : 4
+delay gate time : 0
+tick & rebuild  : 161
+
+eval time       : 10
+update time     : 4
+delay gate time : 0
+tick            : 14
+
+eval time       : 10
+update time     : 4
+delay gate time : 0
+tick            : 14
+
+allocation time : 14
+delay gate time : 2
+build time      : 59
+serial time     : 16
+eval time       : 9
+update time     : 4
+delay gate time : 0
+tick & rebuild  : 117
+
+eval time       : 9
+update time     : 4
+delay gate time : 0
+tick            : 13
+
+eval time       : 9
+update time     : 4
+delay gate time : 0
+tick            : 13
+
+
+Block Counts:
+total     : 3969258
+redstone  : 1624900
+not_gate  : 1562377
+delay_gate: 2
+diode     : 781979
+
+Gathering tick stats: 
+eval time       : 9
+update time     : 4
+delay gate time : 0
+eval time       : 9
+update time     : 5
+delay gate time : 0
+eval time       : 9
+update time     : 7
+delay gate time : 0
+eval time       : 9
+update time     : 8
+delay gate time : 1
+
+Average blocks changed per tick: 3927299
+
+Levels: 124
+0: 854
+1: 1750
+2: 1750
+3: 1750
+4: 1750
+5: 1750
+6: 1750
+7: 1750
+8: 1750
+9: 1750
+10: 1750
+11: 1750
+12: 1750
+13: 1750
+14: 1750
+15: 1750
+16: 1750
+17: 1750
+18: 1749
+19: 1749
+20: 1749
+21: 1749
+22: 1749
+23: 1749
+24: 1749
+25: 1749
+26: 1749
+27: 1749
+28: 1749
+29: 1749
+30: 1749
+31: 1749
+32: 1749
+33: 1749
+34: 1749
+35: 1749
+36: 1749
+37: 1749
+38: 1749
+39: 1749
+40: 1749
+41: 1749
+42: 1749
+43: 1749
+44: 1749
+45: 1749
+46: 1748
+47: 1748
+48: 1748
+49: 1748
+50: 1748
+51: 1748
+52: 1748
+53: 1748
+54: 1748
+55: 1748
+56: 1748
+57: 1748
+58: 1748
+59: 1748
+60: 1748
+61: 1748
+62: 1748
+63: 1748
+64: 1748
+65: 1747
+66: 1747
+67: 1747
+68: 1747
+69: 1747
+70: 1747
+71: 1747
+72: 1747
+73: 1747
+74: 1747
+75: 1747
+76: 1747
+77: 1747
+78: 1745
+79: 1743
+80: 1742
+81: 1738
+82: 1736
+83: 1730
+84: 1721
+85: 1710
+86: 1700
+87: 1684
+88: 1653
+89: 1617
+90: 1584
+91: 1545
+92: 1506
+93: 1465
+94: 1395
+95: 1335
+96: 1261
+97: 1179
+98: 1096
+99: 1009
+100: 924
+101: 825
+102: 738
+103: 665
+104: 598
+105: 514
+106: 437
+107: 371
+108: 304
+109: 236
+110: 193
+111: 166
+112: 131
+113: 99
+114: 79
+115: 60
+116: 37
+117: 24
+118: 18
+119: 13
+120: 7
+121: 5
+122: 2
+123: 2
+unknown height: 1387559

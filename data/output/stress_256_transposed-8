@@ -1,0 +1,97 @@
+benchmark_worlds/stress_256.transposed.world
+
+allocation time : 50
+delay gate time : 4
+build time      : 93
+serial time     : 44
+eval time       : 2
+update time     : 5
+delay gate time : 1
+tick & rebuild  : 219
+
+eval time       : 2
+update time     : 5
+delay gate time : 1
+tick            : 9
+
+eval time       : 2
+update time     : 5
+delay gate time : 1
+tick            : 10
+
+allocation time : 13
+delay gate time : 3
+build time      : 93
+serial time     : 35
+eval time       : 2
+update time     : 5
+delay gate time : 2
+tick & rebuild  : 173
+
+eval time       : 2
+update time     : 5
+delay gate time : 1
+tick            : 10
+
+eval time       : 2
+update time     : 5
+delay gate time : 1
+tick            : 10
+
+
+Block Counts:
+total     : 3969258
+redstone  : 1625059
+not_gate  : 1367411
+delay_gate: 586503
+diode     : 390285
+
+Gathering tick stats: 
+eval time       : 2
+update time     : 5
+delay gate time : 2
+eval time       : 2
+update time     : 5
+delay gate time : 2
+eval time       : 2
+update time     : 5
+delay gate time : 2
+eval time       : 2
+update time     : 5
+delay gate time : 2
+
+Average blocks changed per tick: 2100011
+
+Levels: 31
+0: 587053
+1: 408696
+2: 283651
+3: 197164
+4: 136694
+5: 94566
+6: 65801
+7: 45463
+8: 31540
+9: 21980
+10: 15180
+11: 10598
+12: 7429
+13: 5184
+14: 3579
+15: 2492
+16: 1731
+17: 1189
+18: 796
+19: 550
+20: 364
+21: 238
+22: 150
+23: 98
+24: 69
+25: 41
+26: 26
+27: 16
+28: 12
+29: 8
+30: 4
+unknown height: 32238
