@@ -2,17 +2,17 @@ benchmark_worlds/stress_256_no_delays.transposed.world
 
 allocation time : 44
 delay gate time : 23
-build time      : 274
-serial time     : 33
+build time      : 277
+serial time     : 34
 eval time       : 8
 update time     : 51
 delay gate time : 0
-tick & rebuild  : 557
+tick & rebuild  : 561
 
 eval time       : 8
 update time     : 47
 delay gate time : 0
-tick            : 55
+tick            : 56
 
 eval time       : 8
 update time     : 47
@@ -21,17 +21,17 @@ tick            : 56
 
 allocation time : 13
 delay gate time : 23
-build time      : 274
+build time      : 276
 serial time     : 27
 eval time       : 8
 update time     : 47
 delay gate time : 0
-tick & rebuild  : 515
+tick & rebuild  : 518
 
 eval time       : 8
 update time     : 47
 delay gate time : 0
-tick            : 55
+tick            : 56
 
 eval time       : 8
 update time     : 47
@@ -57,7 +57,7 @@ eval time       : 8
 update time     : 47
 delay gate time : 0
 eval time       : 8
-update time     : 47
+update time     : 48
 delay gate time : 0
 
 Average blocks changed per tick: 3927299

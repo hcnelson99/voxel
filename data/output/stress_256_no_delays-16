@@ -1,0 +1,194 @@
+benchmark_worlds/stress_256_no_delays.world
+
+allocation time : 46
+delay gate time : 2
+build time      : 56
+serial time     : 28
+eval time       : 7
+update time     : 52
+delay gate time : 0
+tick & rebuild  : 203
+
+eval time       : 7
+update time     : 59
+delay gate time : 0
+tick            : 66
+
+eval time       : 7
+update time     : 59
+delay gate time : 0
+tick            : 66
+
+allocation time : 14
+delay gate time : 2
+build time      : 57
+serial time     : 30
+eval time       : 7
+update time     : 59
+delay gate time : 0
+tick & rebuild  : 182
+
+eval time       : 8
+update time     : 60
+delay gate time : 0
+tick            : 68
+
+eval time       : 8
+update time     : 60
+delay gate time : 0
+tick            : 69
+
+
+Block Counts:
+total     : 3969258
+redstone  : 1624900
+not_gate  : 1562377
+delay_gate: 2
+diode     : 781979
+
+Gathering tick stats: 
+eval time       : 9
+update time     : 59
+delay gate time : 0
+eval time       : 8
+update time     : 60
+delay gate time : 0
+eval time       : 9
+update time     : 59
+delay gate time : 0
+eval time       : 8
+update time     : 60
+delay gate time : 0
+
+Average blocks changed per tick: 3927299
+
+Levels: 128
+0: 1048
+1: 5375
+2: 5375
+3: 5373
+4: 5372
+5: 5372
+6: 5372
+7: 5372
+8: 5372
+9: 5372
+10: 5372
+11: 5372
+12: 5372
+13: 5372
+14: 5371
+15: 5371
+16: 5371
+17: 5371
+18: 5371
+19: 5371
+20: 5371
+21: 5370
+22: 5370
+23: 5370
+24: 5370
+25: 5370
+26: 5370
+27: 5370
+28: 5370
+29: 5370
+30: 5370
+31: 5370
+32: 5370
+33: 5370
+34: 5370
+35: 5370
+36: 5370
+37: 5370
+38: 5370
+39: 5370
+40: 5370
+41: 5370
+42: 5370
+43: 5370
+44: 5369
+45: 5369
+46: 5369
+47: 5369
+48: 5369
+49: 5369
+50: 5369
+51: 5369
+52: 5367
+53: 5366
+54: 5366
+55: 5366
+56: 5366
+57: 5366
+58: 5366
+59: 5366
+60: 5366
+61: 5366
+62: 5366
+63: 5364
+64: 5364
+65: 5364
+66: 5364
+67: 5363
+68: 5363
+69: 5363
+70: 5363
+71: 5363
+72: 5362
+73: 5362
+74: 5362
+75: 5360
+76: 5359
+77: 5356
+78: 5352
+79: 5348
+80: 5343
+81: 5333
+82: 5321
+83: 5293
+84: 5268
+85: 5234
+86: 5196
+87: 5147
+88: 5069
+89: 4969
+90: 4861
+91: 4734
+92: 4601
+93: 4454
+94: 4271
+95: 4078
+96: 3858
+97: 3624
+98: 3386
+99: 3116
+100: 2849
+101: 2543
+102: 2243
+103: 2004
+104: 1783
+105: 1517
+106: 1299
+107: 1085
+108: 909
+109: 722
+110: 584
+111: 483
+112: 381
+113: 290
+114: 228
+115: 171
+116: 121
+117: 81
+118: 58
+119: 42
+120: 33
+121: 24
+122: 18
+123: 12
+124: 7
+125: 5
+126: 4
+127: 3
+unknown height: 1025836

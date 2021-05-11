@@ -20,18 +20,18 @@ delay gate time : 7
 tick            : 71
 
 allocation time : 13
-delay gate time : 6
+delay gate time : 5
 build time      : 131
 serial time     : 35
 eval time       : 4
 update time     : 59
 delay gate time : 7
-tick & rebuild  : 295
+tick & rebuild  : 294
 
 eval time       : 4
 update time     : 60
 delay gate time : 7
-tick            : 72
+tick            : 73
 
 eval time       : 4
 update time     : 60
@@ -48,13 +48,13 @@ diode     : 390285
 
 Gathering tick stats: 
 eval time       : 4
-update time     : 60
-delay gate time : 8
-eval time       : 4
 update time     : 61
 delay gate time : 8
 eval time       : 4
 update time     : 61
+delay gate time : 8
+eval time       : 4
+update time     : 62
 delay gate time : 8
 eval time       : 4
 update time     : 62
