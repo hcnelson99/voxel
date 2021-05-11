@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <fcntl.h>
-#include <glm/gtc/quaternion.hpp>
 #include <iostream>
 #include <optional>
 #include <random>
@@ -14,6 +13,7 @@
 #include <unistd.h>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include "tracy/Tracy.hpp"
@@ -177,6 +177,16 @@ static void _add_square(int vertex, uint8_t offset, int x, int y, int z, Orienta
 }
 
 void WorldGeometry::initialize() {
+    {
+        _add_square(0, 0b000, 0, 0, 0, Orientation::PosX, vertex_texture_uv_data);
+        _add_square(6, 0b000, 0, 0, 0, Orientation::PosY, vertex_texture_uv_data);
+        _add_square(12, 0b000, 0, 0, 0, Orientation::PosZ, vertex_texture_uv_data);
+        _add_square(18, 0b100, 1, 0, 0, Orientation::NegX, vertex_texture_uv_data);
+        _add_square(24, 0b010, 0, 1, 0, Orientation::NegY, vertex_texture_uv_data);
+        _add_square(30, 0b001, 0, 0, 1, Orientation::NegZ, vertex_texture_uv_data);
+    }
+
+#ifndef REDSTONE_BENCHMARK_ONLY
     glGenTextures(1, &buffers.block_ids);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_3D, buffers.block_ids);
@@ -191,12 +201,6 @@ void WorldGeometry::initialize() {
                     block_map.get_buffer());
 
     {
-        _add_square(0, 0b000, 0, 0, 0, Orientation::PosX, vertex_texture_uv_data);
-        _add_square(6, 0b000, 0, 0, 0, Orientation::PosY, vertex_texture_uv_data);
-        _add_square(12, 0b000, 0, 0, 0, Orientation::PosZ, vertex_texture_uv_data);
-        _add_square(18, 0b100, 1, 0, 0, Orientation::NegX, vertex_texture_uv_data);
-        _add_square(24, 0b010, 0, 1, 0, Orientation::NegY, vertex_texture_uv_data);
-        _add_square(30, 0b001, 0, 0, 1, Orientation::NegZ, vertex_texture_uv_data);
 
         glGenBuffers(1, &buffers.vertex_texture_uv);
         glBindBuffer(GL_ARRAY_BUFFER, buffers.vertex_texture_uv);
@@ -206,7 +210,15 @@ void WorldGeometry::initialize() {
     glGenBuffers(1, &buffers.block_positions);
     glBindBuffer(GL_ARRAY_BUFFER, buffers.block_positions);
     glBufferData(GL_ARRAY_BUFFER, sizeof(uint32_t) * BLOCKS, block_positions, GL_DYNAMIC_DRAW);
+#endif
 }
+
+#ifdef REDSTONE_BENCHMARK_ONLY
+
+void WorldGeometry::sync_mipmapped_blockmap() {}
+void WorldGeometry::sync_buffers() {}
+
+#else
 
 void WorldGeometry::sync_mipmapped_blockmap() {
     ZoneScoped;
@@ -310,6 +322,8 @@ void WorldGeometry::sync_buffers() {
     }
     geometry_dirty = false;
 }
+
+#endif
 
 Block WorldGeometry::get_block(int x, int y, int z) { return block_map(x, y, z); }
 

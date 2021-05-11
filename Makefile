@@ -1,4 +1,4 @@
-CXXFLAGS=-g -O3 -std=c++17 -pthread -lSDL2 -lGLEW -lX11 -lGLU -lGL -fopenmp -DGLM_ENABLE_EXPERIMENTAL
+CXXFLAGS=-g -O3 -std=c++17 -pthread -lX11  -fopenmp -DGLM_ENABLE_EXPERIMENTAL
 
 SOURCES=world.cpp redstone.cpp
 HEADERS=world.h log.h repl.h ray.h config.h
@@ -16,7 +16,7 @@ editor: editor.cpp $(SOURCES)
 	g++ -o editor editor.cpp $(SOURCES) $(CXXFLAGS)
 
 benchmark: benchmark.cpp $(SOURCES)
-	g++ -o benchmark benchmark.cpp $(SOURCES) $(CXXFLAGS) $(CFLAGS)
+	g++ -o benchmark benchmark.cpp $(SOURCES) $(CXXFLAGS) $(CFLAGS) -DREDSTONE_BENCHMARK_ONLY
 
 benchmark_worlds/%:
 	@scripts/make_benchmark.sh "$@.world"
