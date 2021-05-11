@@ -1,0 +1,10 @@
+#!/bin/bash
+
+make benchmark_worlds/stress_256_no_delays.transposed
+mv benchmark benchmark_archive/stress_256_no_delays_transposed
+make benchmark_worlds/stress_256_no_delays
+mv benchmark benchmark_archive/stress_256_no_delays
+make benchmark_worlds/stress_256.transposed
+mv benchmark benchmark_archive/stress_256_transposed
+make benchmark_worlds/stress_256
+mv benchmark benchmark_archive/stress_256

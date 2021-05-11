@@ -20,3 +20,15 @@ benchmark: benchmark.cpp $(SOURCES)
 
 benchmark_worlds/%:
 	@scripts/make_benchmark.sh "$@.world"
+
+.PHONY: benchmark_archive
+benchmark_archive:
+	@rm -rf benchmark_archive
+	@mkdir benchmark_archive
+	@scripts/compile_benchmarks.sh
+	@cp -r benchmark_worlds benchmark_archive
+	@cp scripts/run_benchmarks.sh benchmark_archive
+	@rm -rf benchmark_archive.zip
+	@zip -r -o benchmark_archive.zip benchmark_archive
+
+

@@ -5,3 +5,5 @@ test.world
 build*
 benchmark
 /bench_output.csv
+benchmark_archive.zip
+benchmark_archive
