@@ -30,9 +30,9 @@ def main():
 
     # sizes = [16, 32, 64, 128, 256]
     sizes = [256]
-    ps = [0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1]
-    # raycasts = ['naive', 'predicated', 'mipmapped']
-    raycasts = ['mipmapped']
+    ps = [0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.05, 0.1, 0.5, 1]
+    raycasts = ['naive', 'predicated', 'mipmapped']
+    # raycasts = ['mipmapped']
     worlds = ['random']
 
 

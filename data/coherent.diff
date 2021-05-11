@@ -1,0 +1,21 @@
+diff --git a/glsl/lfragment-impl.glsl b/glsl/lfragment-impl.glsl
+index aff6eea..47679b4 100644
+--- a/glsl/lfragment-impl.glsl
++++ b/glsl/lfragment-impl.glsl
+@@ -9,6 +9,7 @@ uint bounces_per_pixel = 2;
+ 
+ uint noise_per_pixel = rays_per_pixel * bounces_per_pixel * 2;
+ vec4 generate_noise(vec2 uv, uint frame_number, uint i) {
++    return vec4(1, 1, 1, 1);
+     return mod(texture(blue_noise, mod(uv, blue_noise_size)) + generalized_golden_ratio * ((frame_number * 4 + i) % 2243), 1.0);
+ }
+ 
+@@ -89,7 +90,7 @@ vec3 lighting(vec2 uv) {
+ }
+ 
+ void main() {
+-    vec3 brightness = lighting(uv);
++    vec3 brightness = lighting(vec2(0.5, 0.5));
+     frag_color = vec4(brightness, 1);
+ }
+ 
