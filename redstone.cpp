@@ -434,7 +434,7 @@ void WorldGeometryWithRedstone::tick() {
                 ticks--;
 
                 if (ticks == 0) {
-                    set_active(v.x, v.y, v.z, delay.activating);
+                    set_active<false>(v.x, v.y, v.z, delay.activating);
                     ticks = 0xff;
                 }
             }
@@ -448,6 +448,8 @@ void WorldGeometryWithRedstone::tick() {
             update_blocks();
         }
     });
+
+    blocks_dirty = true;
 
     delay_gate_time += time_function([&]() {
 #pragma omp parallel for
@@ -486,8 +488,6 @@ void WorldGeometryWithRedstone::update_blocks() {
             set_active<false>(v.x, v.y, v.z, active);
         }
     }
-
-    blocks_dirty = true;
 }
 
 void WorldGeometryWithRedstone::evaluate_parallel() {
