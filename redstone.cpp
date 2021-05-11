@@ -483,9 +483,11 @@ void WorldGeometryWithRedstone::update_blocks() {
         const Vec3 v = Vec3::decode(block_positions[i]);
         if (block_to_expression(v).load() != 0) {
             const bool active = evaluate(block_to_expression(v).load());
-            set_active(v.x, v.y, v.z, active);
+            set_active<false>(v.x, v.y, v.z, active);
         }
     }
+
+    blocks_dirty = true;
 }
 
 void WorldGeometryWithRedstone::evaluate_parallel() {

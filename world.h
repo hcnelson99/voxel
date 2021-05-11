@@ -196,17 +196,49 @@ class WorldGeometry {
     void set_block(int x, int y, int z, Block block);
     void set_block(Vec3 v, Block block) { set_block(v.x, v.y, v.z, block); }
     void delete_block(int x, int y, int z);
-    void set_active(int x, int y, int z, bool active);
+
+    template <bool mark_dirty = true> void set_active(int x, int y, int z, bool active) {
+        Block block = get_block(x, y, z);
+
+        if (block.is_active() == active) {
+            return;
+        }
+
+        if (block.is_redstone()) {
+            block.set_type(active ? Block::ActiveRedstone : Block::InactiveRedstone);
+        } else if (block.is_bluestone()) {
+            block.set_type(active ? Block::ActiveBluestone : Block::InactiveBluestone);
+        } else if (block.is_greenstone()) {
+            block.set_type(active ? Block::ActiveGreenstone : Block::InactiveGreenstone);
+        } else if (block.is_not_gate()) {
+            block.set_type(active ? Block::ActiveNotGate : Block::NotGate);
+        } else if (block.is_diode_gate()) {
+            block.set_type(active ? Block::ActiveDiodeGate : Block::DiodeGate);
+        } else if (block.is_delay_gate()) {
+            block.set_type(active ? Block::ActiveDelayGate : Block::DelayGate);
+        } else if (block.is_display()) {
+            block.set_type(active ? Block::ActiveDisplay : Block::Display);
+        } else if (block.is_switch()) {
+            block.set_type(active ? Block::ActiveSwitch : Block::Switch);
+        } else {
+            assert(false);
+        }
+
+        _update_block_map<mark_dirty>(x, y, z, block);
+    }
+
     void rotate_block(int x, int y, int z);
     void randomize(float p);
     void flatworld();
     void outline();
 
   private:
-    void _update_block_map(int x, int y, int z, const Block &block) {
-        blocks_dirty = true;
-        if (block_map(x, y, z).is(Block::Air) != block.is(Block::Air)) {
-            geometry_dirty = true;
+    template <bool mark_dirty = true> void _update_block_map(int x, int y, int z, const Block &block) {
+        if (mark_dirty) {
+            blocks_dirty = true;
+            if (block_map(x, y, z).is(Block::Air) != block.is(Block::Air)) {
+                geometry_dirty = true;
+            }
         }
         block_map(x, y, z) = block;
     }
