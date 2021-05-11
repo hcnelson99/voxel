@@ -1,0 +1,196 @@
+benchmark_worlds/stress_256_no_delays.world
+
+allocation time : 44
+delay gate time : 5
+build time      : 147
+serial time     : 32
+eval time       : 3
+update time     : 65
+delay gate time : 0
+tick & rebuild  : 337
+
+eval time       : 3
+update time     : 69
+delay gate time : 0
+tick            : 72
+
+eval time       : 3
+update time     : 69
+delay gate time : 0
+tick            : 73
+
+allocation time : 13
+delay gate time : 5
+build time      : 148
+serial time     : 18
+eval time       : 6
+update time     : 67
+delay gate time : 0
+tick & rebuild  : 299
+
+eval time       : 6
+update time     : 69
+delay gate time : 0
+tick            : 75
+
+eval time       : 6
+update time     : 69
+delay gate time : 0
+tick            : 75
+
+
+Block Counts:
+total     : 3969258
+redstone  : 1624900
+not_gate  : 1562377
+delay_gate: 2
+diode     : 781979
+
+Gathering tick stats: 
+eval time       : 6
+update time     : 67
+delay gate time : 0
+eval time       : 6
+update time     : 67
+delay gate time : 0
+eval time       : 6
+update time     : 67
+delay gate time : 0
+eval time       : 6
+update time     : 68
+delay gate time : 0
+
+Average blocks changed per tick: 3927299
+
+Levels: 130
+0: 182
+1: 7500
+2: 7500
+3: 7500
+4: 7500
+5: 7500
+6: 7500
+7: 7500
+8: 7500
+9: 7500
+10: 7500
+11: 7500
+12: 7499
+13: 7499
+14: 7499
+15: 7499
+16: 7499
+17: 7499
+18: 7499
+19: 7499
+20: 7499
+21: 7499
+22: 7499
+23: 7499
+24: 7499
+25: 7499
+26: 7499
+27: 7499
+28: 7499
+29: 7499
+30: 7499
+31: 7498
+32: 7498
+33: 7498
+34: 7498
+35: 7498
+36: 7498
+37: 7498
+38: 7498
+39: 7498
+40: 7498
+41: 7498
+42: 7498
+43: 7498
+44: 7498
+45: 7498
+46: 7498
+47: 7498
+48: 7498
+49: 7498
+50: 7498
+51: 7498
+52: 7498
+53: 7498
+54: 7498
+55: 7498
+56: 7498
+57: 7498
+58: 7497
+59: 7496
+60: 7496
+61: 7496
+62: 7496
+63: 7496
+64: 7496
+65: 7495
+66: 7494
+67: 7494
+68: 7494
+69: 7494
+70: 7494
+71: 7494
+72: 7493
+73: 7493
+74: 7493
+75: 7490
+76: 7489
+77: 7486
+78: 7482
+79: 7475
+80: 7467
+81: 7450
+82: 7429
+83: 7396
+84: 7357
+85: 7313
+86: 7258
+87: 7190
+88: 7080
+89: 6957
+90: 6809
+91: 6636
+92: 6441
+93: 6233
+94: 5983
+95: 5707
+96: 5402
+97: 5052
+98: 4709
+99: 4340
+100: 3969
+101: 3559
+102: 3162
+103: 2833
+104: 2502
+105: 2141
+106: 1832
+107: 1531
+108: 1269
+109: 997
+110: 808
+111: 659
+112: 520
+113: 408
+114: 311
+115: 226
+116: 161
+117: 112
+118: 84
+119: 59
+120: 46
+121: 39
+122: 27
+123: 18
+124: 12
+125: 8
+126: 7
+127: 4
+128: 1
+129: 1
+unknown height: 812743
