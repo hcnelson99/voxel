@@ -1,8 +1,8 @@
-world = list(open("test.world2", "rb").read())
+world = list(open("stress_256_no_delays.world", "rb").read())
 
 world2 = [0] * len(world)
 
-N = 64
+N = 256
 
 def get(x, y, z):
     if (0 <= x < N and 0 <= y < N and 0 <= z < N):
@@ -29,8 +29,20 @@ def clear(minimum, maximum):
             for z in range(minimum[2], maximum[2]):
                 set(x, y, z, 0)
 
-
-copy((28, 3, 22), (48, 20, 40), (28, 3, 41))
+for x in range(256):
+    for y in range(256):
+        for z in range(256):
+            block = get(x, y, z)
+            if block & 0b111 == 0:
+                set2(z, y, x, (block & ~0b111) | 4)
+            elif block & 0b111 == 1:
+                set2(z, y, x, (block & ~0b111) | 5)
+            elif block & 0b111 == 4:
+                set2(z, y, x, (block & ~0b111) | 0)
+            elif block & 0b111 == 5:
+                set2(z, y, x, (block & ~0b111) | 1)
+            else:
+                set2(z, y, x, block)
 
 """
 copy((38, 3, 5), (53, 16, 15), (38, 3, 16))
@@ -44,5 +56,5 @@ copy((19, 3, 5), (35, 11, 21), (19, 3, 24))
 copy((19, 3, 5), (35, 11, 21), (19, 12, 24))
 """
 
-open("test.world", "wb").write(bytearray(world))
+open("stress_256_no_delays.transposed.world", "wb").write(bytearray(world2))
 
