@@ -280,9 +280,7 @@ class WorldGeometryWithRedstone : public WorldGeometry {
     std::atomic_uint disjunction_bump_allocator;
     std::vector<uint32_t> disjunction_memory;
 
-    std::vector<Expression> ordered_expressions;
     std::vector<uint32_t> index_to_expression;
-    std::vector<uint32_t> expression_indices;
 
     std::vector<uint8_t> evaluation_memo;
 
@@ -305,6 +303,11 @@ class WorldGeometryWithRedstone : public WorldGeometry {
 
     bool evaluate(uint32_t expr_i);
     void evaluate_parallel();
+
+  public:
+    // make these public to allow benchmark to read them
+    std::vector<uint32_t> expression_indices;
+    std::vector<Expression> ordered_expressions;
 };
 
 class World : public WorldGeometryWithRedstone {

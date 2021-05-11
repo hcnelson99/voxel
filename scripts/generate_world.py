@@ -85,13 +85,6 @@ def create(Y):
         for col in range(2, N):
             set_block(col, Y, row, block(left))
 
-    if random.random() < 0.4:
-        for col in range(4, N - 2):
-            if random.random() < 0.05:
-                for row in range(2, N):
-                    set_block(col, Y, row, "Block::InactiveRedstone")
-
-
     for row in range(2, N):
         set_block(1, Y, row, "Block::InactiveRedstone")
 

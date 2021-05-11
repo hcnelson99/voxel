@@ -41,6 +41,8 @@ int main() {
     world = new World;
     world->load(world_file.c_str());
 
+    std::cout << world_file << "\n" << std::endl;
+
     for (int f = 0; f < 2; f++) {
         world->set_block(0, 0, 0, world->get_block(0, 0, 0));
         size_t first_tick = tick();
@@ -106,6 +108,13 @@ int main() {
     changed += diff(temp);
 
     std::cout << "\nAverage blocks changed per tick: " << changed / 4 << std::endl;
+
+    const auto &indices = world->expression_indices;
+    std::cout << "\nLevels: " << indices.size() - 1 << std::endl;
+    for (size_t i = 0; i < indices.size() - 1; i++) {
+        std::cout << i << ": " << indices[i + 1] - indices[i] << std::endl;
+    }
+    std::cout << "unknown height: " << ((world->ordered_expressions.size()) - (*indices.rbegin())) << std::endl;
 
     return 0;
 }
