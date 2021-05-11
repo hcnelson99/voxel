@@ -1,4 +1,4 @@
-world = list(open("stress_256_no_delays.world", "rb").read())
+world = list(open("bk", "rb").read())
 
 world2 = [0] * len(world)
 
@@ -29,32 +29,9 @@ def clear(minimum, maximum):
             for z in range(minimum[2], maximum[2]):
                 set(x, y, z, 0)
 
-for x in range(256):
-    for y in range(256):
-        for z in range(256):
-            block = get(x, y, z)
-            if block & 0b111 == 0:
-                set2(z, y, x, (block & ~0b111) | 4)
-            elif block & 0b111 == 1:
-                set2(z, y, x, (block & ~0b111) | 5)
-            elif block & 0b111 == 4:
-                set2(z, y, x, (block & ~0b111) | 0)
-            elif block & 0b111 == 5:
-                set2(z, y, x, (block & ~0b111) | 1)
-            else:
-                set2(z, y, x, block)
+copy((3, 8, 2), (115, 120, 86), (3 + 112, 8, 2))
+copy((3, 8, 2), (115, 120, 86), (3, 8 + 112, 2))
+copy((3, 8, 2), (115, 120, 86), (3 + 112, 8 + 112, 2))
 
-"""
-copy((38, 3, 5), (53, 16, 15), (38, 3, 16))
-copy((38, 3, 5), (53, 16, 15), (38, 3, 27))
-copy((38, 3, 5), (53, 16, 15), (38, 3, 38))
-copy((38, 3, 5), (53, 16, 15), (38, 3, 49))
-
-clear((20, 3, 22), (35, 11, 39))
-
-copy((19, 3, 5), (35, 11, 21), (19, 3, 24))
-copy((19, 3, 5), (35, 11, 21), (19, 12, 24))
-"""
-
-open("stress_256_no_delays.transposed.world", "wb").write(bytearray(world2))
+open("game_of_life_256_acorn", "wb").write(bytearray(world))
 
