@@ -1,42 +1,42 @@
 benchmark_worlds/stress_256_no_delays.transposed.world
 
-allocation time : 45
+allocation time : 50
 delay gate time : 3
-build time      : 68
+build time      : 70
 serial time     : 31
-eval time       : 4
-update time     : 51
+eval time       : 3
+update time     : 6
 delay gate time : 0
-tick & rebuild  : 220
+tick & rebuild  : 182
 
 eval time       : 3
-update time     : 64
+update time     : 6
 delay gate time : 0
-tick            : 67
+tick            : 10
 
 eval time       : 3
-update time     : 64
+update time     : 6
 delay gate time : 0
-tick            : 68
+tick            : 10
 
 allocation time : 13
-delay gate time : 2
-build time      : 68
-serial time     : 18
-eval time       : 7
-update time     : 58
+delay gate time : 3
+build time      : 70
+serial time     : 17
+eval time       : 6
+update time     : 6
 delay gate time : 0
-tick & rebuild  : 185
+tick & rebuild  : 134
 
 eval time       : 7
-update time     : 58
+update time     : 6
 delay gate time : 0
-tick            : 65
+tick            : 13
 
 eval time       : 7
-update time     : 58
+update time     : 6
 delay gate time : 0
-tick            : 65
+tick            : 14
 
 
 Block Counts:
@@ -48,22 +48,22 @@ diode     : 781979
 
 Gathering tick stats: 
 eval time       : 7
-update time     : 58
+update time     : 6
 delay gate time : 0
 eval time       : 7
-update time     : 57
+update time     : 6
 delay gate time : 0
 eval time       : 7
-update time     : 57
+update time     : 11
 delay gate time : 0
 eval time       : 7
-update time     : 57
+update time     : 11
 delay gate time : 0
 
 Average blocks changed per tick: 3927299
 
 Levels: 128
-0: 369
+0: 298
 1: 3750
 2: 3750
 3: 3750
@@ -147,16 +147,16 @@ Levels: 128
 81: 3729
 82: 3721
 83: 3703
-84: 3685
-85: 3663
-86: 3635
-87: 3604
-88: 3540
-89: 3473
-90: 3398
-91: 3318
-92: 3228
-93: 3125
+84: 3684
+85: 3662
+86: 3634
+87: 3603
+88: 3539
+89: 3472
+90: 3397
+91: 3317
+92: 3227
+93: 3124
 94: 2992
 95: 2855
 96: 2708
@@ -182,7 +182,7 @@ Levels: 128
 116: 79
 117: 53
 118: 41
-119: 28
+119: 27
 120: 21
 121: 17
 122: 10
@@ -191,4 +191,4 @@ Levels: 128
 125: 3
 126: 3
 127: 3
-unknown height: 1187618
+unknown height: 1187700

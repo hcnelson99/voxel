@@ -1,42 +1,42 @@
 benchmark_worlds/stress_256.transposed.world
 
-allocation time : 47
+allocation time : 51
+delay gate time : 3
+build time      : 64
+serial time     : 44
+eval time       : 2
+update time     : 3
+delay gate time : 1
+tick & rebuild  : 180
+
+eval time       : 2
+update time     : 3
+delay gate time : 1
+tick            : 7
+
+eval time       : 2
+update time     : 3
+delay gate time : 1
+tick            : 7
+
+allocation time : 15
 delay gate time : 2
-build time      : 35
-serial time     : 43
+build time      : 64
+serial time     : 35
 eval time       : 2
-update time     : 41
+update time     : 3
+delay gate time : 2
+tick & rebuild  : 133
+
+eval time       : 2
+update time     : 3
 delay gate time : 1
-tick & rebuild  : 182
+tick            : 8
 
 eval time       : 2
-update time     : 34
-delay gate time : 4
-tick            : 41
-
-eval time       : 2
-update time     : 35
-delay gate time : 4
-tick            : 43
-
-allocation time : 14
+update time     : 3
 delay gate time : 1
-build time      : 33
-serial time     : 48
-eval time       : 3
-update time     : 36
-delay gate time : 4
-tick & rebuild  : 151
-
-eval time       : 2
-update time     : 37
-delay gate time : 4
-tick            : 45
-
-eval time       : 2
-update time     : 37
-delay gate time : 5
-tick            : 45
+tick            : 8
 
 
 Block Counts:
@@ -47,28 +47,28 @@ delay_gate: 586503
 diode     : 390285
 
 Gathering tick stats: 
-eval time       : 3
-update time     : 38
-delay gate time : 5
 eval time       : 2
-update time     : 39
-delay gate time : 5
+update time     : 3
+delay gate time : 2
 eval time       : 3
-update time     : 39
-delay gate time : 5
+update time     : 3
+delay gate time : 2
 eval time       : 3
-update time     : 40
-delay gate time : 5
+update time     : 3
+delay gate time : 2
+eval time       : 2
+update time     : 3
+delay gate time : 1
 
 Average blocks changed per tick: 2100011
 
 Levels: 31
-0: 587331
-1: 411519
-2: 285662
-3: 198572
-4: 137683
-5: 95262
+0: 587233
+1: 411518
+2: 285661
+3: 198571
+4: 137682
+5: 95261
 6: 66302
 7: 45820
 8: 31780
@@ -94,4 +94,4 @@ Levels: 31
 28: 12
 29: 8
 30: 4
-unknown height: 22651
+unknown height: 22654

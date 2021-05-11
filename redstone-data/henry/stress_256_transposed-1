@@ -1,42 +1,42 @@
 benchmark_worlds/stress_256.transposed.world
 
-allocation time : 45
-delay gate time : 24
-build time      : 241
-serial time     : 42
+allocation time : 50
+delay gate time : 25
+build time      : 247
+serial time     : 43
 eval time       : 8
-update time     : 38
+update time     : 39
 delay gate time : 8
-tick & rebuild  : 532
+tick & rebuild  : 544
 
 eval time       : 9
-update time     : 35
+update time     : 41
 delay gate time : 12
-tick            : 58
+tick            : 65
 
 eval time       : 9
-update time     : 37
+update time     : 43
 delay gate time : 13
-tick            : 60
+tick            : 67
 
 allocation time : 13
-delay gate time : 24
-build time      : 241
-serial time     : 34
-eval time       : 10
-update time     : 37
+delay gate time : 25
+build time      : 248
+serial time     : 33
+eval time       : 9
+update time     : 43
 delay gate time : 13
-tick & rebuild  : 497
+tick & rebuild  : 510
 
 eval time       : 10
-update time     : 38
+update time     : 43
 delay gate time : 14
-tick            : 63
+tick            : 68
 
 eval time       : 10
-update time     : 38
+update time     : 43
 delay gate time : 15
-tick            : 64
+tick            : 69
 
 
 Block Counts:
@@ -48,16 +48,16 @@ diode     : 390285
 
 Gathering tick stats: 
 eval time       : 10
-update time     : 39
+update time     : 44
 delay gate time : 15
 eval time       : 10
-update time     : 39
-delay gate time : 15
+update time     : 44
+delay gate time : 14
 eval time       : 10
-update time     : 39
-delay gate time : 15
+update time     : 44
+delay gate time : 14
 eval time       : 10
-update time     : 39
+update time     : 44
 delay gate time : 14
 
 Average blocks changed per tick: 2100011
