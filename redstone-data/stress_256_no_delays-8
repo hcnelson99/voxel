@@ -1,0 +1,194 @@
+benchmark_worlds/stress_256_no_delays.world
+
+allocation time : 17
+delay gate time : 2
+build time      : 96
+serial time     : 15
+eval time       : 7
+update time     : 51
+delay gate time : 0
+tick & rebuild  : 203
+
+eval time       : 7
+update time     : 76
+delay gate time : 0
+tick            : 83
+
+eval time       : 7
+update time     : 76
+delay gate time : 0
+tick            : 83
+
+allocation time : 8
+delay gate time : 2
+build time      : 96
+serial time     : 18
+eval time       : 7
+update time     : 76
+delay gate time : 0
+tick & rebuild  : 221
+
+eval time       : 7
+update time     : 76
+delay gate time : 0
+tick            : 83
+
+eval time       : 7
+update time     : 76
+delay gate time : 0
+tick            : 83
+
+
+Block Counts:
+total     : 3969258
+redstone  : 1624900
+not_gate  : 1562377
+delay_gate: 2
+diode     : 781979
+
+Gathering tick stats: 
+eval time       : 7
+update time     : 76
+delay gate time : 0
+eval time       : 7
+update time     : 76
+delay gate time : 0
+eval time       : 7
+update time     : 76
+delay gate time : 0
+eval time       : 7
+update time     : 76
+delay gate time : 0
+
+Average blocks changed per tick: 3927299
+
+Levels: 128
+0: 476
+1: 3625
+2: 3625
+3: 3625
+4: 3625
+5: 3625
+6: 3625
+7: 3625
+8: 3625
+9: 3625
+10: 3625
+11: 3625
+12: 3625
+13: 3625
+14: 3625
+15: 3624
+16: 3624
+17: 3624
+18: 3624
+19: 3624
+20: 3624
+21: 3623
+22: 3623
+23: 3623
+24: 3623
+25: 3623
+26: 3623
+27: 3623
+28: 3623
+29: 3623
+30: 3623
+31: 3623
+32: 3623
+33: 3623
+34: 3623
+35: 3623
+36: 3623
+37: 3623
+38: 3623
+39: 3623
+40: 3623
+41: 3623
+42: 3623
+43: 3623
+44: 3623
+45: 3623
+46: 3623
+47: 3623
+48: 3623
+49: 3623
+50: 3623
+51: 3623
+52: 3623
+53: 3623
+54: 3623
+55: 3623
+56: 3623
+57: 3623
+58: 3623
+59: 3623
+60: 3623
+61: 3623
+62: 3623
+63: 3623
+64: 3623
+65: 3623
+66: 3623
+67: 3623
+68: 3623
+69: 3623
+70: 3623
+71: 3623
+72: 3622
+73: 3622
+74: 3622
+75: 3621
+76: 3620
+77: 3619
+78: 3617
+79: 3614
+80: 3611
+81: 3603
+82: 3596
+83: 3578
+84: 3560
+85: 3537
+86: 3512
+87: 3483
+88: 3423
+89: 3357
+90: 3286
+91: 3211
+92: 3122
+93: 3023
+94: 2891
+95: 2759
+96: 2620
+97: 2455
+98: 2277
+99: 2094
+100: 1920
+101: 1717
+102: 1524
+103: 1371
+104: 1224
+105: 1042
+106: 889
+107: 735
+108: 612
+109: 474
+110: 389
+111: 321
+112: 252
+113: 188
+114: 148
+115: 114
+116: 76
+117: 51
+118: 39
+119: 25
+120: 19
+121: 16
+122: 9
+123: 8
+124: 6
+125: 3
+126: 3
+127: 1
+unknown height: 1200126

@@ -1,0 +1,194 @@
+benchmark_worlds/stress_256_no_delays.transposed.world
+
+allocation time : 17
+delay gate time : 2
+build time      : 121
+serial time     : 23
+eval time       : 2
+update time     : 50
+delay gate time : 0
+tick & rebuild  : 235
+
+eval time       : 2
+update time     : 76
+delay gate time : 0
+tick            : 78
+
+eval time       : 2
+update time     : 76
+delay gate time : 0
+tick            : 78
+
+allocation time : 8
+delay gate time : 2
+build time      : 121
+serial time     : 12
+eval time       : 6
+update time     : 76
+delay gate time : 0
+tick & rebuild  : 243
+
+eval time       : 6
+update time     : 76
+delay gate time : 0
+tick            : 82
+
+eval time       : 6
+update time     : 76
+delay gate time : 0
+tick            : 83
+
+
+Block Counts:
+total     : 3969258
+redstone  : 1624900
+not_gate  : 1562377
+delay_gate: 2
+diode     : 781979
+
+Gathering tick stats: 
+eval time       : 6
+update time     : 76
+delay gate time : 0
+eval time       : 6
+update time     : 76
+delay gate time : 0
+eval time       : 6
+update time     : 76
+delay gate time : 0
+eval time       : 6
+update time     : 75
+delay gate time : 0
+
+Average blocks changed per tick: 3927299
+
+Levels: 128
+0: 260
+1: 3750
+2: 3750
+3: 3750
+4: 3750
+5: 3750
+6: 3750
+7: 3750
+8: 3750
+9: 3750
+10: 3750
+11: 3750
+12: 3750
+13: 3750
+14: 3750
+15: 3750
+16: 3750
+17: 3750
+18: 3750
+19: 3750
+20: 3750
+21: 3750
+22: 3750
+23: 3750
+24: 3750
+25: 3750
+26: 3750
+27: 3750
+28: 3750
+29: 3750
+30: 3750
+31: 3750
+32: 3750
+33: 3750
+34: 3750
+35: 3750
+36: 3750
+37: 3750
+38: 3750
+39: 3750
+40: 3750
+41: 3750
+42: 3750
+43: 3750
+44: 3750
+45: 3750
+46: 3750
+47: 3750
+48: 3750
+49: 3750
+50: 3750
+51: 3750
+52: 3750
+53: 3750
+54: 3750
+55: 3750
+56: 3750
+57: 3750
+58: 3750
+59: 3750
+60: 3750
+61: 3750
+62: 3750
+63: 3750
+64: 3750
+65: 3750
+66: 3750
+67: 3750
+68: 3750
+69: 3750
+70: 3750
+71: 3750
+72: 3749
+73: 3749
+74: 3749
+75: 3748
+76: 3747
+77: 3746
+78: 3743
+79: 3740
+80: 3737
+81: 3729
+82: 3721
+83: 3703
+84: 3685
+85: 3663
+86: 3635
+87: 3604
+88: 3540
+89: 3473
+90: 3398
+91: 3318
+92: 3228
+93: 3125
+94: 2992
+95: 2855
+96: 2708
+97: 2540
+98: 2357
+99: 2169
+100: 1986
+101: 1777
+102: 1575
+103: 1414
+104: 1260
+105: 1075
+106: 916
+107: 758
+108: 632
+109: 489
+110: 401
+111: 330
+112: 260
+113: 196
+114: 152
+115: 117
+116: 79
+117: 53
+118: 41
+119: 28
+120: 21
+121: 17
+122: 10
+123: 9
+124: 7
+125: 3
+126: 3
+127: 3
+unknown height: 1187527
